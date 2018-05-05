@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PolyPong</string>
+    <string name="mainjoin">Join game</string>
+    <string name="mainhost">Host game</string>
+    <string name="searchGame">Checking for games in local network</string>
+    <string name="joinGame">Join game</string>
+    <string name="foundGames">Games found</string>
+    <string name="searchingDevices">Looking for devices in local network</string>
+    <string name="devicesFound">Devices found</string>
+    <string name="hostGame">Host game</string>
+    <string name="confirm">confirm</string>
+    <string name="numballs">"Number of balls: "</string>
+    <string name="options">Game options</string>
+</resources>

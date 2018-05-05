@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="planets_array">
+        <item>Lutscher</item>
+        <item>IP Adresse 2</item>
+        <item>IP Adresse 3</item>
+        <item>IP Adresse 4</item>
+        <item>IP Adresse 5</item>
+        <item>IP Adresse 6</item>
+        <item>IP Adresse 7</item>
+        <item>IP Adresse 8</item>
+    </string-array>
+</resources>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PolyPong</string>
+    <string name="mainjoin">Spiel beitreten</string>
+    <string name="mainhost">Spiel erstellen</string>
+    <string name="searchGame">Spiel wird im lokalen Netzwerk gesucht...</string>
+    <string name="joinGame">Spiel beitreten</string>
+    <string name="foundGames">Gefundene Spiele</string>
+    <string name="searchingDevices">Geräte im lokalen Netzwerk werden gesucht...</string>
+    <string name="devicesFound">Gefundene Geräten:</string>
+    <string name="options">Spieleinstellungen</string>
+    <string name="numballs">"Anzahl der Bälle: "</string>
+    <string name="confirm">Bestätigen</string>
+</resources>
