@@ -4,7 +4,6 @@ import android.content.Context;
 import android.util.Log;
 
 import com.demgames.polypong.Globals;
-import com.demgames.polypong.Globals.*;
 import com.demgames.polypong.network.sendclasses.SendSettings;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
