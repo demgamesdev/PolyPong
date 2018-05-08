@@ -22,9 +22,9 @@ public class ServerListener extends Listener{
         String tempIpAdress=connection.getRemoteAddressTCP().toString();
         tempIpAdress=tempIpAdress.substring(1,tempIpAdress.length()).split(":")[0];
         Log.e(TAG, tempIpAdress+" connected.");
-        globalVariables.addToConnectionList(connection);
+        globalVariables.getNetworkVariables().addToConnectionList(connection);
 
-        if (globalVariables.addIpTolist(tempIpAdress)) {
+        if (globalVariables.getNetworkVariables().addIpTolist(tempIpAdress)) {
             globalVariables.setUpdateListViewState(true);
         }
     }

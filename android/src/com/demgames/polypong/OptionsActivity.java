@@ -60,11 +60,11 @@ public class OptionsActivity extends AppCompatActivity implements AdapterView.On
             @Override
             public void onClick(View view) {
                 /***Optionen an Global Übergeben'**/
-                globalVariables.setNumberOfBalls(ballnum);
-                Log.d(TAG, "Anzahl der bälle: "+ globalVariables.getNumberOfBalls());
-                globalVariables.setGravityState(gravity.isChecked());
-                globalVariables.setAttractionState(attraction.isChecked());
-                globalVariables.setFriction(fric);
+                globalVariables.getGameVariables().numberOfBalls=ballnum;
+                Log.d(TAG, "Anzahl der bälle: "+ globalVariables.getGameVariables().numberOfBalls);
+                globalVariables.getGameVariables().gravityState=gravity.isChecked();
+                globalVariables.getGameVariables().attractionState=attraction.isChecked();
+                globalVariables.getGameVariables().friction=fric;
 
                 /***Server Activity starten***/
                 Intent startServer = new Intent(getApplicationContext(), ServerActivity.class);
@@ -81,7 +81,8 @@ public class OptionsActivity extends AppCompatActivity implements AdapterView.On
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
                 ballnum = i+1;
                 ballTextView.setText(getString(R.string.numballs) + Integer.toString(ballnum));
-                //Log.d(TAG, "onProgressChanged: Anzahl der Bälle auf " + Integer.toString(ballnum) + " geändert");
+                globalVariables.getGameVariables().numberOfBalls=ballnum;
+                Log.d(TAG, "onProgressChanged: Anzahl der Bälle auf " + Integer.toString(globalVariables.getGameVariables().numberOfBalls) + " geändert");
             }
 
             @Override
@@ -121,12 +122,11 @@ public class OptionsActivity extends AppCompatActivity implements AdapterView.On
         Globals globalVariables = (Globals) getApplicationContext();
         switch (i){
             case 0:
-                globalVariables.setGameMode(1);
+                globalVariables.getSettingsVariables().gameMode=1;
                 Log.d(TAG, "onItemSelected: Klassischer Spielmodus ausgewähöt");
                 break;
             case 1:
-                globalVariables.setGameMode(2);
-                startActivity(new Intent(getApplicationContext(), AndroidLauncher.class));
+                globalVariables.getSettingsVariables().gameMode=2;
                 Log.d(TAG, "onItemSelected: Pong Spielmodus ausgewählt");
                 break;
         }
@@ -135,6 +135,6 @@ public class OptionsActivity extends AppCompatActivity implements AdapterView.On
     @Override
     public void onNothingSelected(AdapterView<?> adapterView) {
         Globals globalVariables = (Globals) getApplicationContext();
-        globalVariables.setGameMode(1);
+        globalVariables.getSettingsVariables().gameMode=1;
     }
 }

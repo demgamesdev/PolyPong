@@ -13,6 +13,7 @@ import android.widget.EditText;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import android.widget.Toast;
@@ -97,9 +98,9 @@ public class MainActivity extends AppCompatActivity {
             //Name in Globals Speichern
             String[] name = new String[2];
             name[0]=YourName.getText().toString();
-            globalVariables.setPlayerNamesList(name);
+            globalVariables.getSettingsVariables().playerNamesList=new ArrayList<String>(Arrays.asList(name));
             List<String> supplierNames1 = new ArrayList<String>();
-            supplierNames1 = globalVariables.getPlayerNamesList();
+            supplierNames1 = globalVariables.getSettingsVariables().playerNamesList;
             Log.d(TAG, "MainActivity getName: "+ supplierNames1.get(0));
             return true;
         }

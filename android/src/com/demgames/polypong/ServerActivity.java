@@ -18,7 +18,6 @@ import android.widget.TextView;
 import android.view.KeyEvent;
 import android.widget.Toast;
 
-import com.demgames.polypong.network.sendclasses.SendSettings;
 import com.esotericsoftware.kryonet.Connection;
 
 import java.io.IOException;
@@ -26,8 +25,10 @@ import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.Arrays;
 
-public class ServerActivity extends AppCompatActivity {
+public class ServerActivity extends AppCompatActivity{
 
     private static final String TAG = "ServerActivity";
     private MyTask MyTaskServer;
@@ -56,22 +57,21 @@ public class ServerActivity extends AppCompatActivity {
         /***Decklarationen***/
 
         final Globals globalVariables = (Globals) getApplicationContext();
-        globalVariables.setConnectState(false);
-        globalVariables.setReadyStateState(false);
-        globalVariables.setGameLaunched(false);
+        globalVariables.getSettingsVariables().connectState=false;
+        globalVariables.getSettingsVariables().readyState=false;
+        globalVariables.getSettingsVariables().gameLaunched=false;
 
-        globalVariables.setIpAdressList(new String[] {});
-        globalVariables.setConnectionList(new Connection[]{});
-        globalVariables.setRemoteIpAdress(null);
+        globalVariables.getNetworkVariables().ipAdressList=new ArrayList<String>(Arrays.asList(new String[] {}));
+        globalVariables.getNetworkVariables().connectionList=new ArrayList<Connection>(Arrays.asList(new Connection[] {}));
 
-        globalVariables.setMyPlayerScreen(0);
+        globalVariables.getSettingsVariables().myPlayerScreen=0;
 
 
         //IP Suche
         MyTaskServer= new MyTask();
         MyTaskServer.execute();
 
-        globalVariables.setBalls(true);
+        globalVariables.getGameVariables().setBalls(true);
 
 
     }
@@ -130,7 +130,7 @@ public class ServerActivity extends AppCompatActivity {
         if ((keyCode == KeyEvent.KEYCODE_BACK)) {
             Log.d(this.getClass().getName(), "back button pressed");
             Globals globalVariables = (Globals) getApplicationContext();
-            globalVariables.getServer().stop();
+            globalVariables.getNetworkVariables().server.stop();
         }
         return super.onKeyDown(keyCode, event);
     }
@@ -142,7 +142,7 @@ public class ServerActivity extends AppCompatActivity {
 
         Globals globalVariables = (Globals) getApplicationContext();
         ArrayAdapter<String> adapter = new ArrayAdapter<String>
-                (ServerActivity.this, R.layout.listview, globalVariables.getIpAdressList());
+                (ServerActivity.this, R.layout.listview, globalVariables.getNetworkVariables().ipAdressList);
         final TextView myIpTextView = (TextView) findViewById(R.id.IPtextView);
 
 
@@ -150,22 +150,22 @@ public class ServerActivity extends AppCompatActivity {
         protected Void doInBackground(Void... voids) {
 
             //kryostuff--------------------------------------
-            globalVariables.getServer().start();
+            globalVariables.getNetworkVariables().server.start();
             try {
-                globalVariables.getServer().bind(globalVariables.getMyPort(), globalVariables.getMyPort());
+                globalVariables.getNetworkVariables().server.bind(globalVariables.getNetworkVariables().myPort, globalVariables.getNetworkVariables().myPort);
             } catch (IOException e) {
                 e.printStackTrace();
             }
 
             globalVariables.setServerListener(getApplicationContext());
 
-            globalVariables.getServer().addListener(globalVariables.getServerListener());
+            globalVariables.getNetworkVariables().server.addListener(globalVariables.getServerListener());
 
-            globalVariables.registerKryoClasses(globalVariables.getServer().getKryo());
+            globalVariables.registerKryoClasses(globalVariables.getNetworkVariables().server.getKryo());
 
             Log.d(TAG, "doInBackground: Anfang Suche");
 
-            while(!globalVariables.getConnectState() && !isCancelled()){
+            while(!globalVariables.getSettingsVariables().connectState && !isCancelled()){
                 //sendHostConnect();
                 publishProgress();
                 try {
@@ -173,9 +173,9 @@ public class ServerActivity extends AppCompatActivity {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                globalVariables.setMyIpAdress(wifiIpAddress(getApplicationContext()));
+                globalVariables.getNetworkVariables().myIpAdress=wifiIpAddress(getApplicationContext());
 
-                if(globalVariables.getConnectionList().length!=0 ) {
+                if(globalVariables.getNetworkVariables().connectionList.size()!=0 ) {
                     Log.d(TAG,"Connectionlist not empty");
                 } else {
                     Log.d(TAG,"Connectionlist empty");
@@ -184,8 +184,8 @@ public class ServerActivity extends AppCompatActivity {
                 myIpTextView.post(new Runnable() {
                     @Override
                     public void run() {
-                        if (checkIfIp(globalVariables.getMyIpAdress())) {
-                            myIpTextView.setText("Deine IP-Adresse lautet: " + globalVariables.getMyIpAdress());
+                        if (checkIfIp(globalVariables.getNetworkVariables().myIpAdress)) {
+                            myIpTextView.setText("Deine IP-Adresse lautet: " + globalVariables.getNetworkVariables().myIpAdress);
                         }
                         else {
                             myIpTextView.setText("Unable to get Ip-Adress");
@@ -203,18 +203,15 @@ public class ServerActivity extends AppCompatActivity {
 
             Log.d(TAG, "doInBackground: Ende Suche");
 
-            while(!globalVariables.getReadyState() && !isCancelled()) {
+            while(!globalVariables.getSettingsVariables().readyState && !isCancelled()) {
 
             }
 
             if(!isCancelled()) {
-                globalVariables.getServer().removeListener(globalVariables.getServerListener());
-                Intent startGame = new Intent(getApplicationContext(), GameLaunchActivity.class);
-                //Intent startGame = new Intent(getApplicationContext(), GameLaunchActivity.class);
-                startGame.putExtra("mode", "host");
-                startActivity(startGame);
+                globalVariables.getNetworkVariables().server.removeListener(globalVariables.getServerListener());
+                startActivity(new Intent(getApplicationContext(), GDXGameLauncher.class));
                 //globalVariables.myThread.stop();
-                globalVariables.setGameLaunched(true);
+                globalVariables.getSettingsVariables().gameLaunched=true;
                 MyTaskServer.cancel(true);
                 finish();
 
@@ -235,26 +232,26 @@ public class ServerActivity extends AppCompatActivity {
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                     //Toast.makeText(Client.this, globalVariables.getMyIpList().get(i), Toast.LENGTH_SHORT).show();
                     Log.d(TAG, "onItemClick: " + Integer.toString(i));
-                    Log.d(TAG, "onItemClick: " + globalVariables.getIpAdressList().get(i));
-                    Toast.makeText(ServerActivity.this, "Zu \"" + globalVariables.getIpAdressList().get(i) + "\" wird verbunden", Toast.LENGTH_SHORT).show();
-                    globalVariables.setConnectState(true);
-                    globalVariables.setRemoteIpAdress(globalVariables.getIpAdressList().get(i));
+                    Log.d(TAG, "onItemClick: " + globalVariables.getNetworkVariables().ipAdressList.get(i));
+                    Toast.makeText(ServerActivity.this, "Zu \"" + globalVariables.getNetworkVariables().ipAdressList.get(i) + "\" wird verbunden", Toast.LENGTH_SHORT).show();
+                    globalVariables.getSettingsVariables().connectState=true;
+                    globalVariables.getNetworkVariables().remoteIpAdress=globalVariables.getNetworkVariables().ipAdressList.get(i);
 
-                    SendSettings mySettings=new SendSettings();
+                    Globals.SendVariables.SendSettings mySettings=new Globals.SendVariables.SendSettings();
                     //mySettings.connectionList=globalVariables.getConnectionList();
-                    mySettings.ballsPositions=globalVariables.getBallsPositions();
-                    mySettings.ballsVelocities=globalVariables.getBallsVelocities();
-                    mySettings.ballsSizes=globalVariables.getBallsSizes();
-                    mySettings.gameMode=globalVariables.getGameMode();
-                    mySettings.gravityState=globalVariables.getGravityState();
-                    mySettings.attractionState=globalVariables.getAttractionState();
-                    globalVariables.getConnectionList()[0].sendTCP(mySettings);
+                    mySettings.ballsPositions=globalVariables.getGameVariables().ballsPositions;
+                    mySettings.ballsVelocities=globalVariables.getGameVariables().ballsVelocities;
+                    mySettings.ballsSizes=globalVariables.getGameVariables().ballsSizes;
+                    mySettings.gameMode=globalVariables.getSettingsVariables().gameMode;
+                    mySettings.gravityState=globalVariables.getGameVariables().gravityState;
+                    mySettings.attractionState=globalVariables.getGameVariables().attractionState;
+                    globalVariables.getNetworkVariables().connectionList.get(0).sendTCP(mySettings);
 
                     /*SendBallsKinetics ballPacket= new SendBallsKinetics();
                     ballPacket.ballsPositions=new PVector[]{new PVector(-1,100),new PVector(2,-10009)};
                     globalVariables.getConnectionList()[0].sendTCP(ballPacket);*/
 
-                    globalVariables.setReadyStateState(true);
+                    globalVariables.getSettingsVariables().readyState=true;
                 }
             });
         }

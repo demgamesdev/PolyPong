@@ -31,11 +31,11 @@ import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
 
 public class ClassicGame extends ApplicationAdapter implements InputProcessor {
-
+    private IGlobals globalVariables;
 
     //thisisnetworkbranch
-    public ClassicGame() {
-
+    public ClassicGame(IGlobals globalVariables_ ) {
+        this.globalVariables=globalVariables_;
     }
 
     private SpriteBatch batch;
@@ -45,16 +45,22 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor {
     private World world;
     private Box2DDebugRenderer debugRenderer;
 
-    private Body boxBody,leftBorderBody,bottomBorderBody,rightBorderBody,topBorderBody;
+    private Body leftBorderBody,bottomBorderBody,rightBorderBody,topBorderBody;//boxBody
 
     private Vector2 boxPosition;
     private float boxWidth, boxHeight, ballRadius;
 
     private float borderDamping=1f;
 
-    int numberOfBalls=100;
+    int numberOfBalls;
 
     Ball [] balls;
+
+    //network
+    IGlobals.SendVariables.SendBallKinetics sendBallKinetics=new IGlobals.SendVariables.SendBallKinetics();
+    IGlobals.SendVariables.SendBallScreenChange sendBallScreenChange=new IGlobals.SendVariables.SendBallScreenChange();
+    IGlobals.SendVariables.SendBat sendBat=new IGlobals.SendVariables.SendBat();
+    IGlobals.SendVariables.SendScore sendScore=new IGlobals.SendVariables.SendScore();
 
 
     private Map<Integer,TouchInfo> touches = new HashMap<Integer,TouchInfo>();
@@ -63,7 +69,12 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor {
 
     @Override
     public void create() {
-        world=new World(new Vector2(0,0f),true);
+        if(globalVariables.getGameVariables().gravityState) {
+            world=new World(new Vector2(0,-98f),true);
+        } else {
+            world=new World(new Vector2(0,0f),true);
+        }
+
         shapeRenderer = new ShapeRenderer();
         batch = new SpriteBatch();
         font = new BitmapFont();
@@ -76,7 +87,7 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor {
             touches.put(i, new TouchInfo());
         }
 
-
+        numberOfBalls=globalVariables.getGameVariables().numberOfBalls;
 
         boxPosition = new Vector2(width/2,height/2);
 
@@ -87,10 +98,10 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor {
 
         balls=new Ball[numberOfBalls];
         for(int i=0;i<numberOfBalls;i++) {
-            balls[i]= new Ball(new Vector2(width/2,height/2),new Vector2(0,0),ballRadius,i,0);
+            balls[i]= new Ball(new Vector2(globalVariables.getGameVariables().ballsPositions[i].x*width,globalVariables.getGameVariables().ballsPositions[i].y*height),new Vector2(0,0),globalVariables.getGameVariables().ballsSizes[i]*width/30,i,0);
         }
 
-        BodyDef bodyDef= new BodyDef();
+        /*BodyDef bodyDef= new BodyDef();
         bodyDef.type= BodyDef.BodyType.DynamicBody;
         bodyDef.position.set(boxPosition.scl(1/PIXELS_TO_METERS));
 
@@ -102,7 +113,7 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor {
         boxFd.density=1;
         boxFd.friction=0;
         boxBody.createFixture(boxFd);
-        boxShape.dispose();
+        boxShape.dispose();*/
 
         BodyDef bodyDef2 = new BodyDef();
         bodyDef2.type = BodyDef.BodyType.StaticBody;
@@ -155,7 +166,7 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor {
             public void beginContact(Contact contact) {
                 // Check to see if the collision is between the second sprite and the bottom of the screen
                 // If so apply a random amount of upward force to both objects... just because
-                setupBorderCollsision(contact,boxBody);
+                //setupBorderCollsision(contact,boxBody);
 
                 for(int i=0;i<numberOfBalls;i++) {
                     setupBorderCollsision(contact,balls[i].body);
@@ -214,26 +225,43 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor {
         Gdx.gl.glDisable(GL20.GL_BLEND);*/
 
         int touchCounter=0;
-        for (int i=0; i<5;i++){
-            if(touches.get(i).touched){
-                touchCounter++;
+        if(globalVariables.getSettingsVariables().myPlayerScreen==0) {
+            if(globalVariables.getGameVariables().attractionState) {
+                for (int i = 0; i < 5; i++) {
+                    if (touches.get(i).touched) {
+                        touchCounter++;
 
-                //boxBody.applyForceToCenter(new Vector2(touches.get(i).touchPos.cpy().scl(1/PIXELS_TO_METERS).sub(boxBody.getPosition())),true);
-                for(int j = 0; j < numberOfBalls; j++) {
-                    balls[j].body.applyForceToCenter(touches.get(i).touchPos.cpy().scl(1/PIXELS_TO_METERS).sub(balls[j].body.getPosition()),true);
+                        //boxBody.applyForceToCenter(new Vector2(touches.get(i).touchPos.cpy().scl(1/PIXELS_TO_METERS).sub(boxBody.getPosition())),true);
+                        for (int j = 0; j < numberOfBalls; j++) {
+                            balls[j].body.applyForceToCenter(touches.get(i).touchPos.cpy().scl(1 / PIXELS_TO_METERS).sub(balls[j].body.getPosition()), true);
+                        }
+                    }
                 }
+            }
+        } else {
+            for (int i = 0; i < numberOfBalls; i++) {
+                balls[i].body.setTransform(new Vector2(globalVariables.getGameVariables().ballsPositions[i].x*width,globalVariables.getGameVariables().ballsPositions[i].y*height),0);
             }
         }
 
         world.step(1/60f, 6,2);
-        boxPosition= new Vector2(boxBody.getPosition().x,boxBody.getPosition().y);
+
+        if(globalVariables.getSettingsVariables().myPlayerScreen==0) {
+            for (int i = 0; i < numberOfBalls; i++) {
+                sendBall(balls[i]);
+            }
+        }
+
+
+        //boxPosition= new Vector2(boxBody.getPosition().x,boxBody.getPosition().y);
 
 
         batch.begin();
 
-
+        //globalVariables.setNumberOfBalls(2);
         font.draw(batch,Integer.toString(touchCounter)+" fingers touching, fps: "+Float.toString(Gdx.graphics.getFramesPerSecond()), width /2, height /2);
         font.draw(batch,/*"boxspeed "+Float.toString(boxBody.getLinearVelocity().len())+*/", touchX "+Float.toString(touches.get(0).touchPos.x)+", touchY "+Float.toString(touches.get(0).touchPos.y), 0, height *0.4f);
+        font.draw(batch,"angvel0 "+Float.toString(balls[0].body.getAngularVelocity()),0, height *0.3f);
 
         //
 
@@ -241,15 +269,16 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor {
 
         shapeRenderer.begin(ShapeType.Filled);
 
-        shapeRenderer.setColor(0, 0, 1, 0.5f);
+        /*shapeRenderer.setColor(0, 1, 1, 0.5f);
         shapeRenderer.rect((boxPosition.x*PIXELS_TO_METERS-boxWidth/2), (boxPosition.y*PIXELS_TO_METERS-boxHeight/2), boxWidth, boxHeight);
+        */
 
         //
 
         for(int i = 0; i < 5; i++) {
             if (touches.get(i).touched) {
                 shapeRenderer.setColor(0, 1, 0, 0.5f);
-                shapeRenderer.circle(touches.get(i).touchPos.x*PIXELS_TO_METERS,touches.get(i).touchPos.y*PIXELS_TO_METERS, ballRadius, 100);
+                shapeRenderer.circle(touches.get(i).touchPos.x,touches.get(i).touchPos.y, ballRadius, 100);
                 if(i>0) {
                     shapeRenderer.setColor(0, 1, 0, 1);
                     shapeRenderer.line(touches.get(i-1).touchPos.x,touches.get(i-1).touchPos.y,touches.get(i).touchPos.x,touches.get(i).touchPos.y);
@@ -334,6 +363,20 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor {
         // TODO Auto-generated method stub
         return false;
     }
+
+    /********* SEND FUNCTIONS *********/
+
+    void sendBall(Ball theBall) {
+        sendBallKinetics.ballNumber=theBall.ballnumber;
+        sendBallKinetics.ballPosition=new Vector2(theBall.body.getPosition().x/width,theBall.body.getPosition().y/height);
+        sendBallKinetics.ballVelocity=new Vector2(theBall.body.getLinearVelocity().x/width,theBall.body.getLinearVelocity().y/height);
+
+        if(globalVariables.getSettingsVariables().myPlayerScreen==0) {
+            globalVariables.getNetworkVariables().connectionList.get(0).sendUDP(sendBallKinetics);
+        }
+    }
+
+
     /********* OTHER FUNCTIONS *********/
 
     void setupBorderCollsision(Contact contact, Body body) {
@@ -387,7 +430,7 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor {
 
         float radius,m;
 
-        int[] ballcolor=new int[3];
+        int[] ballColor =new int[3];
         int ballnumber;
         boolean controlled;
         boolean updateState=true;
@@ -404,7 +447,13 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor {
             //physics stuff
 
             BodyDef bodyDef= new BodyDef();
-            bodyDef.type=BodyDef.BodyType.DynamicBody;
+
+            if(globalVariables.getSettingsVariables().myPlayerScreen==0) {
+                bodyDef.type = BodyDef.BodyType.DynamicBody;
+            } else {
+                bodyDef.type = BodyDef.BodyType.KinematicBody;
+            }
+
             bodyDef.position.set(position_.scl(1/PIXELS_TO_METERS));
             body = world.createBody(bodyDef);
 
@@ -421,20 +470,26 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor {
 
             body.setLinearVelocity(velocity_.scl(1/PIXELS_TO_METERS));
 
-            ballcolor[0] =0;
-            ballcolor[1]=0;
-            ballcolor[2]=255;
+            ballColor[0] =0;
+            ballColor[1]=0;
+            ballColor[2]=1;
+
+            if(ballnumber==0) {
+                ballColor[0]=1;
+                ballColor[2]=0;
+            }
+
 
             if (playerScreen!=0) {
-                ballcolor[0] =255;
-                ballcolor[2]=0;
+                ballColor[0] =1;
+                ballColor[2]=0;
             }
             //(int)random(255);
         }
 
         //display ball
         void display() {
-            shapeRenderer.setColor(1, 0, 0, 0.5f);
+            shapeRenderer.setColor(ballColor[0], ballColor[1], ballColor[2], 0.5f);
             shapeRenderer.circle(this.body.getPosition().x*PIXELS_TO_METERS,this.body.getPosition().y*PIXELS_TO_METERS, radius, 100);
         }
 

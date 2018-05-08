@@ -28,9 +28,11 @@ import java.net.InetAddress;
 import java.nio.ByteOrder;
 import java.math.BigInteger;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 
-public class ClientActivity extends AppCompatActivity {
+public class ClientActivity extends AppCompatActivity{
 
     private static final String TAG = "Client";
     private MyTaskClient MyTaskClient;
@@ -59,13 +61,14 @@ public class ClientActivity extends AppCompatActivity {
 
         /***Deklarationen***/
         final Globals globalVariables = (Globals) getApplicationContext();
-        globalVariables.setConnectState(false);
-        globalVariables.setReadyStateState(false);
-        globalVariables.setGameLaunched(false);
-        globalVariables.setConnectionList(new Connection[]{});
-        globalVariables.setIpAdressList(new String[] {});
+        globalVariables.getSettingsVariables().connectState=false;
+        globalVariables.getSettingsVariables().readyState=false;
+        globalVariables.getSettingsVariables().gameLaunched=false;
 
-        globalVariables.setMyPlayerScreen(1);
+        globalVariables.getNetworkVariables().ipAdressList=new ArrayList<String>(Arrays.asList(new String[] {}));
+        globalVariables.getNetworkVariables().connectionList=new ArrayList<Connection>(Arrays.asList(new Connection[] {}));
+
+        globalVariables.getSettingsVariables().myPlayerScreen=1;
 
         //--------------------------------------------------
 
@@ -132,7 +135,7 @@ public class ClientActivity extends AppCompatActivity {
         if ((keyCode == KeyEvent.KEYCODE_BACK)) {
             Log.d(this.getClass().getName(), "back button pressed");
             Globals globalVariables = (Globals) getApplicationContext();
-            globalVariables.getClient().stop();
+            globalVariables.getNetworkVariables().client.stop();
         }
         return super.onKeyDown(keyCode, event);
     }
@@ -144,7 +147,7 @@ public class ClientActivity extends AppCompatActivity {
 
         Globals globalVariables = (Globals) getApplicationContext();
         ArrayAdapter<String> adapter = new ArrayAdapter<String>
-                (ClientActivity.this, R.layout.listview, globalVariables.getIpAdressList());
+                (ClientActivity.this, R.layout.listview, globalVariables.getNetworkVariables().ipAdressList);
         TextView myIpTextView = (TextView) findViewById(R.id.IpAdressTextView);
         EditText manualIpEditText = (EditText) findViewById(R.id.manualIpEditText);
         Button manualIpButton = (Button) findViewById(R.id.manualIpButton);
@@ -154,41 +157,41 @@ public class ClientActivity extends AppCompatActivity {
             //Background Thread
 
             //kryostuff--------------------------------------
-            globalVariables.getClient().start();
+            globalVariables.getNetworkVariables().client.start();
 
             globalVariables.setClientListener(getApplicationContext());
-            globalVariables.getClient().addListener(globalVariables.getClientListener());
+            globalVariables.getNetworkVariables().client.addListener(globalVariables.getClientListener());
 
-            globalVariables.registerKryoClasses(globalVariables.getClient().getKryo());
+            globalVariables.registerKryoClasses(globalVariables.getNetworkVariables().client.getKryo());
 
             Log.d(TAG, "doInBackground: Anfang Suche");
 
 
-            while (!globalVariables.getConnectState()&& !isCancelled()) {
+            while (!globalVariables.getSettingsVariables().connectState&& !isCancelled()) {
                 //sendClientConnect();
                 try {
                     Thread.currentThread().sleep(1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                globalVariables.setHostsList(globalVariables.getClient().discoverHosts(globalVariables.getMyPort(),1000));
+                globalVariables.setHostsList(globalVariables.getNetworkVariables().client.discoverHosts(globalVariables.getNetworkVariables().myPort,1000));
                 if(globalVariables.getHostsList().toArray().length!=0) {
                     for (int i = 0; i < globalVariables.getHostsList().toArray().length; i++) {
                         String tempIPAdress = globalVariables.getHostsList().toArray()[i].toString();
                         tempIPAdress = tempIPAdress.substring(1, tempIPAdress.length());
                         Log.d("discovery", tempIPAdress);
-                        if (globalVariables.addIpTolist(tempIPAdress)) {
+                        if (globalVariables.getNetworkVariables().addIpTolist(tempIPAdress)) {
                             globalVariables.setUpdateListViewState(true);
                         }
                     }
                 }
-                globalVariables.setMyIpAdress(wifiIpAddress(getApplicationContext()));
+                globalVariables.getNetworkVariables().myIpAdress=wifiIpAddress(getApplicationContext());
 
                 myIpTextView.post(new Runnable() {
                     @Override
                     public void run() {
-                        if (checkIfIp(globalVariables.getMyIpAdress())) {
-                            myIpTextView.setText("Deine IP-Adresse lautet: " + globalVariables.getMyIpAdress());
+                        if (checkIfIp(globalVariables.getNetworkVariables().myIpAdress)) {
+                            myIpTextView.setText("Deine IP-Adresse lautet: " + globalVariables.getNetworkVariables().myIpAdress);
                             //IP Adresse wird in die Liste Hinzugefügt
                             //globalVariables.addIpTolist(globalVariables.getMyIpAdress());
 
@@ -208,18 +211,15 @@ public class ClientActivity extends AppCompatActivity {
 
             Log.d(TAG, "onPostExecute: Anfang Settings Senden");
 
-            while(!globalVariables.getReadyState() && !isCancelled()) {
+            while(!globalVariables.getSettingsVariables().readyState && !isCancelled()) {
 
             }
 
             if(!isCancelled()) {
-                globalVariables.getClient().removeListener(globalVariables.getClientListener());
-                Intent startGame = new Intent(getApplicationContext(), GameLaunchActivity.class);
-                //Intent startGame = new Intent(getApplicationContext(), GameLaunchActivity.class);
-                startGame.putExtra("mode", "client");
-                startActivity(startGame);
+                globalVariables.getNetworkVariables().client.removeListener(globalVariables.getClientListener());
+                startActivity(new Intent(getApplicationContext(), GDXGameLauncher.class));
                 //globalVariables.myThread.stop();
-                globalVariables.setGameLaunched(true);
+                globalVariables.getSettingsVariables().gameLaunched=true;
                 MyTaskClient.cancel(true);
                 finish();
 
@@ -244,13 +244,13 @@ public class ClientActivity extends AppCompatActivity {
                     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                         //Toast.makeText(Client.this, globalVariables.getMyIpList().get(i), Toast.LENGTH_SHORT).show();
                         Log.d(TAG, "onItemClick: " + Integer.toString(i));
-                        Log.d(TAG, "onItemClick: " + globalVariables.getIpAdressList().get(i));
-                        Toast.makeText(ClientActivity.this, "Zu \"" + globalVariables.getIpAdressList().get(i) + "\" wird verbunden", Toast.LENGTH_SHORT).show();
-                        globalVariables.setConnectState(true);
-                        globalVariables.setRemoteIpAdress(globalVariables.getIpAdressList().get(i));
+                        Log.d(TAG, "onItemClick: " + globalVariables.getNetworkVariables().ipAdressList.get(i));
+                        Toast.makeText(ClientActivity.this, "Zu \"" + globalVariables.getNetworkVariables().ipAdressList.get(i) + "\" wird verbunden", Toast.LENGTH_SHORT).show();
+                        globalVariables.getSettingsVariables().connectState=true;
+                        globalVariables.getNetworkVariables().remoteIpAdress=globalVariables.getNetworkVariables().ipAdressList.get(i);
 
                         try {
-                            globalVariables.getClient().connect(5000,globalVariables.getRemoteIpAdress(),globalVariables.getMyPort(),globalVariables.getMyPort());
+                            globalVariables.getNetworkVariables().client.connect(5000,globalVariables.getNetworkVariables().remoteIpAdress,globalVariables.getNetworkVariables().myPort,globalVariables.getNetworkVariables().myPort);
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -265,12 +265,12 @@ public class ClientActivity extends AppCompatActivity {
                             Toast.makeText(ClientActivity.this, "Zu \"" + manualIpEditText.getText().toString() + "\" wird verbunden", Toast.LENGTH_SHORT).show();
 
                             try {
-                                globalVariables.getClient().connect(5000, manualIpEditText.getText().toString(), globalVariables.getMyPort(), globalVariables.getMyPort());
+                                globalVariables.getNetworkVariables().client.connect(5000, manualIpEditText.getText().toString(), globalVariables.getNetworkVariables().myPort, globalVariables.getNetworkVariables().myPort);
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
-                            globalVariables.setRemoteIpAdress(manualIpEditText.getText().toString());
-                            globalVariables.setConnectState(true);
+                            globalVariables.getNetworkVariables().remoteIpAdress=manualIpEditText.getText().toString();
+                            globalVariables.getSettingsVariables().connectState=true;
                         } else {
                             Toast.makeText(ClientActivity.this, "Gültige Ip-Adresse eingeben", Toast.LENGTH_SHORT).show();
                         }
