@@ -9,3 +9,8 @@ sourceSets.main.java.srcDirs = [ "src/" ]
 eclipse.project {
     name = appName + "-core"
 }
+
+dependencies {
+    compile files('libs/kryonet-2.21-all.jar')
+    //compile 'com.github.SilenceDut:AsyncTaskScheduler:1.0.0-alpha1'
+}

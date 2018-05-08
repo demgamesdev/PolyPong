@@ -107,7 +107,8 @@ project(":core") {
         compile "com.badlogicgames.gdx:gdx:$gdxVersion"
         compile "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
         compile "com.badlogicgames.gdx:gdx-ai:$aiVersion"
-        
+
+        //compile "com.esotericsoftware:kryonet:2.22.0-RC1"
     }
 }
 

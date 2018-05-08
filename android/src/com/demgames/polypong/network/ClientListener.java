@@ -3,12 +3,10 @@ package com.demgames.polypong.network;
 import android.content.Context;
 import android.util.Log;
 
+import com.badlogic.gdx.math.Vector2;
 import com.demgames.polypong.Globals;
-import com.demgames.polypong.network.sendclasses.SendSettings;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
-
-import processing.core.PVector;
 
 public class ClientListener extends Listener{
     Globals globalVariables;
@@ -36,33 +34,33 @@ public class ClientListener extends Listener{
     public void received(Connection connection,Object object) {
         Log.e(TAG, "Package received.");
 
-        if(object instanceof SendSettings) {
+        if(object instanceof Globals.SendVariables.SendSettings) {
             Log.d(TAG,"received settings");
-            SendSettings mySettings=(SendSettings)object;
-            PVector[] ballsPositions=mySettings.ballsPositions;
-            PVector[] ballsVelocities=mySettings.ballsVelocities;
+            Globals.SendVariables.SendSettings mySettings=(Globals.SendVariables.SendSettings)object;
+            Vector2[] ballsPositions=mySettings.ballsPositions;
+            Vector2[] ballsVelocities=mySettings.ballsVelocities;
             float[] ballsSizes=mySettings.ballsSizes;
             int gameMode=mySettings.gameMode;
             boolean gravityState=mySettings.gravityState;
             boolean attractionState=mySettings.attractionState;
 
-            globalVariables.setNumberOfBalls(ballsPositions.length);
-            globalVariables.setBalls(false);
-            globalVariables.setGameMode(gameMode);
-            globalVariables.setGravityState(gravityState);
-            globalVariables.setAttractionState(attractionState);
+            globalVariables.getGameVariables().numberOfBalls=ballsPositions.length;
+            globalVariables.getGameVariables().setBalls(false);
+            globalVariables.getSettingsVariables().gameMode=gameMode;
+            globalVariables.getGameVariables().gravityState=gravityState;
+            globalVariables.getGameVariables().attractionState=attractionState;
 
             for (int i=0; i<ballsPositions.length;i++) {
-                globalVariables.setBallPosition(i,ballsPositions[i]);
-                globalVariables.setBallVelocity(i,ballsVelocities[i]);
-                globalVariables.setBallPlayerScreen(i,0);
-                globalVariables.setBallSize(i,ballsSizes[i]);
-                Log.d(TAG,"x "+Float.toString(globalVariables.getBallsPositions()[i].x)+", y "+Float.toString(globalVariables.getBallsPositions()[i].y));
+                globalVariables.getGameVariables().ballsPositions[i]=ballsPositions[i];
+                globalVariables.getGameVariables().ballsVelocities[i]=ballsVelocities[i];
+                globalVariables.getGameVariables().ballsPlayerScreens[i]=0;
+                globalVariables.getGameVariables().ballsSizes[i]=ballsSizes[i];
+                Log.d(TAG,"x "+Float.toString(globalVariables.getGameVariables().ballsPositions[i].x)+", y "+Float.toString(globalVariables.getGameVariables().ballsPositions[i].y));
                 /*tempIpAdress=tempIpAdress.substring(1,tempIpAdress.length()).split(":")[0];
                 Log.e(TAG, "Connection: "+ tempIpAdress);*/
             }
 
-            globalVariables.setReadyStateState(true);
+            globalVariables.getSettingsVariables().readyState=true;
         }
     }
 }
