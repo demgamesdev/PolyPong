@@ -28,6 +28,8 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import android.os.Vibrator;
+
 public class ServerActivity extends AppCompatActivity{
 
     private static final String TAG = "ServerActivity";
@@ -226,10 +228,12 @@ public class ServerActivity extends AppCompatActivity{
         protected void onPreExecute() {
             ListView ServerLV = (ListView) findViewById(R.id.serverListView);
             ServerLV.setAdapter(adapter);
+            final Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
             //globalVariables.setSearchConnecState(true);
             ServerLV.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                    v.vibrate(50);
                     //Toast.makeText(Client.this, globalVariables.getMyIpList().get(i), Toast.LENGTH_SHORT).show();
                     Log.d(TAG, "onItemClick: " + Integer.toString(i));
                     Log.d(TAG, "onItemClick: " + globalVariables.getNetworkVariables().ipAdressList.get(i));

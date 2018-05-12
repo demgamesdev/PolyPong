@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.net.wifi.WifiManager;
 import android.content.Intent;
 import android.os.StrictMode;
+import android.os.Vibrator;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -239,10 +240,12 @@ public class ClientActivity extends AppCompatActivity{
                 ListView ClientLV = (ListView) findViewById(R.id.ClientListView);
                 ClientLV.setAdapter(adapter);
                 //globalVariables.setSearchConnecState(true);
+                final Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                 ClientLV.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                     @Override
                     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                         //Toast.makeText(Client.this, globalVariables.getMyIpList().get(i), Toast.LENGTH_SHORT).show();
+                        v.vibrate(50);
                         Log.d(TAG, "onItemClick: " + Integer.toString(i));
                         Log.d(TAG, "onItemClick: " + globalVariables.getNetworkVariables().ipAdressList.get(i));
                         Toast.makeText(ClientActivity.this, "Zu \"" + globalVariables.getNetworkVariables().ipAdressList.get(i) + "\" wird verbunden", Toast.LENGTH_SHORT).show();
