@@ -264,7 +264,6 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor {
         font.draw(batch,"angvel0 "+Float.toString(balls[0].body.getAngularVelocity()),0, height *0.3f);
 
         //
-
         batch.end();
 
         shapeRenderer.begin(ShapeType.Filled);
