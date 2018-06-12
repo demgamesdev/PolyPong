@@ -124,7 +124,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    //Saves lates Name entry onto internal Storage
+    //Saves latest Name entry onto internal Storage
     public void writeName(){
         try {
             FileOutputStream fileOutputStream = openFileOutput(file_name, MODE_PRIVATE);
@@ -139,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    //Loads lates Name entry from internal Storage
+    //Loads latest Name entry from internal Storage
     public void readName(){
         try {
             String Message;
