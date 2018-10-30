@@ -48,7 +48,7 @@ public class GameListener extends Listener{
 
             //Log.d(TAG, "ball "+Integer.toString(ballNumber)+" updated to x "+Float.toString(ballPosition.x));
 
-            globalVariables.getGameVariables().ballsPlayerScreens[ballNumber]=ballPlayerScreen;
+            //globalVariables.getGameVariables().ballsPlayerScreens[ballNumber]=ballPlayerScreen;
             globalVariables.getGameVariables().ballsPositions[ballNumber]=new Vector2(1-ballPosition.x,2-ballPosition.y);
             globalVariables.getGameVariables().ballsVelocities[ballNumber]=new Vector2(-ballVelocity.x,-ballVelocity.y);
 

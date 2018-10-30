@@ -113,7 +113,7 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
 
         balls=new Ball[numberOfBalls];
         for(int i=0;i<numberOfBalls;i++) {
-            balls[i]= new Ball(new Vector2(globalVariables.getGameVariables().ballsPositions[i].x*width/PIXELS_TO_METERS,globalVariables.getGameVariables().ballsPositions[i].y*height/PIXELS_TO_METERS),new Vector2(0,0),(1+globalVariables.getGameVariables().ballsSizes[i])*width/50/PIXELS_TO_METERS,i,0);
+            balls[i]= new Ball(new Vector2(globalVariables.getGameVariables().ballsPositions[i].x*width/PIXELS_TO_METERS,globalVariables.getGameVariables().ballsPositions[i].y*height/PIXELS_TO_METERS),new Vector2(0,10),(1+globalVariables.getGameVariables().ballsSizes[i])*width/50/PIXELS_TO_METERS,i,0);
         }
 
         BodyDef batBodyDef= new BodyDef();
@@ -175,7 +175,7 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
         topBorderShape.dispose();
 
         BodyDef playerScreenBodyDef = new BodyDef();
-        //playerScreenBodyDef.type = BodyDef.BodyType.StaticBody;
+        playerScreenBodyDef.type = BodyDef.BodyType.DynamicBody;
         FixtureDef playerScreenFd = new FixtureDef();
         playerScreenFd.isSensor = true;
 
@@ -205,6 +205,7 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
                 for(int i=0;i<numberOfBalls;i++) {
                     setupBorderCollision(contact,balls[i].body);
                     setupPlayerScreenContact(contact,balls[i]);
+
                 }
 
             }
@@ -274,9 +275,10 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
                 //Gdx.app.debug("ClassicGame", "ball "+Integer.toString(balls[i].ballNumber)+" NOT computed");
 
                 balls[i].body.setType(BodyDef.BodyType.KinematicBody);
+
                 balls[i].body.setTransform(new Vector2(globalVariables.getGameVariables().ballsPositions[i].x*width/PIXELS_TO_METERS,globalVariables.getGameVariables().ballsPositions[i].y*height/PIXELS_TO_METERS),0);
                 balls[i].body.setLinearVelocity(new Vector2(globalVariables.getGameVariables().ballsVelocities[i].x*width/PIXELS_TO_METERS,globalVariables.getGameVariables().ballsVelocities[i].y*height/PIXELS_TO_METERS));
-
+                //balls[i].body.applyForceToCenter((-globalVariables.getGameVariables().ballsPositions[i].x*width+balls[i].body.getPosition().x)*100/PIXELS_TO_METERS,(-globalVariables.getGameVariables().ballsPositions[i].y*height+balls[i].body.getPosition().y)*100/PIXELS_TO_METERS,true);
             }
         }
         world.step(1/60f, 6,2);
@@ -518,13 +520,14 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
         if(((contact.getFixtureA().getBody() == playerScreenBody &&
                 contact.getFixtureB().getBody() == theBall.body) ||
                 (contact.getFixtureB().getBody() == playerScreenBody &&
-                        contact.getFixtureA().getBody() == theBall.body) )) {
-            //&& globalVariables.getGameVariables().ballsPlayerScreens[theBall.ballNumber]!=
-            //                        globalVariables.getSettingsVariables().myPlayerScreen
+                        contact.getFixtureA().getBody() == theBall.body) ) &&
+                globalVariables.getGameVariables().ballsPlayerScreens[theBall.ballNumber]!=
+                        globalVariables.getSettingsVariables().myPlayerScreen) {
+            //
             Gdx.app.debug("ClassicGame", "ball "+Integer.toString(theBall.ballNumber)+" entered player screen");
 
             globalVariables.getGameVariables().ballsPlayerScreens[theBall.ballNumber]=globalVariables.getSettingsVariables().myPlayerScreen;
-            //sendBallPlayerScreenChange(theBall);
+            sendBallPlayerScreenChange(theBall);
             //theBall.body.setType(BodyDef.BodyType.DynamicBody);
             //globalVariables.getGameVariables().ballsPlayerScreens[theBall.ballNumber]=(globalVariables.getSettingsVariables().myPlayerScreen+1)%2;
 
