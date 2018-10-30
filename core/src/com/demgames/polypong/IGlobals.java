@@ -147,6 +147,7 @@ public interface IGlobals {
 
         static public class SendBallKinetics {
             public int ballNumber;
+            public int ballPlayerScreen;
             public Vector2 ballPosition;
             public Vector2 ballVelocity;
         }
@@ -157,7 +158,8 @@ public interface IGlobals {
         }
 
         static public class SendBallScreenChange {
-            public  int ballNumber;
+            public int ballNumber;
+            public int ballPlayerScreen;
             public Vector2 ballPosition;
             public Vector2 ballVelocity;
         }

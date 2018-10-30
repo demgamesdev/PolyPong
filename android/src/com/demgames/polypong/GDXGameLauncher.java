@@ -30,7 +30,8 @@ public class GDXGameLauncher extends AndroidApplication {
         }
 
 		AndroidApplicationConfiguration config = new AndroidApplicationConfiguration();
-		ClassicGame classicGame = new ClassicGame(globalVariables);
+
+        ClassicGame classicGame = new ClassicGame(globalVariables);
 		initialize(classicGame, config);
 	}
 

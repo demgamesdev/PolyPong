@@ -42,25 +42,28 @@ public class GameListener extends Listener{
             //Log.d(TAG, "ball received");
             Globals.SendVariables.SendBallKinetics ballKinetics=(Globals.SendVariables.SendBallKinetics)object;
             int ballNumber=ballKinetics.ballNumber;
+            int ballPlayerScreen=ballKinetics.ballPlayerScreen;
             Vector2 ballPosition=ballKinetics.ballPosition;
             Vector2 ballVelocity=ballKinetics.ballVelocity;
 
             //Log.d(TAG, "ball "+Integer.toString(ballNumber)+" updated to x "+Float.toString(ballPosition.x));
 
-            globalVariables.getGameVariables().ballsPositions[ballNumber]=ballPosition;
-            globalVariables.getGameVariables().ballsVelocities[ballNumber]=ballVelocity;
+            globalVariables.getGameVariables().ballsPlayerScreens[ballNumber]=ballPlayerScreen;
+            globalVariables.getGameVariables().ballsPositions[ballNumber]=new Vector2(1-ballPosition.x,2-ballPosition.y);
+            globalVariables.getGameVariables().ballsVelocities[ballNumber]=new Vector2(-ballVelocity.x,-ballVelocity.y);
 
 
-        } else if(object instanceof Globals.SendVariables.SendBat) {
+        } else if(object instanceof Globals.SendVariables.SendBallScreenChange) {
 
             Globals.SendVariables.SendBallScreenChange ballScreenChange=(Globals.SendVariables.SendBallScreenChange)object;
             int ballNumber=ballScreenChange.ballNumber;
+            int ballPlayerScreen = ballScreenChange.ballPlayerScreen;
             Vector2 ballPosition=ballScreenChange.ballPosition;
             Vector2 ballVelocity=ballScreenChange.ballVelocity;
 
-            globalVariables.getGameVariables().ballsPositions[ballNumber]=ballPosition;
-            globalVariables.getGameVariables().ballsVelocities[ballNumber]=ballVelocity;
-            globalVariables.getGameVariables().ballsPlayerScreens[ballNumber]=globalVariables.getSettingsVariables().myPlayerScreen;
+            globalVariables.getGameVariables().ballsPositions[ballNumber]=new Vector2(1-ballPosition.x,2-ballPosition.y);
+            globalVariables.getGameVariables().ballsVelocities[ballNumber]=new Vector2(-ballVelocity.x,-ballVelocity.y);
+            globalVariables.getGameVariables().ballsPlayerScreens[ballNumber]=ballPlayerScreen;
 
             Log.d(TAG, "ball "+Integer.toString(ballNumber)+" screenchange");
 

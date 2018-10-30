@@ -64,6 +64,7 @@
         android:ems="10"
         android:hint="Namen eingeben"
         android:inputType="textCapWords"
+        android:text="Test"
         android:textAlignment="center"
         android:textColor="@color/TColor"
         android:textColorHint="@color/HintColor"
