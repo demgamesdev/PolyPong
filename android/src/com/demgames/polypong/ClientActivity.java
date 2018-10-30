@@ -19,10 +19,15 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.view.KeyEvent;
 import android.widget.Toast;
+import android.os.Vibrator;
 
 import com.esotericsoftware.kryonet.Connection;
 
-
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.InputStreamReader;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.ByteOrder;
@@ -36,6 +41,9 @@ public class ClientActivity extends AppCompatActivity{
 
     private static final String TAG = "Client";
     private MyTaskClient MyTaskClient;
+
+    String file_name = "IPAdressfile";
+    String storeIP;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -235,19 +243,25 @@ public class ClientActivity extends AppCompatActivity{
         @Override
         protected void onPreExecute() {
 
+                loadIPAdress();
+
                 //Vor dem Thread Initialisierung
                 ListView ClientLV = (ListView) findViewById(R.id.ClientListView);
                 ClientLV.setAdapter(adapter);
                 //globalVariables.setSearchConnecState(true);
+            final Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                 ClientLV.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                     @Override
                     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                         //Toast.makeText(Client.this, globalVariables.getMyIpList().get(i), Toast.LENGTH_SHORT).show();
+                        v.vibrate(50);
                         Log.d(TAG, "onItemClick: " + Integer.toString(i));
                         Log.d(TAG, "onItemClick: " + globalVariables.getNetworkVariables().ipAdressList.get(i));
                         Toast.makeText(ClientActivity.this, "Zu \"" + globalVariables.getNetworkVariables().ipAdressList.get(i) + "\" wird verbunden", Toast.LENGTH_SHORT).show();
                         globalVariables.getSettingsVariables().connectState=true;
                         globalVariables.getNetworkVariables().remoteIpAdress=globalVariables.getNetworkVariables().ipAdressList.get(i);
+                        storeIP = globalVariables.getNetworkVariables().remoteIpAdress;
+                        storeIPAdress();
 
                         try {
                             globalVariables.getNetworkVariables().client.connect(5000,globalVariables.getNetworkVariables().remoteIpAdress,globalVariables.getNetworkVariables().myPort,globalVariables.getNetworkVariables().myPort);
@@ -263,6 +277,8 @@ public class ClientActivity extends AppCompatActivity{
                     public void onClick(View v) {
                         if(checkIfIp(manualIpEditText.getText().toString())) {
                             Toast.makeText(ClientActivity.this, "Zu \"" + manualIpEditText.getText().toString() + "\" wird verbunden", Toast.LENGTH_SHORT).show();
+                            storeIP = globalVariables.getNetworkVariables().remoteIpAdress;
+                            storeIPAdress();
 
                             try {
                                 globalVariables.getNetworkVariables().client.connect(5000, manualIpEditText.getText().toString(), globalVariables.getNetworkVariables().myPort, globalVariables.getNetworkVariables().myPort);
@@ -304,6 +320,49 @@ public class ClientActivity extends AppCompatActivity{
         }
 
     }
+    //Saves latest connected IP Adress in local storage
+    public void storeIPAdress(){
+        try {
+            FileOutputStream fileOutputStream = openFileOutput(file_name, MODE_PRIVATE);
+            fileOutputStream.write(storeIP.getBytes());
+            fileOutputStream.close();
 
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    //Loads latest Name entry from internal Storage
+
+    public void loadIPAdress(){
+        Globals globalVariables = (Globals) getApplicationContext();
+        try {
+            String Message;
+            FileInputStream fileInputStream = openFileInput(file_name);
+            InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream);
+            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+            StringBuffer stringBuffer = new StringBuffer();
+            while ((Message = bufferedReader.readLine())!=null){
+                stringBuffer.append(Message);
+            }
+
+            EditText manualIpEditText = (EditText) findViewById(R.id.manualIpEditText);
+            manualIpEditText.setText(stringBuffer.toString());
+
+            //if (globalVariables.getNetworkVariables().addIpTolist(stringBuffer.toString())) {
+                //globalVariables.setUpdateListViewState(true);
+            //}
+            //storedIPadress.setText(stringBuffer.toString());
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
 
 }

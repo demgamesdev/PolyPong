@@ -12,6 +12,13 @@ import android.support.v7.app.AppCompatActivity;
 import android.widget.EditText;
 import android.util.Log;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -29,6 +36,9 @@ public class MainActivity extends AppCompatActivity {
         this.mWakeLock.release();
         super.onDestroy();
     }
+
+    String Name;
+    String file_name = "name_file";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +62,8 @@ public class MainActivity extends AppCompatActivity {
 
         final Button startHostButton = (Button) findViewById(R.id.startHostButton);
         final Button startClientButton = (Button) findViewById(R.id.startClientButton);
+
+        readName();
 
         startHostButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -83,7 +95,7 @@ public class MainActivity extends AppCompatActivity {
     boolean getName(){
         Globals globalVariables = (Globals) getApplicationContext();
         EditText YourName = (EditText) findViewById(R.id.nameEditText);
-        YourName.getText().toString();
+        Name = YourName.getText().toString();
         if (YourName.getText().toString().matches("")){
             Context context = getApplicationContext();
             CharSequence text = "Name ist ungültig!";
@@ -95,6 +107,9 @@ public class MainActivity extends AppCompatActivity {
             return false;
         }
         else{
+
+            writeName();
+
             //Name in Globals Speichern
             String[] name = new String[2];
             name[0]=YourName.getText().toString();
@@ -105,6 +120,45 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
+
+    }
+
+
+    //Saves latest Name entry onto internal Storage
+    public void writeName(){
+        try {
+            FileOutputStream fileOutputStream = openFileOutput(file_name, MODE_PRIVATE);
+            fileOutputStream.write(Name.getBytes());
+            fileOutputStream.close();
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    //Loads latest Name entry from internal Storage
+    public void readName(){
+        try {
+            String Message;
+            EditText YourName = (EditText) findViewById(R.id.nameEditText);
+            FileInputStream fileInputStream = openFileInput(file_name);
+            InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream);
+            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+            StringBuffer stringBuffer = new StringBuffer();
+            while ((Message = bufferedReader.readLine())!=null){
+                stringBuffer.append(Message + "\n");
+            }
+
+            YourName.setText(stringBuffer.toString());
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
     }
 

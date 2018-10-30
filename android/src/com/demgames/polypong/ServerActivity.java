@@ -17,6 +17,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.view.KeyEvent;
 import android.widget.Toast;
+import android.os.Vibrator;
 
 import com.esotericsoftware.kryonet.Connection;
 
@@ -27,6 +28,8 @@ import java.net.UnknownHostException;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
+
+
 
 public class ServerActivity extends AppCompatActivity{
 
@@ -226,11 +229,13 @@ public class ServerActivity extends AppCompatActivity{
         protected void onPreExecute() {
             ListView ServerLV = (ListView) findViewById(R.id.serverListView);
             ServerLV.setAdapter(adapter);
+            final Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
             //globalVariables.setSearchConnecState(true);
             ServerLV.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                     //Toast.makeText(Client.this, globalVariables.getMyIpList().get(i), Toast.LENGTH_SHORT).show();
+                    v.vibrate(50);
                     Log.d(TAG, "onItemClick: " + Integer.toString(i));
                     Log.d(TAG, "onItemClick: " + globalVariables.getNetworkVariables().ipAdressList.get(i));
                     Toast.makeText(ServerActivity.this, "Zu \"" + globalVariables.getNetworkVariables().ipAdressList.get(i) + "\" wird verbunden", Toast.LENGTH_SHORT).show();
