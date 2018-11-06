@@ -52,7 +52,7 @@ public class MainActivity extends AppCompatActivity {
 
          /* will make the screen be always on until this Activity gets destroyed. */
         final PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        this.mWakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "My Tag");
+        this.mWakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "polypong:mywakelocktag");
         this.mWakeLock.acquire();
 
         /*requestWindowFeature(Window.FEATURE_NO_TITLE);

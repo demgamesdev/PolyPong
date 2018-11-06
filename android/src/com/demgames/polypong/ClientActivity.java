@@ -160,6 +160,8 @@ public class ClientActivity extends AppCompatActivity{
         EditText manualIpEditText = (EditText) findViewById(R.id.manualIpEditText);
         Button manualIpButton = (Button) findViewById(R.id.manualIpButton);
 
+
+
         @Override
         protected Void doInBackground(Void... voids) {
             //Background Thread
@@ -182,7 +184,7 @@ public class ClientActivity extends AppCompatActivity{
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                globalVariables.setHostsList(globalVariables.getNetworkVariables().client.discoverHosts(globalVariables.getNetworkVariables().myPort,1000));
+                globalVariables.setHostsList(globalVariables.getNetworkVariables().client.discoverHosts(globalVariables.getNetworkVariables().udpPort,1000));
                 if(globalVariables.getHostsList().toArray().length!=0) {
                     for (int i = 0; i < globalVariables.getHostsList().toArray().length; i++) {
                         String tempIPAdress = globalVariables.getHostsList().toArray()[i].toString();
@@ -249,12 +251,12 @@ public class ClientActivity extends AppCompatActivity{
                 ListView ClientLV = (ListView) findViewById(R.id.ClientListView);
                 ClientLV.setAdapter(adapter);
                 //globalVariables.setSearchConnecState(true);
-            final Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                final Vibrator vib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                 ClientLV.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                     @Override
                     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                         //Toast.makeText(Client.this, globalVariables.getMyIpList().get(i), Toast.LENGTH_SHORT).show();
-                        v.vibrate(50);
+                        vib.vibrate(50);
                         Log.d(TAG, "onItemClick: " + Integer.toString(i));
                         Log.d(TAG, "onItemClick: " + globalVariables.getNetworkVariables().ipAdressList.get(i));
                         Toast.makeText(ClientActivity.this, "Zu \"" + globalVariables.getNetworkVariables().ipAdressList.get(i) + "\" wird verbunden", Toast.LENGTH_SHORT).show();
@@ -262,9 +264,8 @@ public class ClientActivity extends AppCompatActivity{
                         globalVariables.getNetworkVariables().remoteIpAdress=globalVariables.getNetworkVariables().ipAdressList.get(i);
                         storeIP = globalVariables.getNetworkVariables().remoteIpAdress;
                         storeIPAdress();
-
                         try {
-                            globalVariables.getNetworkVariables().client.connect(5000,globalVariables.getNetworkVariables().remoteIpAdress,globalVariables.getNetworkVariables().myPort,globalVariables.getNetworkVariables().myPort);
+                            globalVariables.getNetworkVariables().client.connect(5000,globalVariables.getNetworkVariables().remoteIpAdress,globalVariables.getNetworkVariables().tcpPort,globalVariables.getNetworkVariables().udpPort);
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -277,11 +278,12 @@ public class ClientActivity extends AppCompatActivity{
                     public void onClick(View v) {
                         if(checkIfIp(manualIpEditText.getText().toString())) {
                             Toast.makeText(ClientActivity.this, "Zu \"" + manualIpEditText.getText().toString() + "\" wird verbunden", Toast.LENGTH_SHORT).show();
+                            vib.vibrate(50);
                             storeIP = globalVariables.getNetworkVariables().remoteIpAdress;
                             storeIPAdress();
 
                             try {
-                                globalVariables.getNetworkVariables().client.connect(5000, manualIpEditText.getText().toString(), globalVariables.getNetworkVariables().myPort, globalVariables.getNetworkVariables().myPort);
+                                globalVariables.getNetworkVariables().client.connect(5000, manualIpEditText.getText().toString(), globalVariables.getNetworkVariables().tcpPort, globalVariables.getNetworkVariables().udpPort);
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }

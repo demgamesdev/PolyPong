@@ -51,8 +51,8 @@ public class ClientListener extends Listener{
             globalVariables.getGameVariables().attractionState=attractionState;
 
             for (int i=0; i<ballsPositions.length;i++) {
-                globalVariables.getGameVariables().ballsPositions[i]=ballsPositions[i];
-                globalVariables.getGameVariables().ballsVelocities[i]=ballsVelocities[i];
+                globalVariables.getGameVariables().ballsPositions[i]=new Vector2(1-ballsPositions[i].x,2-ballsPositions[i].y);
+                globalVariables.getGameVariables().ballsVelocities[i]=new Vector2(-ballsVelocities[i].x,-ballsVelocities[i].y);
                 globalVariables.getGameVariables().ballsPlayerScreens[i]=0;
                 globalVariables.getGameVariables().ballsSizes[i]=ballsSizes[i];
                 Log.d(TAG,"x "+Float.toString(globalVariables.getGameVariables().ballsPositions[i].x)+", y "+Float.toString(globalVariables.getGameVariables().ballsPositions[i].y));

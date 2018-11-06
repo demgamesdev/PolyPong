@@ -94,7 +94,7 @@ public interface IGlobals {
     class NetworkVariables {
         String myIpAdress;
         String remoteIpAdress;
-        int myPort;
+        int tcpPort,udpPort;
         List<String> ipAdressList;
         List<Connection> connectionList;
 
@@ -103,7 +103,8 @@ public interface IGlobals {
 
         NetworkVariables() {
 
-            myPort=12000;
+            tcpPort=12000;
+            udpPort=12001;
 
             server=new Server(4096,4096);
             client=new Client(4096,4096);

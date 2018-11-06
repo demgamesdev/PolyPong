@@ -155,7 +155,7 @@ public class ServerActivity extends AppCompatActivity{
             //kryostuff--------------------------------------
             globalVariables.getNetworkVariables().server.start();
             try {
-                globalVariables.getNetworkVariables().server.bind(globalVariables.getNetworkVariables().myPort, globalVariables.getNetworkVariables().myPort);
+                globalVariables.getNetworkVariables().server.bind(globalVariables.getNetworkVariables().tcpPort,globalVariables.getNetworkVariables().udpPort);
             } catch (IOException e) {
                 e.printStackTrace();
             }
