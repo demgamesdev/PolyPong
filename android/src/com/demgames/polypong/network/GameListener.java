@@ -65,7 +65,7 @@ public class GameListener extends Listener{
             globalVariables.getGameVariables().ballsVelocities[ballNumber]=new Vector2(-ballVelocity.x,-ballVelocity.y);
             globalVariables.getGameVariables().ballsPlayerScreens[ballNumber]=ballPlayerScreen;
 
-            Log.d(TAG, "ball "+Integer.toString(ballNumber)+" screenchange");
+            //Log.d(TAG, "ball "+Integer.toString(ballNumber)+" screenchange");
 
         } else if(object instanceof Globals.SendVariables.SendBat) {
             //Log.d(TAG,"received Bat");

@@ -39,4 +39,8 @@ public class ServerListener extends Listener{
         Log.e(TAG, "Package received.");
 
     }
+
+    public void removeListener(){
+
+    }
 }

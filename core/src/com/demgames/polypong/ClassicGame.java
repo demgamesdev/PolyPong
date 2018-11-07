@@ -15,6 +15,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 import com.badlogic.gdx.math.Matrix4;
+import com.badlogic.gdx.math.Polygon;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.Body;
@@ -50,7 +51,7 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
     private OrthographicCamera camera;
 
     private Body leftBorderBody,bottomBorderBody,rightBorderBody,topBorderBody,batBody, player0ScreenBody,player1ScreenBody, playerLineBody;
-    PolygonShape[] playerScreenShapes;
+    Polygon[] playerScreenShapes;
 
     private float batWidth, batHeight, ballRadius;
 
@@ -183,7 +184,10 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
         FixtureDef playerScreenFd = new FixtureDef();
         playerScreenFd.isSensor = true;
 
-        PolygonShape playerScreenShape = new PolygonShape();
+        playerScreenShapes = new Polygon[2];
+        for (int i=0;i<2;i++) {
+            playerScreenShapes[i]=new Polygon();
+        }
         Vector2[] playerScreenVertices = new Vector2[6];
         float rotatePlayerScreenDegrees = 0;
         switch (globalVariables.getSettingsVariables().myPlayerScreen) {
@@ -201,17 +205,8 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
 
         Vector2[] player0Screen = new Vector2[]{playerScreenVertices[0],playerScreenVertices[1],playerScreenVertices[2],playerScreenVertices[5]};
         Vector2[] player1Screen = new Vector2[]{playerScreenVertices[3],playerScreenVertices[4],playerScreenVertices[5],playerScreenVertices[2]};
-        Gdx.app.debug("setup", "vertex "+Float.toString(player0Screen[0].x));
-        playerScreenShape.set(player0Screen);
-        //playerScreenShape[1].set(player1Screen);
-
-        player0ScreenBody = world.createBody(playerScreenBodyDef);
-        playerScreenFd.shape = playerScreenShape;
-        player0ScreenBody.createFixture(playerScreenFd);
-       // playerScreenFd.shape = playerScreenShape[1];
         //player1ScreenBody.createFixture(playerScreenFd);
         //playerScreenShape.dispose();
-
 
         debugRenderer = new Box2DDebugRenderer();
 
@@ -224,7 +219,6 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
 
                 for(int i=0;i<numberOfBalls;i++) {
                     setupBorderCollision(contact,balls[i].body);
-                    setupPlayerScreenContact(contact,balls[i]);
 
                 }
 
@@ -290,6 +284,7 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
                     }
                 }
                 sendBall(balls[i]);
+                balls[i].checkPlayerScreenContains();
 
             } else {
                 //Gdx.app.debug("ClassicGame", "ball "+Integer.toString(balls[i].ballNumber)+" NOT computed");
@@ -339,16 +334,16 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
         batch.begin();
 
         //globalVariables.setNumberOfBalls(2);
-        font.draw(batch,Integer.toString(touchCounter)+" fingers touching, fps: "+Float.toString(Gdx.graphics.getFramesPerSecond()), width /2, height /2);
-        font.draw(batch,/*"boxspeed "+Float.toString(boxBody.getLinearVelocity().len())+*/", touchX "+Float.toString(touches.get(0).touchPos.x)+", touchY "+Float.toString(touches.get(0).touchPos.y), 0, height *0.4f);
+        /*font.draw(batch,Integer.toString(touchCounter)+" fingers touching, fps: "+Float.toString(Gdx.graphics.getFramesPerSecond()), width /2, height /2);
+        font.draw(batch,/*"boxspeed "+Float.toString(boxBody.getLinearVelocity().len())+", touchX "+Float.toString(touches.get(0).touchPos.x)+", touchY "+Float.toString(touches.get(0).touchPos.y), 0, height *0.4f);
         font.draw(batch,"angvel0 "+Float.toString(balls[0].body.getAngularVelocity()),0, height *0.3f);
-        font.draw(batch,"zoom "+Float.toString(zoomLevel),0, height *0.2f);
+        font.draw(batch,"zoom "+Float.toString(zoomLevel),0, height *0.2f);*/
 
         //
 
         batch.end();
 
-        debugRenderer.render(world,camera.combined.cpy().scale(PIXELS_TO_METERS,PIXELS_TO_METERS,1));
+        //debugRenderer.render(world,camera.combined.cpy().scale(PIXELS_TO_METERS,PIXELS_TO_METERS,1));
 
 
     }
@@ -469,7 +464,7 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
 
     void sendBallPlayerScreenChange(Ball theBall) {
         sendBallScreenChange.ballNumber=theBall.ballNumber;
-        sendBallScreenChange.ballPlayerScreen=globalVariables.getSettingsVariables().myPlayerScreen;
+        sendBallScreenChange.ballPlayerScreen=(globalVariables.getSettingsVariables().myPlayerScreen+1)%2;
         sendBallScreenChange.ballPosition=new Vector2(theBall.body.getPosition().x/width*PIXELS_TO_METERS,theBall.body.getPosition().y/height*PIXELS_TO_METERS);
         sendBallScreenChange.ballVelocity=new Vector2(theBall.body.getLinearVelocity().x/width*PIXELS_TO_METERS,theBall.body.getLinearVelocity().y/height*PIXELS_TO_METERS);
 
@@ -536,24 +531,6 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
         }
     }
 
-    void setupPlayerScreenContact(Contact contact, Ball theBall) {
-        if(((contact.getFixtureA().getBody() == player0ScreenBody &&
-                contact.getFixtureB().getBody() == theBall.body) ||
-                (contact.getFixtureB().getBody() == player0ScreenBody &&
-                        contact.getFixtureA().getBody() == theBall.body) ) &&
-                globalVariables.getGameVariables().ballsPlayerScreens[theBall.ballNumber]!=
-                        globalVariables.getSettingsVariables().myPlayerScreen) {
-            //
-            Gdx.app.debug("ClassicGame", "ball "+Integer.toString(theBall.ballNumber)+" entered player screen");
-
-            globalVariables.getGameVariables().ballsPlayerScreens[theBall.ballNumber]=globalVariables.getSettingsVariables().myPlayerScreen;
-            sendBallPlayerScreenChange(theBall);
-            //theBall.body.setType(BodyDef.BodyType.DynamicBody);
-            //globalVariables.getGameVariables().ballsPlayerScreens[theBall.ballNumber]=(globalVariables.getSettingsVariables().myPlayerScreen+1)%2;
-
-        }
-    }
-
     Vector2 rotateAroundPoint(Vector2 vec, Vector2 point, float degrees) {
         vec.sub(point);
         vec.rotate(degrees);
@@ -576,8 +553,6 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
     class Ball {
         Body body;
 
-        int playerScreen;
-
         float radius,m;
 
         int[] ballColor =new int[3];
@@ -592,7 +567,6 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
             radius=radius_;
             m=radius*0.1f;
             ballNumber=ballNumber_;
-            playerScreen=playerScreen_;
 
             //physics stuff
 
@@ -629,7 +603,7 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
             }*/
 
 
-            if (playerScreen==0) {
+            if (playerScreen_==0) {
                 ballColor[0] =0;
                 ballColor[1]=0;
                 ballColor[2]=1;
@@ -656,7 +630,14 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
             }
 
             shapeRenderer.setColor(ballColor[0], ballColor[1], ballColor[2], 0.5f);
-            shapeRenderer.circle(this.body.getPosition().x*PIXELS_TO_METERS,this.body.getPosition().y*PIXELS_TO_METERS, radius*PIXELS_TO_METERS, 100);
+            shapeRenderer.circle(this.body.getPosition().x*PIXELS_TO_METERS,this.body.getPosition().y*PIXELS_TO_METERS, radius*PIXELS_TO_METERS, 30);
+        }
+
+        void checkPlayerScreenContains() {
+            if ((this.body.getPosition().y+this.radius)*PIXELS_TO_METERS>=height && this.body.getLinearVelocity().y>0) {
+                sendBallPlayerScreenChange(this);
+                globalVariables.getGameVariables().ballsPlayerScreens[this.ballNumber]=(globalVariables.getSettingsVariables().myPlayerScreen+1)%2;
+            }
         }
 
     }
