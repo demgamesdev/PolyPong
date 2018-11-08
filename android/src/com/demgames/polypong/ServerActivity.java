@@ -160,9 +160,9 @@ public class ServerActivity extends AppCompatActivity{
                 e.printStackTrace();
             }
 
-            globalVariables.setServerListener(getApplicationContext());
+            globalVariables.setGlobalListener(getApplicationContext());
 
-            globalVariables.getNetworkVariables().server.addListener(globalVariables.getServerListener());
+            globalVariables.getNetworkVariables().server.addListener(globalVariables.getGlobalListener());
 
             globalVariables.registerKryoClasses(globalVariables.getNetworkVariables().server.getKryo());
 
@@ -211,7 +211,6 @@ public class ServerActivity extends AppCompatActivity{
             }
 
             if(!isCancelled()) {
-                globalVariables.getNetworkVariables().server.removeListener(globalVariables.getServerListener());
                 startActivity(new Intent(getApplicationContext(), GDXGameLauncher.class));
                 //globalVariables.myThread.stop();
                 globalVariables.getSettingsVariables().gameLaunched=true;

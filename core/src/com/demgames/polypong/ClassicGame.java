@@ -1,5 +1,7 @@
 package com.demgames.polypong;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -52,6 +54,7 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
 
     private Body leftBorderBody,bottomBorderBody,rightBorderBody,topBorderBody,batBody, player0ScreenBody,player1ScreenBody, playerLineBody;
     Polygon[] playerScreenShapes;
+    Polygon playerScreen;
 
     private float batWidth, batHeight, ballRadius;
 
@@ -61,7 +64,13 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
 
     private float zoomLevel=1;
 
+    private long frameNumber=0;
+    private int sendFrameSkip=1;
+    private long currentMillis=System.currentTimeMillis();
+
     private Ball [] balls;
+    private ArrayList<Integer> sendBallKineticsAL=new ArrayList<Integer>(Arrays.asList(new Integer[]{}));
+    private ArrayList<Integer> sendBallScreenChangeAL=new ArrayList<Integer>(Arrays.asList(new Integer[]{}));
 
     //network
     private IGlobals.SendVariables.SendBallKinetics sendBallKinetics=new IGlobals.SendVariables.SendBallKinetics();
@@ -203,7 +212,7 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
         playerScreenVertices[5] = rotateAroundPoint(new Vector2(0,height/PIXELS_TO_METERS),midPoint,rotatePlayerScreenDegrees);
 
 
-        Vector2[] player0Screen = new Vector2[]{playerScreenVertices[0],playerScreenVertices[1],playerScreenVertices[2],playerScreenVertices[5]};
+        playerScreen = new Polygon(new float[]{0,height,width,height,width,2*height,0,2*height});
         Vector2[] player1Screen = new Vector2[]{playerScreenVertices[3],playerScreenVertices[4],playerScreenVertices[5],playerScreenVertices[2]};
         //player1ScreenBody.createFixture(playerScreenFd);
         //playerScreenShape.dispose();
@@ -270,6 +279,7 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
         //Gdx.app.debug("ClassicGame", "myplayerscreen " + Integer.toString(globalVariables.getSettingsVariables().myPlayerScreen));
 
         for (int i = 0; i < numberOfBalls; i++) {
+            balls[i].checkPlayerScreenContains();
             if(globalVariables.getGameVariables().ballsPlayerScreens[i]==globalVariables.getSettingsVariables().myPlayerScreen) {
                 //Gdx.app.debug("ClassicGame", "ball "+Integer.toString(balls[i].ballNumber)+" computed");
                 balls[i].body.setType(BodyDef.BodyType.DynamicBody);
@@ -283,20 +293,28 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
                         }
                     }
                 }
-                sendBall(balls[i]);
-                balls[i].checkPlayerScreenContains();
 
             } else {
                 //Gdx.app.debug("ClassicGame", "ball "+Integer.toString(balls[i].ballNumber)+" NOT computed");
+                if (frameNumber%sendFrameSkip==0) {
+                    balls[i].body.setType(BodyDef.BodyType.KinematicBody);
 
-                balls[i].body.setType(BodyDef.BodyType.KinematicBody);
+                    balls[i].body.setTransform(new Vector2(globalVariables.getGameVariables().ballsPositions[i].x*width/PIXELS_TO_METERS,globalVariables.getGameVariables().ballsPositions[i].y*height/PIXELS_TO_METERS),0);
+                    balls[i].body.setLinearVelocity(new Vector2(globalVariables.getGameVariables().ballsVelocities[i].x*width/PIXELS_TO_METERS,globalVariables.getGameVariables().ballsVelocities[i].y*height/PIXELS_TO_METERS));
 
-                balls[i].body.setTransform(new Vector2(globalVariables.getGameVariables().ballsPositions[i].x*width/PIXELS_TO_METERS,globalVariables.getGameVariables().ballsPositions[i].y*height/PIXELS_TO_METERS),0);
-                balls[i].body.setLinearVelocity(new Vector2(globalVariables.getGameVariables().ballsVelocities[i].x*width/PIXELS_TO_METERS,globalVariables.getGameVariables().ballsVelocities[i].y*height/PIXELS_TO_METERS));
+                    frameNumber=0;
+                }
                 //balls[i].body.applyForceToCenter((-globalVariables.getGameVariables().ballsPositions[i].x*width+balls[i].body.getPosition().x)*100/PIXELS_TO_METERS,(-globalVariables.getGameVariables().ballsPositions[i].y*height+balls[i].body.getPosition().y)*100/PIXELS_TO_METERS,true);
             }
         }
-        world.step(1/60f, 6,2);
+
+        world.step(1/60f, 2,2);
+
+        sendBallPlayerScreenChange(sendBallScreenChangeAL);
+        sendBall(sendBallKineticsAL);
+        sendBallKineticsAL=new ArrayList<Integer>(Arrays.asList(new Integer[]{}));
+        sendBallScreenChangeAL=new ArrayList<Integer>(Arrays.asList(new Integer[]{}));
+
 
         //Gdx.app.debug("ClassicGame", "ball 0 vely "+Float.toString(balls[0].body.getLinearVelocity().y/height*PIXELS_TO_METERS) + " ps "+Integer.toString(globalVariables.getGameVariables().ballsPlayerScreens[balls[0].ballNumber]));
         //boxPosition= new Vector2(boxBody.getPosition().x,boxBody.getPosition().y);
@@ -307,6 +325,9 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
 
         shapeRenderer.setColor(1, 1, 1, 1);
         shapeRenderer.rect(0, 0, width, height*2);
+
+        shapeRenderer.setColor(0,0,0,1);
+        shapeRenderer.rect(0, height-10, width, 20);
 
         shapeRenderer.setColor(0, 1, 1, 1);
         shapeRenderer.rect(batBody.getPosition().x*PIXELS_TO_METERS-batWidth/2, batBody.getPosition().y*PIXELS_TO_METERS-batHeight/2, batWidth, batHeight);
@@ -325,6 +346,7 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
         }
 
         for(int i = 0; i < numberOfBalls; i++) {
+
             balls[i].display();
         }
 
@@ -345,7 +367,7 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
 
         //debugRenderer.render(world,camera.combined.cpy().scale(PIXELS_TO_METERS,PIXELS_TO_METERS,1));
 
-
+        frameNumber++;
     }
 
     @Override
@@ -447,31 +469,48 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
 
     /********* SEND FUNCTIONS *********/
 
-    void sendBall(Ball theBall) {
-        sendBallKinetics.ballNumber=theBall.ballNumber;
-        sendBallKinetics.ballPlayerScreen=globalVariables.getSettingsVariables().myPlayerScreen;
-        sendBallKinetics.ballPosition=new Vector2(theBall.body.getPosition().x/width*PIXELS_TO_METERS,theBall.body.getPosition().y/height*PIXELS_TO_METERS);
-        sendBallKinetics.ballVelocity=new Vector2(theBall.body.getLinearVelocity().x/width*PIXELS_TO_METERS,theBall.body.getLinearVelocity().y/height*PIXELS_TO_METERS);
+    void sendBall(ArrayList<Integer> AL) {
+        if (AL.size()>0) {
+            sendBallKinetics.ballNumbers = AL.toArray(new Integer[0]);
+            sendBallKinetics.ballPlayerScreens = new int[AL.size()];
+            sendBallKinetics.ballPositions = new Vector2[AL.size()];
+            sendBallKinetics.ballVelocities = new Vector2[AL.size()];
 
-        if(globalVariables.getSettingsVariables().myPlayerScreen==0) {
-            globalVariables.getNetworkVariables().connectionList.get(0).sendUDP(sendBallKinetics);
-        } else {
-            globalVariables.getNetworkVariables().client.sendUDP(sendBallKinetics);
+
+            for (int i = 0; i < AL.size(); i++) {
+                sendBallKinetics.ballPlayerScreens[i] = globalVariables.getSettingsVariables().myPlayerScreen;
+                sendBallKinetics.ballPositions[i] = new Vector2(balls[sendBallKinetics.ballNumbers[i]].body.getPosition().x / width * PIXELS_TO_METERS, balls[sendBallKinetics.ballNumbers[i]].body.getPosition().y / height * PIXELS_TO_METERS);
+                sendBallKinetics.ballVelocities[i] = new Vector2(balls[sendBallKinetics.ballNumbers[i]].body.getLinearVelocity().x / width * PIXELS_TO_METERS, balls[sendBallKinetics.ballNumbers[i]].body.getLinearVelocity().y / height * PIXELS_TO_METERS);
+            }
+
+            if (globalVariables.getSettingsVariables().myPlayerScreen == 0) {
+                globalVariables.getNetworkVariables().connectionList.get(0).sendUDP(sendBallKinetics);
+            } else {
+                globalVariables.getNetworkVariables().client.sendUDP(sendBallKinetics);
+            }
+            //Gdx.app.debug("ClassicGame", "ball "+Integer.toString(theBall.ballNumber)+" sent");
         }
-        //Gdx.app.debug("ClassicGame", "ball "+Integer.toString(theBall.ballNumber)+" sent");
-
     }
 
-    void sendBallPlayerScreenChange(Ball theBall) {
-        sendBallScreenChange.ballNumber=theBall.ballNumber;
-        sendBallScreenChange.ballPlayerScreen=(globalVariables.getSettingsVariables().myPlayerScreen+1)%2;
-        sendBallScreenChange.ballPosition=new Vector2(theBall.body.getPosition().x/width*PIXELS_TO_METERS,theBall.body.getPosition().y/height*PIXELS_TO_METERS);
-        sendBallScreenChange.ballVelocity=new Vector2(theBall.body.getLinearVelocity().x/width*PIXELS_TO_METERS,theBall.body.getLinearVelocity().y/height*PIXELS_TO_METERS);
+    void sendBallPlayerScreenChange(ArrayList<Integer> AL) {
+        if (AL.size()>0) {
+            sendBallScreenChange.ballNumbers = AL.toArray(new Integer[0]);
+            sendBallScreenChange.ballPlayerScreens = new int[AL.size()];
+            sendBallScreenChange.ballPositions = new Vector2[AL.size()];
+            sendBallScreenChange.ballVelocities = new Vector2[AL.size()];
 
-        if(globalVariables.getSettingsVariables().myPlayerScreen==0) {
-            globalVariables.getNetworkVariables().connectionList.get(0).sendTCP(sendBallScreenChange);
-        } else {
-            globalVariables.getNetworkVariables().client.sendTCP(sendBallScreenChange);
+
+            for (int i = 0; i < AL.size(); i++) {
+                sendBallScreenChange.ballPlayerScreens[i] = (globalVariables.getSettingsVariables().myPlayerScreen + 1) % 2;
+                sendBallScreenChange.ballPositions[i] = new Vector2(balls[sendBallScreenChange.ballNumbers[i]].body.getPosition().x / width * PIXELS_TO_METERS, balls[sendBallScreenChange.ballNumbers[i]].body.getPosition().y / height * PIXELS_TO_METERS);
+                sendBallScreenChange.ballVelocities[i] = new Vector2(balls[sendBallScreenChange.ballNumbers[i]].body.getLinearVelocity().x / width * PIXELS_TO_METERS, balls[sendBallScreenChange.ballNumbers[i]].body.getLinearVelocity().y / height * PIXELS_TO_METERS);
+            }
+
+            if (globalVariables.getSettingsVariables().myPlayerScreen == 0) {
+                globalVariables.getNetworkVariables().connectionList.get(0).sendTCP(sendBallScreenChange);
+            } else {
+                globalVariables.getNetworkVariables().client.sendTCP(sendBallScreenChange);
+            }
         }
     }
 
@@ -634,9 +673,10 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
         }
 
         void checkPlayerScreenContains() {
-            if ((this.body.getPosition().y+this.radius)*PIXELS_TO_METERS>=height && this.body.getLinearVelocity().y>0) {
-                sendBallPlayerScreenChange(this);
-                globalVariables.getGameVariables().ballsPlayerScreens[this.ballNumber]=(globalVariables.getSettingsVariables().myPlayerScreen+1)%2;
+            if(playerScreen.contains(this.body.getPosition().cpy().scl(PIXELS_TO_METERS))) {
+                sendBallScreenChangeAL.add(this.ballNumber);
+            } else {
+                sendBallKineticsAL.add(this.ballNumber);
             }
         }
 

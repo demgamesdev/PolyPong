@@ -8,7 +8,6 @@ import android.view.View;
 
 import com.badlogic.gdx.backends.android.AndroidApplication;
 import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration;
-import com.demgames.polypong.ClassicGame;
 
 public class GDXGameLauncher extends AndroidApplication {
     private static final String TAG = "GDXGameLauncher" ;
@@ -19,15 +18,6 @@ public class GDXGameLauncher extends AndroidApplication {
 		super.onCreate(savedInstanceState);
 
         final Globals globalVariables = (Globals) getApplicationContext();
-
-
-        globalVariables.setGameListener(getApplicationContext());
-
-        if(globalVariables.getSettingsVariables().myPlayerScreen==0) {
-            globalVariables.getNetworkVariables().server.addListener(globalVariables.getGameListener());
-        } else {
-            globalVariables.getNetworkVariables().client.addListener(globalVariables.getGameListener());
-        }
 
 		AndroidApplicationConfiguration config = new AndroidApplicationConfiguration();
 

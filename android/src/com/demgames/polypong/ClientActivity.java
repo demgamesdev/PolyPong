@@ -169,8 +169,8 @@ public class ClientActivity extends AppCompatActivity{
             //kryostuff--------------------------------------
             globalVariables.getNetworkVariables().client.start();
 
-            globalVariables.setClientListener(getApplicationContext());
-            globalVariables.getNetworkVariables().client.addListener(globalVariables.getClientListener());
+            globalVariables.setGlobalListener(getApplicationContext());
+            globalVariables.getNetworkVariables().client.addListener(globalVariables.getGlobalListener());
 
             globalVariables.registerKryoClasses(globalVariables.getNetworkVariables().client.getKryo());
 
@@ -226,7 +226,6 @@ public class ClientActivity extends AppCompatActivity{
             }
 
             if(!isCancelled()) {
-                globalVariables.getNetworkVariables().client.removeListener(globalVariables.getClientListener());
                 startActivity(new Intent(getApplicationContext(), GDXGameLauncher.class));
                 //globalVariables.myThread.stop();
                 globalVariables.getSettingsVariables().gameLaunched=true;
@@ -262,8 +261,8 @@ public class ClientActivity extends AppCompatActivity{
                         Toast.makeText(ClientActivity.this, "Zu \"" + globalVariables.getNetworkVariables().ipAdressList.get(i) + "\" wird verbunden", Toast.LENGTH_SHORT).show();
                         globalVariables.getSettingsVariables().connectState=true;
                         globalVariables.getNetworkVariables().remoteIpAdress=globalVariables.getNetworkVariables().ipAdressList.get(i);
-                        storeIP = globalVariables.getNetworkVariables().remoteIpAdress;
-                        storeIPAdress();
+                        //storeIP = globalVariables.getNetworkVariables().remoteIpAdress;
+                        //storeIPAdress();
                         try {
                             globalVariables.getNetworkVariables().client.connect(5000,globalVariables.getNetworkVariables().remoteIpAdress,globalVariables.getNetworkVariables().tcpPort,globalVariables.getNetworkVariables().udpPort);
                         } catch (IOException e) {
@@ -279,8 +278,8 @@ public class ClientActivity extends AppCompatActivity{
                         if(checkIfIp(manualIpEditText.getText().toString())) {
                             Toast.makeText(ClientActivity.this, "Zu \"" + manualIpEditText.getText().toString() + "\" wird verbunden", Toast.LENGTH_SHORT).show();
                             vib.vibrate(50);
-                            storeIP = globalVariables.getNetworkVariables().remoteIpAdress;
-                            storeIPAdress();
+                            //storeIP = globalVariables.getNetworkVariables().remoteIpAdress;
+                            //storeIPAdress();
 
                             try {
                                 globalVariables.getNetworkVariables().client.connect(5000, manualIpEditText.getText().toString(), globalVariables.getNetworkVariables().tcpPort, globalVariables.getNetworkVariables().udpPort);

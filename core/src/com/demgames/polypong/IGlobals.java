@@ -105,9 +105,12 @@ public interface IGlobals {
 
             tcpPort=12000;
             udpPort=12001;
+            udpPort=12001;
 
             server=new Server(4096,4096);
+            //server=new Server();
             client=new Client(4096,4096);
+            //client=new Client();
 
             ipAdressList= new ArrayList<String>(Arrays.asList(new String[] {}));
             connectionList = new ArrayList<Connection>(Arrays.asList(new Connection[]{}));
@@ -147,10 +150,10 @@ public interface IGlobals {
         }
 
         static public class SendBallKinetics {
-            public int ballNumber;
-            public int ballPlayerScreen;
-            public Vector2 ballPosition;
-            public Vector2 ballVelocity;
+            public Integer[] ballNumbers;
+            public int[] ballPlayerScreens;
+            public Vector2[] ballPositions;
+            public Vector2[] ballVelocities;
         }
 
         static public class SendBat {
@@ -159,10 +162,10 @@ public interface IGlobals {
         }
 
         static public class SendBallScreenChange {
-            public int ballNumber;
-            public int ballPlayerScreen;
-            public Vector2 ballPosition;
-            public Vector2 ballVelocity;
+            public Integer[] ballNumbers;
+            public int[] ballPlayerScreens;
+            public Vector2[] ballPositions;
+            public Vector2[] ballVelocities;
         }
 
         static public class SendScore {
