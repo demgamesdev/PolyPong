@@ -53,8 +53,8 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
     private OrthographicCamera camera;
 
     private Body leftBorderBody,bottomBorderBody,rightBorderBody,topBorderBody,batBody, player0ScreenBody,player1ScreenBody, playerLineBody;
-    Polygon[] playerScreenShapes;
-    Polygon playerScreen;
+    private Polygon[] playerScreenShapes;
+    private Polygon playerScreen;
 
     private float batWidth, batHeight, ballRadius;
 
@@ -77,6 +77,9 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
     private IGlobals.SendVariables.SendBallScreenChange sendBallScreenChange=new IGlobals.SendVariables.SendBallScreenChange();
     private IGlobals.SendVariables.SendBat sendBat=new IGlobals.SendVariables.SendBat();
     private IGlobals.SendVariables.SendScore sendScore=new IGlobals.SendVariables.SendScore();
+
+    private Vector2 touchPos=new Vector2(0,0);
+    private Vector2 lastTouchPos =touchPos;
 
 
     private Map<Integer,TouchInfo> touches = new HashMap<Integer,TouchInfo>();
@@ -131,16 +134,17 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
         }
 
         BodyDef batBodyDef= new BodyDef();
-        batBodyDef.type= BodyDef.BodyType.KinematicBody;
+        batBodyDef.type= BodyDef.BodyType.DynamicBody;
         batBodyDef.position.set(new Vector2(width/2,height*0.2f).scl(1/PIXELS_TO_METERS));
 
         batBody=world.createBody(batBodyDef);
         PolygonShape batShape= new PolygonShape();
         batShape.setAsBox(batWidth/2/PIXELS_TO_METERS,batHeight/2/PIXELS_TO_METERS);
         FixtureDef batFd= new FixtureDef();
+        batFd.restitution=0.7f;
         batFd.shape = batShape;
-        batFd.density=1;
-        batFd.friction=0;
+        batFd.density=1f;
+        batFd.friction=0f;
         batBody.createFixture(batFd);
         batShape.dispose();
 
@@ -148,6 +152,8 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
         borderBodyDef.type = BodyDef.BodyType.StaticBody;
         borderBodyDef.position.set(0,0);
         FixtureDef borderFd=new FixtureDef();
+        borderFd.restitution = 0.7f;
+        //borderFd.density=100000f;
 
         Vector2 [] borderVertices=new Vector2[4];
         borderVertices[0]=new Vector2(0,height/PIXELS_TO_METERS*2);
@@ -227,7 +233,7 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
                 //setupBorderCollision(contact,boxBody);
 
                 for(int i=0;i<numberOfBalls;i++) {
-                    setupBorderCollision(contact,balls[i].body);
+                    //setupBorderCollision(contact,balls[i].body);
 
                 }
 
@@ -273,8 +279,13 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
 
         }
 
+        if (Gdx.input.isTouched(0)) {
+            touchPos=new Vector2(Gdx.input.getX(),(height-Gdx.input.getY()));
+
+        }
+        Gdx.app.debug("ClassicGame", "pos "+Float.toString(touchPos.x)+", "+Float.toString(touchPos.y));
         int touchCounter=0;
-        //Gdx.app.debug("ClassicGame", "my playerScreen "+Integer.toString(globalVariables.getSettingsVariables().myPlayerScreen));
+
 
         //Gdx.app.debug("ClassicGame", "myplayerscreen " + Integer.toString(globalVariables.getSettingsVariables().myPlayerScreen));
 
@@ -307,7 +318,8 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
                 //balls[i].body.applyForceToCenter((-globalVariables.getGameVariables().ballsPositions[i].x*width+balls[i].body.getPosition().x)*100/PIXELS_TO_METERS,(-globalVariables.getGameVariables().ballsPositions[i].y*height+balls[i].body.getPosition().y)*100/PIXELS_TO_METERS,true);
             }
         }
-
+        batBody.setTransform(touchPos.cpy().scl(1/PIXELS_TO_METERS),0);
+        batBody.setLinearVelocity(touchPos.cpy().sub(lastTouchPos));
         world.step(1/60f, 2,2);
 
         sendBallPlayerScreenChange(sendBallScreenChangeAL);
@@ -367,6 +379,7 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
 
         //debugRenderer.render(world,camera.combined.cpy().scale(PIXELS_TO_METERS,PIXELS_TO_METERS,1));
 
+        lastTouchPos=touchPos;
         frameNumber++;
     }
 
@@ -408,8 +421,8 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
             touches.get(pointer).lastTouchPos = new Vector2(screenX,height-screenY);
             touches.get(pointer).touched = true;
             if(pointer==0) {
-                batBody.setTransform(touches.get(pointer).touchPos.cpy().scl(1/PIXELS_TO_METERS),0);
-                batBody.setLinearVelocity(0,0);
+                //batBody.setTransform(touches.get(pointer).touchPos.cpy().scl(1/PIXELS_TO_METERS),0);
+                //batBody.setLinearVelocity(0,0);
             }
         }
         return true;
@@ -422,8 +435,8 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
             //touches.get(pointer).touchY = 0;
             touches.get(pointer).touched = false;
             if(pointer==0) {
-                batBody.setTransform(touches.get(pointer).touchPos.cpy().scl(1/PIXELS_TO_METERS),0);
-                batBody.setLinearVelocity(0,0);
+                //batBody.setTransform(touches.get(pointer).touchPos.cpy().scl(1/PIXELS_TO_METERS),0);
+                //batBody.setLinearVelocity(0,0);
             }
 
 
@@ -442,9 +455,10 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
                 }
             }
             if(pointer==0) {
-                batBody.setTransform(touches.get(pointer).touchPos.cpy().scl(1/PIXELS_TO_METERS),0);
-                batBody.setLinearVelocity(touches.get(pointer).touchPos.cpy().sub(touches.get(pointer).lastTouchPos));
-                touches.get(pointer).lastTouchPos=new Vector2(touches.get(pointer).touchPos);
+                //batBody.setTransform(touches.get(pointer).touchPos.cpy().scl(1/PIXELS_TO_METERS),0);
+                //batBody.applyForceToCenter(new Vector2(100,100),true);
+                //batBody.setLinearVelocity(touches.get(pointer).touchPos.cpy().sub(touches.get(pointer).lastTouchPos));
+                //touches.get(pointer).lastTouchPos=new Vector2(touches.get(pointer).touchPos);
 
             }
         }
@@ -604,7 +618,7 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
 
 
             radius=radius_;
-            m=radius*0.1f;
+            m=radius*0.1f*100;
             ballNumber=ballNumber_;
 
             //physics stuff
