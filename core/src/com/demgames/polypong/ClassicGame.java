@@ -94,7 +94,8 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
         height = Gdx.graphics.getHeight();
 
         camera = new OrthographicCamera(width, height);
-        camera.position.set(camera.viewportWidth / 2f, camera.viewportHeight / 2f, 0);
+        //camera.position.set(camera.viewportWidth / 2f, camera.viewportHeight / 2f, 0);
+        camera.position.set(0, -height/2, 0);
         camera.update();
 
         debugMatrix=new Matrix4(camera.combined);
@@ -135,7 +136,7 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
 
         BodyDef batBodyDef= new BodyDef();
         batBodyDef.type= BodyDef.BodyType.DynamicBody;
-        batBodyDef.position.set(new Vector2(width/2,height*0.2f).scl(1/PIXELS_TO_METERS));
+        batBodyDef.position.set(new Vector2(0,-height*0.8f).scl(1/PIXELS_TO_METERS));
 
         batBody=world.createBody(batBodyDef);
         PolygonShape batShape= new PolygonShape();
@@ -156,10 +157,10 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
         //borderFd.density=100000f;
 
         Vector2 [] borderVertices=new Vector2[4];
-        borderVertices[0]=new Vector2(0,height/PIXELS_TO_METERS*2);
-        borderVertices[1]=new Vector2(0,0);
-        borderVertices[2]=new Vector2(width/PIXELS_TO_METERS,0);
-        borderVertices[3]= new Vector2(width/PIXELS_TO_METERS,height/PIXELS_TO_METERS*2);
+        borderVertices[0]=new Vector2(-width/2/PIXELS_TO_METERS,-height/PIXELS_TO_METERS);
+        borderVertices[1]=new Vector2(width/2/PIXELS_TO_METERS,-height/PIXELS_TO_METERS);
+        borderVertices[2]=new Vector2(width/2/PIXELS_TO_METERS,height/PIXELS_TO_METERS);
+        borderVertices[3]= new Vector2(-width/2/PIXELS_TO_METERS,height/PIXELS_TO_METERS);
 
         final EdgeShape leftBorderShape,bottomBorderShape,rightBorderShape,topBorderShape;
         leftBorderShape=new EdgeShape();
@@ -167,10 +168,10 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
         rightBorderShape= new EdgeShape();
         topBorderShape=new EdgeShape();
 
-        leftBorderShape.set(borderVertices[0],borderVertices[1]);
-        bottomBorderShape.set(borderVertices[1],borderVertices[2]);
-        rightBorderShape.set(borderVertices[2],borderVertices[3]);
-        topBorderShape.set(borderVertices[3],borderVertices[0]);
+        bottomBorderShape.set(borderVertices[0],borderVertices[1]);
+        rightBorderShape.set(borderVertices[1],borderVertices[2]);
+        topBorderShape.set(borderVertices[2],borderVertices[3]);
+        leftBorderShape.set(borderVertices[3],borderVertices[0]);
 
         leftBorderBody = world.createBody(borderBodyDef);
         bottomBorderBody= world.createBody(borderBodyDef);
@@ -210,18 +211,15 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
             case 1: rotatePlayerScreenDegrees = 180;
         }
         Vector2 midPoint = new Vector2(width/PIXELS_TO_METERS,height/PIXELS_TO_METERS);
-        playerScreenVertices[0] = rotateAroundPoint(new Vector2(0,0),midPoint,rotatePlayerScreenDegrees);
-        playerScreenVertices[1] = rotateAroundPoint(new Vector2(width/PIXELS_TO_METERS,0),midPoint,rotatePlayerScreenDegrees);
-        playerScreenVertices[2] = rotateAroundPoint(new Vector2(width/PIXELS_TO_METERS,height/PIXELS_TO_METERS),midPoint,rotatePlayerScreenDegrees);
-        playerScreenVertices[3] = rotateAroundPoint(new Vector2(width/PIXELS_TO_METERS,2*height/PIXELS_TO_METERS),midPoint,rotatePlayerScreenDegrees);
-        playerScreenVertices[4] = rotateAroundPoint(new Vector2(0,2*height/PIXELS_TO_METERS),midPoint,rotatePlayerScreenDegrees);
-        playerScreenVertices[5] = rotateAroundPoint(new Vector2(0,height/PIXELS_TO_METERS),midPoint,rotatePlayerScreenDegrees);
+        playerScreenVertices[0] = new Vector2(-width/2,-height);
+        playerScreenVertices[1] = new Vector2(width/2,-height);
+        playerScreenVertices[2] = new Vector2(width/2,0);
+        playerScreenVertices[3] = new Vector2(width/2,height);
+        playerScreenVertices[4] = new Vector2(-width/2,height);
+        playerScreenVertices[5] = new Vector2(-width/2,0);
 
-
-        playerScreen = new Polygon(new float[]{0,height,width,height,width,2*height,0,2*height});
-        Vector2[] player1Screen = new Vector2[]{playerScreenVertices[3],playerScreenVertices[4],playerScreenVertices[5],playerScreenVertices[2]};
-        //player1ScreenBody.createFixture(playerScreenFd);
-        //playerScreenShape.dispose();
+        playerScreen = new Polygon(new float[]{playerScreenVertices[3].x,playerScreenVertices[3].y,playerScreenVertices[4].x,playerScreenVertices[4].y,playerScreenVertices[5].x,
+                playerScreenVertices[5].y,playerScreenVertices[2].x,playerScreenVertices[2].y});
 
         debugRenderer = new Box2DDebugRenderer();
 
@@ -231,11 +229,6 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
                 // Check to see if the collision is between the second sprite and the bottom of the screen
                 // If so apply a random amount of upward force to both objects... just because
                 //setupBorderCollision(contact,boxBody);
-
-                for(int i=0;i<numberOfBalls;i++) {
-                    //setupBorderCollision(contact,balls[i].body);
-
-                }
 
             }
 
@@ -273,25 +266,25 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
             if(zoomLevel != 2.0 || zoomLevel != 1.0) {
                 zoomLevel=Math.round(zoomLevel);
                 camera.zoom=zoomLevel;
-                camera.position.set(width/2,height/2*zoomLevel,0);
+                camera.position.set(0,-height+height/2*zoomLevel,0);
                 camera.update();
             }
 
         }
 
         if (Gdx.input.isTouched(0)) {
-            touchPos=new Vector2(Gdx.input.getX(),(height-Gdx.input.getY()));
+            touchPos=new Vector2(Gdx.input.getX()-width/2,-Gdx.input.getY());
 
         }
-        Gdx.app.debug("ClassicGame", "pos "+Float.toString(touchPos.x)+", "+Float.toString(touchPos.y));
+        //Gdx.app.debug("ClassicGame", "pos "+Float.toString(touchPos.x)+", "+Float.toString(touchPos.y));
         int touchCounter=0;
 
 
         //Gdx.app.debug("ClassicGame", "myplayerscreen " + Integer.toString(globalVariables.getSettingsVariables().myPlayerScreen));
 
         for (int i = 0; i < numberOfBalls; i++) {
-            balls[i].checkPlayerScreenContains();
             if(globalVariables.getGameVariables().ballsPlayerScreens[i]==globalVariables.getSettingsVariables().myPlayerScreen) {
+                balls[i].checkPlayerScreenContains();
                 //Gdx.app.debug("ClassicGame", "ball "+Integer.toString(balls[i].ballNumber)+" computed");
                 balls[i].body.setType(BodyDef.BodyType.DynamicBody);
                 for (int j = 0; j < 5; j++) {
@@ -336,10 +329,10 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
         shapeRenderer.begin(ShapeType.Filled);
 
         shapeRenderer.setColor(1, 1, 1, 1);
-        shapeRenderer.rect(0, 0, width, height*2);
+        shapeRenderer.rect(-width/2, -height, width, height*2);
 
         shapeRenderer.setColor(0,0,0,1);
-        shapeRenderer.rect(0, height-10, width, 20);
+        shapeRenderer.rect(-width/2, -10, width, 20);
 
         shapeRenderer.setColor(0, 1, 1, 1);
         shapeRenderer.rect(batBody.getPosition().x*PIXELS_TO_METERS-batWidth/2, batBody.getPosition().y*PIXELS_TO_METERS-batHeight/2, batWidth, batHeight);
@@ -416,9 +409,9 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
     @Override
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
         if(pointer < 5){
-            touches.get(pointer).touchPos = new Vector2(screenX,height-screenY);
-            touches.get(pointer).startTouchPos = new Vector2(screenX,height-screenY);
-            touches.get(pointer).lastTouchPos = new Vector2(screenX,height-screenY);
+            touches.get(pointer).touchPos = new Vector2(screenX-width/2,-screenY);
+            touches.get(pointer).startTouchPos = new Vector2(screenX-width/2,-screenY);
+            touches.get(pointer).lastTouchPos = new Vector2(screenX-width/2,-screenY);
             touches.get(pointer).touched = true;
             if(pointer==0) {
                 //batBody.setTransform(touches.get(pointer).touchPos.cpy().scl(1/PIXELS_TO_METERS),0);
@@ -543,7 +536,7 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
             zoomLevel=1.0f;
         }
         camera.zoom=zoomLevel;
-        camera.position.set(width/2,height/2*zoomLevel,0);
+        camera.position.set(0,-height+height/2*zoomLevel,0);
         camera.update();
 
         return false;

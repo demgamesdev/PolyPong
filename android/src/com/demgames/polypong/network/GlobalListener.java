@@ -49,7 +49,7 @@ public class GlobalListener extends Listener{
 
             for (int i =0; i<ballScreenChange.ballNumbers.length;i++) {
                 globalVariables.getGameVariables().ballsPlayerScreens[ballScreenChange.ballNumbers[i]]=ballScreenChange.ballPlayerScreens[i];
-                globalVariables.getGameVariables().ballsPositions[ballScreenChange.ballNumbers[i]]=new Vector2(1-ballScreenChange.ballPositions[i].x,2-ballScreenChange.ballPositions[i].y);
+                globalVariables.getGameVariables().ballsPositions[ballScreenChange.ballNumbers[i]]=new Vector2(-ballScreenChange.ballPositions[i].x,-ballScreenChange.ballPositions[i].y);
                 globalVariables.getGameVariables().ballsVelocities[ballScreenChange.ballNumbers[i]]=new Vector2(-ballScreenChange.ballVelocities[i].x,-ballScreenChange.ballVelocities[i].y);
             }
 
@@ -62,7 +62,7 @@ public class GlobalListener extends Listener{
             //Log.d(TAG, "ball "+Integer.toString(ballNumber)+" updated to x "+Float.toString(ballPosition.x));
             for (int i =0; i<ballKinetics.ballNumbers.length;i++) {
                 globalVariables.getGameVariables().ballsPlayerScreens[ballKinetics.ballNumbers[i]]=ballKinetics.ballPlayerScreens[i];
-                globalVariables.getGameVariables().ballsPositions[ballKinetics.ballNumbers[i]]=new Vector2(1-ballKinetics.ballPositions[i].x,2-ballKinetics.ballPositions[i].y);
+                globalVariables.getGameVariables().ballsPositions[ballKinetics.ballNumbers[i]]=new Vector2(-ballKinetics.ballPositions[i].x,-ballKinetics.ballPositions[i].y);
                 globalVariables.getGameVariables().ballsVelocities[ballKinetics.ballNumbers[i]]=new Vector2(-ballKinetics.ballVelocities[i].x,-ballKinetics.ballVelocities[i].y);
             }
 
@@ -104,7 +104,7 @@ public class GlobalListener extends Listener{
             globalVariables.getGameVariables().attractionState=attractionState;
 
             for (int i=0; i<ballsPositions.length;i++) {
-                globalVariables.getGameVariables().ballsPositions[i]=new Vector2(1-ballsPositions[i].x,2-ballsPositions[i].y);
+                globalVariables.getGameVariables().ballsPositions[i]=new Vector2(-ballsPositions[i].x,-ballsPositions[i].y);
                 globalVariables.getGameVariables().ballsVelocities[i]=new Vector2(-ballsVelocities[i].x,-ballsVelocities[i].y);
                 globalVariables.getGameVariables().ballsPlayerScreens[i]=0;
                 globalVariables.getGameVariables().ballsSizes[i]=ballsSizes[i];
