@@ -44,7 +44,7 @@ public class GlobalListener extends Listener{
         //Log.d(TAG, "Package received.");
 
         if(object instanceof Globals.SendVariables.SendBallScreenChange) {
-            Log.d(TAG,"screenchange received");
+            //Log.d(TAG,"screenchange received");
             Globals.SendVariables.SendBallScreenChange ballScreenChange=(Globals.SendVariables.SendBallScreenChange)object;
 
             for (int i =0; i<ballScreenChange.ballNumbers.length;i++) {
@@ -69,13 +69,10 @@ public class GlobalListener extends Listener{
 
 
         } else if(object instanceof Globals.SendVariables.SendBat) {
-            Log.d(TAG,"received Bat");
+            //Log.d(TAG,"received Bat");
             Globals.SendVariables.SendBat bat=(Globals.SendVariables.SendBat)object;
-            Vector2 batPosition=bat.batPosition;
-            float batOrientation=bat.batOrientation;
-
-            globalVariables.getGameVariables().batPosition=batPosition;
-            globalVariables.getGameVariables().batOrientation=batOrientation;
+            globalVariables.getGameVariables().batPosition=bat.batPosition.cpy().scl(-1f);
+            globalVariables.getGameVariables().batOrientation=bat.batOrientation;
 
         } else if(object instanceof Globals.SendVariables.SendScore) {
             Log.d(TAG,"received Score");

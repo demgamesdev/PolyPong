@@ -35,7 +35,7 @@ import com.badlogic.gdx.physics.box2d.World;
 
 import static com.badlogic.gdx.Input.Keys.V;
 
-public class ClassicGame extends ApplicationAdapter implements InputProcessor{
+public class ClassicGame extends ApplicationAdapter{
     private IGlobals globalVariables;
 
     //thisisnetworkbranch
@@ -52,7 +52,9 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
     private Matrix4 debugMatrix;
     private OrthographicCamera camera;
 
-    private Body leftBorderBody,bottomBorderBody,rightBorderBody,topBorderBody,batBody, player0ScreenBody,player1ScreenBody, playerLineBody;
+    Borders borders;
+
+    private Body leftBorderBody,bottomBorderBody,rightBorderBody,topBorderBody,batBody, otherBatBody;
     private Polygon[] playerScreenShapes;
     private Polygon playerScreen;
 
@@ -78,11 +80,7 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
     private IGlobals.SendVariables.SendBat sendBat=new IGlobals.SendVariables.SendBat();
     private IGlobals.SendVariables.SendScore sendScore=new IGlobals.SendVariables.SendScore();
 
-    private Vector2 touchPos=new Vector2(0,0);
-    private Vector2 lastTouchPos =touchPos;
-
-
-    private Map<Integer,TouchInfo> touches = new HashMap<Integer,TouchInfo>();
+    Touches touches;
 
     private final float PIXELS_TO_METERS = 100f;
 
@@ -102,8 +100,6 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
         debugMatrix.scale(PIXELS_TO_METERS, PIXELS_TO_METERS,1);
         debugRenderer=new Box2DDebugRenderer();
 
-        Gdx.input.setInputProcessor(this);
-
         if(globalVariables.getGameVariables().gravityState) {
             world=new World(new Vector2(0,-50f),true);
         } else {
@@ -115,11 +111,7 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
         font = new BitmapFont();
         font.setColor(Color.RED);
 
-
-
-        for(int i = 0; i < 5; i++){
-            touches.put(i, new TouchInfo());
-        }
+        touches=new Touches(2);
 
         numberOfBalls=globalVariables.getGameVariables().numberOfBalls;
 
@@ -128,6 +120,8 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
         batHeight=width/15;
 
         ballRadius=width/50;
+
+        borders=new Borders();
 
         balls=new Ball[numberOfBalls];
         for(int i=0;i<numberOfBalls;i++) {
@@ -144,56 +138,19 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
         FixtureDef batFd= new FixtureDef();
         batFd.restitution=0.7f;
         batFd.shape = batShape;
+        batShape.dispose();
         batFd.density=1f;
         batFd.friction=0f;
         batBody.createFixture(batFd);
-        batShape.dispose();
 
-        BodyDef borderBodyDef = new BodyDef();
-        borderBodyDef.type = BodyDef.BodyType.StaticBody;
-        borderBodyDef.position.set(0,0);
-        FixtureDef borderFd=new FixtureDef();
-        borderFd.restitution = 0.7f;
-        //borderFd.density=100000f;
 
-        Vector2 [] borderVertices=new Vector2[4];
-        borderVertices[0]=new Vector2(-width/2/PIXELS_TO_METERS,-height/PIXELS_TO_METERS);
-        borderVertices[1]=new Vector2(width/2/PIXELS_TO_METERS,-height/PIXELS_TO_METERS);
-        borderVertices[2]=new Vector2(width/2/PIXELS_TO_METERS,height/PIXELS_TO_METERS);
-        borderVertices[3]= new Vector2(-width/2/PIXELS_TO_METERS,height/PIXELS_TO_METERS);
+        BodyDef otherBatBodyDef= new BodyDef();
+        otherBatBodyDef.type= BodyDef.BodyType.KinematicBody;
+        otherBatBodyDef.position.set(new Vector2(0,height*0.8f).scl(1/PIXELS_TO_METERS));
+        otherBatBody=world.createBody(batBodyDef);
+        otherBatBody.createFixture(batFd);
+        globalVariables.getGameVariables().batPosition=new Vector2(otherBatBody.getPosition().x/width*PIXELS_TO_METERS,otherBatBody.getPosition().y/height*PIXELS_TO_METERS);
 
-        final EdgeShape leftBorderShape,bottomBorderShape,rightBorderShape,topBorderShape;
-        leftBorderShape=new EdgeShape();
-        bottomBorderShape=new EdgeShape();
-        rightBorderShape= new EdgeShape();
-        topBorderShape=new EdgeShape();
-
-        bottomBorderShape.set(borderVertices[0],borderVertices[1]);
-        rightBorderShape.set(borderVertices[1],borderVertices[2]);
-        topBorderShape.set(borderVertices[2],borderVertices[3]);
-        leftBorderShape.set(borderVertices[3],borderVertices[0]);
-
-        leftBorderBody = world.createBody(borderBodyDef);
-        bottomBorderBody= world.createBody(borderBodyDef);
-        rightBorderBody= world.createBody(borderBodyDef);
-        topBorderBody=world.createBody(borderBodyDef);
-
-        borderFd.shape = leftBorderShape;
-        leftBorderBody.createFixture(borderFd);
-
-        borderFd.shape = bottomBorderShape;
-        bottomBorderBody.createFixture(borderFd);
-
-        borderFd.shape = rightBorderShape;
-        rightBorderBody.createFixture(borderFd);
-
-        borderFd.shape = topBorderShape;
-        topBorderBody.createFixture(borderFd);
-
-        leftBorderShape.dispose();
-        bottomBorderShape.dispose();
-        rightBorderShape.dispose();
-        topBorderShape.dispose();
 
         BodyDef playerScreenBodyDef = new BodyDef();
         playerScreenBodyDef.type = BodyDef.BodyType.DynamicBody;
@@ -210,7 +167,6 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
             case 0: rotatePlayerScreenDegrees = 0;
             case 1: rotatePlayerScreenDegrees = 180;
         }
-        Vector2 midPoint = new Vector2(width/PIXELS_TO_METERS,height/PIXELS_TO_METERS);
         playerScreenVertices[0] = new Vector2(-width/2,-height);
         playerScreenVertices[1] = new Vector2(width/2,-height);
         playerScreenVertices[2] = new Vector2(width/2,0);
@@ -259,26 +215,16 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
+        touches.checkTouches();
+        touches.checkZoomGesture();
+
+
         /*Gdx.gl.glEnable(GL20.GL_BLEND);
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         Gdx.gl.glDisable(GL20.GL_BLEND);*/
-        if(!Gdx.input.isTouched(0) || !Gdx.input.isTouched(1)) {
-            if(zoomLevel != 2.0 || zoomLevel != 1.0) {
-                zoomLevel=Math.round(zoomLevel);
-                camera.zoom=zoomLevel;
-                camera.position.set(0,-height+height/2*zoomLevel,0);
-                camera.update();
-            }
 
-        }
 
-        if (Gdx.input.isTouched(0)) {
-            touchPos=new Vector2(Gdx.input.getX()-width/2,-Gdx.input.getY());
-
-        }
-        //Gdx.app.debug("ClassicGame", "pos "+Float.toString(touchPos.x)+", "+Float.toString(touchPos.y));
-        int touchCounter=0;
-
+        Gdx.app.debug("ClassicGame", "pos "+Float.toString(touches.touchPos[1].x)+", "+Float.toString(touches.touchPos[1].y));
 
         //Gdx.app.debug("ClassicGame", "myplayerscreen " + Integer.toString(globalVariables.getSettingsVariables().myPlayerScreen));
 
@@ -287,13 +233,11 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
                 balls[i].checkPlayerScreenContains();
                 //Gdx.app.debug("ClassicGame", "ball "+Integer.toString(balls[i].ballNumber)+" computed");
                 balls[i].body.setType(BodyDef.BodyType.DynamicBody);
-                for (int j = 0; j < 5; j++) {
-                    if (Gdx.input.isTouched(j)) {
-                        touchCounter++;
-
+                for (int j = 0; j < touches.maxTouchCount; j++) {
+                    if (touches.isTouched[j]){
                         //boxBody.applyForceToCenter(new Vector2(touches.get(i).touchPos.cpy().scl(1/PIXELS_TO_METERS).sub(boxBody.getPosition())),true);
                         if(globalVariables.getGameVariables().attractionState) {
-                            balls[i].body.applyForceToCenter(touches.get(j).touchPos.cpy().scl(1 / PIXELS_TO_METERS).sub(balls[i].body.getPosition()), true);
+                            balls[i].body.applyForceToCenter(touches.touchPos[j].cpy().scl(1 / PIXELS_TO_METERS).sub(balls[i].body.getPosition()), true);
                         }
                     }
                 }
@@ -311,14 +255,18 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
                 //balls[i].body.applyForceToCenter((-globalVariables.getGameVariables().ballsPositions[i].x*width+balls[i].body.getPosition().x)*100/PIXELS_TO_METERS,(-globalVariables.getGameVariables().ballsPositions[i].y*height+balls[i].body.getPosition().y)*100/PIXELS_TO_METERS,true);
             }
         }
-        batBody.setTransform(touchPos.cpy().scl(1/PIXELS_TO_METERS),0);
-        batBody.setLinearVelocity(touchPos.cpy().sub(lastTouchPos));
-        world.step(1/60f, 2,2);
+        batBody.setTransform(touches.touchPos[0].cpy().scl(1/PIXELS_TO_METERS),0);
+        batBody.setLinearVelocity(touches.touchPos[0].cpy().sub(touches.lastTouchPos[0]));
+
+        otherBatBody.setTransform(new Vector2(globalVariables.getGameVariables().batPosition.x*width/PIXELS_TO_METERS,globalVariables.getGameVariables().batPosition.y*width/PIXELS_TO_METERS),0);
+        world.step(1/60f, 6,4);
 
         sendBallPlayerScreenChange(sendBallScreenChangeAL);
         sendBall(sendBallKineticsAL);
+        sendBatFunction(new Vector2(batBody.getPosition().x / width * PIXELS_TO_METERS,batBody.getPosition().y / width * PIXELS_TO_METERS));
         sendBallKineticsAL=new ArrayList<Integer>(Arrays.asList(new Integer[]{}));
         sendBallScreenChangeAL=new ArrayList<Integer>(Arrays.asList(new Integer[]{}));
+
 
 
         //Gdx.app.debug("ClassicGame", "ball 0 vely "+Float.toString(balls[0].body.getLinearVelocity().y/height*PIXELS_TO_METERS) + " ps "+Integer.toString(globalVariables.getGameVariables().ballsPlayerScreens[balls[0].ballNumber]));
@@ -336,19 +284,9 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
 
         shapeRenderer.setColor(0, 1, 1, 1);
         shapeRenderer.rect(batBody.getPosition().x*PIXELS_TO_METERS-batWidth/2, batBody.getPosition().y*PIXELS_TO_METERS-batHeight/2, batWidth, batHeight);
+        shapeRenderer.rect(otherBatBody.getPosition().x*PIXELS_TO_METERS-batWidth/2, otherBatBody.getPosition().y*PIXELS_TO_METERS-batHeight/2, batWidth, batHeight);
 
-        //
-
-        for(int i = 0; i < 5; i++) {
-            if (touches.get(i).touched) {
-                shapeRenderer.setColor(0, 1, 0, 0.5f);
-                shapeRenderer.circle(touches.get(i).touchPos.x,touches.get(i).touchPos.y, ballRadius, 100);
-                if(i>0) {
-                    shapeRenderer.setColor(0, 1, 0, 1);
-                    shapeRenderer.line(touches.get(i-1).touchPos.x,touches.get(i-1).touchPos.y,touches.get(i).touchPos.x,touches.get(i).touchPos.y);
-                }
-            }
-        }
+        touches.drawTouchPoints();
 
         for(int i = 0; i < numberOfBalls; i++) {
 
@@ -372,107 +310,9 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
 
         //debugRenderer.render(world,camera.combined.cpy().scale(PIXELS_TO_METERS,PIXELS_TO_METERS,1));
 
-        lastTouchPos=touchPos;
+        touches.updateLasts();
         frameNumber++;
     }
-
-    @Override
-    public void resize(int width, int height) {
-    }
-
-    @Override
-    public void pause() {
-    }
-
-    @Override
-    public void resume() {
-    }
-
-    @Override
-    public boolean keyDown(int keycode) {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-    @Override
-    public boolean keyUp(int keycode) {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-    @Override
-    public boolean keyTyped(char character) {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-    @Override
-    public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-        if(pointer < 5){
-            touches.get(pointer).touchPos = new Vector2(screenX-width/2,-screenY);
-            touches.get(pointer).startTouchPos = new Vector2(screenX-width/2,-screenY);
-            touches.get(pointer).lastTouchPos = new Vector2(screenX-width/2,-screenY);
-            touches.get(pointer).touched = true;
-            if(pointer==0) {
-                //batBody.setTransform(touches.get(pointer).touchPos.cpy().scl(1/PIXELS_TO_METERS),0);
-                //batBody.setLinearVelocity(0,0);
-            }
-        }
-        return true;
-    }
-
-    @Override
-    public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-        if(pointer < 5){
-            //touches.get(pointer).touchX = 0;
-            //touches.get(pointer).touchY = 0;
-            touches.get(pointer).touched = false;
-            if(pointer==0) {
-                //batBody.setTransform(touches.get(pointer).touchPos.cpy().scl(1/PIXELS_TO_METERS),0);
-                //batBody.setLinearVelocity(0,0);
-            }
-
-
-        }
-        return true;
-    }
-
-    @Override
-    public boolean touchDragged(int screenX, int screenY, int pointer) {
-        if(pointer < 5){
-            touches.get(pointer).touchPos = new Vector2(screenX,height-screenY);
-
-            if(pointer==0 || pointer==1) {
-                if(touches.get(0).touched && touches.get(1).touched) {
-                    zoom(touches.get(0).startTouchPos.cpy().sub(touches.get(1).startTouchPos).len(),touches.get(0).touchPos.cpy().sub(touches.get(1).touchPos).len());
-                }
-            }
-            if(pointer==0) {
-                //batBody.setTransform(touches.get(pointer).touchPos.cpy().scl(1/PIXELS_TO_METERS),0);
-                //batBody.applyForceToCenter(new Vector2(100,100),true);
-                //batBody.setLinearVelocity(touches.get(pointer).touchPos.cpy().sub(touches.get(pointer).lastTouchPos));
-                //touches.get(pointer).lastTouchPos=new Vector2(touches.get(pointer).touchPos);
-
-            }
-        }
-        return false;
-    }
-
-    @Override
-    public boolean mouseMoved(int screenX, int screenY) {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-    @Override
-    public boolean scrolled(int amount) {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-
-
-
 
     /********* SEND FUNCTIONS *********/
 
@@ -490,11 +330,7 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
                 sendBallKinetics.ballVelocities[i] = new Vector2(balls[sendBallKinetics.ballNumbers[i]].body.getLinearVelocity().x / width * PIXELS_TO_METERS, balls[sendBallKinetics.ballNumbers[i]].body.getLinearVelocity().y / height * PIXELS_TO_METERS);
             }
 
-            if (globalVariables.getSettingsVariables().myPlayerScreen == 0) {
-                globalVariables.getNetworkVariables().connectionList.get(0).sendUDP(sendBallKinetics);
-            } else {
-                globalVariables.getNetworkVariables().client.sendUDP(sendBallKinetics);
-            }
+            globalVariables.getNetworkVariables().connectionList.get(0).sendUDP(sendBallKinetics);
             //Gdx.app.debug("ClassicGame", "ball "+Integer.toString(theBall.ballNumber)+" sent");
         }
     }
@@ -512,13 +348,14 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
                 sendBallScreenChange.ballPositions[i] = new Vector2(balls[sendBallScreenChange.ballNumbers[i]].body.getPosition().x / width * PIXELS_TO_METERS, balls[sendBallScreenChange.ballNumbers[i]].body.getPosition().y / height * PIXELS_TO_METERS);
                 sendBallScreenChange.ballVelocities[i] = new Vector2(balls[sendBallScreenChange.ballNumbers[i]].body.getLinearVelocity().x / width * PIXELS_TO_METERS, balls[sendBallScreenChange.ballNumbers[i]].body.getLinearVelocity().y / height * PIXELS_TO_METERS);
             }
-
-            if (globalVariables.getSettingsVariables().myPlayerScreen == 0) {
-                globalVariables.getNetworkVariables().connectionList.get(0).sendTCP(sendBallScreenChange);
-            } else {
-                globalVariables.getNetworkVariables().client.sendTCP(sendBallScreenChange);
-            }
+            globalVariables.getNetworkVariables().connectionList.get(0).sendTCP(sendBallScreenChange);
         }
+    }
+
+    void sendBatFunction(Vector2 position) {
+        sendBat.batPosition=position;
+        sendBat.batOrientation=0;
+        globalVariables.getNetworkVariables().connectionList.get(0).sendUDP(sendBat);
     }
 
 
@@ -542,58 +379,7 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
         return false;
     }
 
-    void setupBorderCollision(Contact contact, Body body) {
-        if((contact.getFixtureA().getBody() == leftBorderBody &&
-                contact.getFixtureB().getBody() == body) ||
-                (contact.getFixtureB().getBody() == leftBorderBody &&
-                        contact.getFixtureA().getBody() == body)) {
-
-            body.setLinearVelocity(-body.getLinearVelocity().x,body.getLinearVelocity().y);
-            body.setLinearVelocity(body.getLinearVelocity().scl(borderDamping));
-
-        } else if((contact.getFixtureA().getBody() == bottomBorderBody &&
-                contact.getFixtureB().getBody() == body) ||
-                (contact.getFixtureB().getBody() == bottomBorderBody &&
-                        contact.getFixtureA().getBody() == body)) {
-
-            body.setLinearVelocity(body.getLinearVelocity().x,-body.getLinearVelocity().y);
-            body.setLinearVelocity(body.getLinearVelocity().scl(borderDamping));
-
-        } else if((contact.getFixtureA().getBody() == rightBorderBody &&
-                contact.getFixtureB().getBody() == body) ||
-                (contact.getFixtureB().getBody() == rightBorderBody &&
-                        contact.getFixtureA().getBody() == body)) {
-
-            body.setLinearVelocity(-body.getLinearVelocity().x,body.getLinearVelocity().y);
-            body.setLinearVelocity(body.getLinearVelocity().scl(borderDamping));
-
-        } else if((contact.getFixtureA().getBody() == topBorderBody &&
-                contact.getFixtureB().getBody() == body) ||
-                (contact.getFixtureB().getBody() == topBorderBody &&
-                        contact.getFixtureA().getBody() == body)) {
-
-            body.setLinearVelocity(body.getLinearVelocity().x,-body.getLinearVelocity().y);
-            body.setLinearVelocity(body.getLinearVelocity().scl(borderDamping));
-        }
-    }
-
-    Vector2 rotateAroundPoint(Vector2 vec, Vector2 point, float degrees) {
-        vec.sub(point);
-        vec.rotate(degrees);
-        vec.add(point);
-        return(vec);
-    }
-
     /********* CLASSES *********/
-
-    class TouchInfo {
-
-        public Vector2 touchPos= new Vector2(0,0);
-        public Vector2 startTouchPos= new Vector2(0,0);
-        public Vector2 lastTouchPos= new Vector2(0,0);
-        public boolean touched = false;
-    }
-
 
     //create class Ball
     class Ball {
@@ -687,6 +473,132 @@ public class ClassicGame extends ApplicationAdapter implements InputProcessor{
             }
         }
 
+    }
+
+    class Touches {
+        private int maxTouchCount;
+        private Vector2[] touchPos;
+        private Vector2[] lastTouchPos;
+        private Vector2[] startTouchPos;
+        private boolean[] isTouched;
+        private boolean[] lastIsTouched;
+
+        Touches(int maxTouchCount_) {
+            maxTouchCount=maxTouchCount_;
+            touchPos=new Vector2[maxTouchCount];
+            lastTouchPos=new Vector2[maxTouchCount];
+            startTouchPos=new Vector2[maxTouchCount];
+            isTouched=new boolean[maxTouchCount];
+            lastIsTouched=new boolean[maxTouchCount];
+
+            for (int i=0;i<maxTouchCount;i++) {
+                touchPos[i]=new Vector2(0,-height/2);
+                lastTouchPos[i]=touchPos[i];
+                startTouchPos[i]=touchPos[i];
+                isTouched[i]=false;
+                lastIsTouched[i]=false;
+            }
+        }
+
+        void checkTouches() {
+            for(int i=0;i<this.maxTouchCount;i++) {
+                if (Gdx.input.isTouched(i)) {
+                    this.isTouched[i] = true;
+                    this.touchPos[i]=new Vector2(Gdx.input.getX(i)-width/2,-Gdx.input.getY(i));
+                } else {
+                    this.isTouched[i] = false;
+                }
+                if(!this.lastIsTouched[i] && this.isTouched[i]) {
+                    this.startTouchPos[i]=this.touchPos[i];
+                }
+            }
+        }
+
+        void checkZoomGesture() {
+            if(this.isTouched[0] && this.isTouched[1]) {
+                zoom(this.startTouchPos[0].cpy().sub(this.startTouchPos[1]).len(),this.touchPos[0].cpy().sub(this.touchPos[1]).len());
+            }
+
+            if(!this.isTouched[0] || !this.isTouched[1]) {
+                if(zoomLevel != 2.0 || zoomLevel != 1.0) {
+                    zoomLevel=Math.round(zoomLevel);
+                    camera.zoom=zoomLevel;
+                    camera.position.set(0,-height+height/2*zoomLevel,0);
+                    camera.update();
+                }
+
+            }
+        }
+
+        void updateLasts() {
+            for(int i=0;i<this.maxTouchCount;i++) {
+                this.lastTouchPos[i]=this.touchPos[i];
+                this.lastIsTouched[i]=this.isTouched[i];
+            }
+        }
+
+        void drawTouchPoints() {
+            for(int i = 0; i < this.maxTouchCount; i++) {
+                if (this.isTouched[i]) {
+                    shapeRenderer.setColor(0, 1, 0, 0.5f);
+                    shapeRenderer.circle(this.touchPos[i].x,this.touchPos[i].y, ballRadius, 100);
+                    if(i>0) {
+                        shapeRenderer.setColor(0, 1, 0, 1);
+                        shapeRenderer.line(this.touchPos[i-1].x,this.touchPos[i-1].y,this.touchPos[i].x,this.touchPos[i].y);
+                    }
+                }
+            }
+        }
+    }
+
+    class Borders{
+        Borders() {
+            BodyDef borderBodyDef = new BodyDef();
+            borderBodyDef.type = BodyDef.BodyType.StaticBody;
+            borderBodyDef.position.set(0,0);
+            FixtureDef borderFd=new FixtureDef();
+            borderFd.restitution = 0.7f;
+            //borderFd.density=100000f;
+
+            Vector2 [] borderVertices=new Vector2[4];
+            borderVertices[0]=new Vector2(-width/2/PIXELS_TO_METERS,-height/PIXELS_TO_METERS);
+            borderVertices[1]=new Vector2(width/2/PIXELS_TO_METERS,-height/PIXELS_TO_METERS);
+            borderVertices[2]=new Vector2(width/2/PIXELS_TO_METERS,height/PIXELS_TO_METERS);
+            borderVertices[3]= new Vector2(-width/2/PIXELS_TO_METERS,height/PIXELS_TO_METERS);
+
+            final EdgeShape leftBorderShape,bottomBorderShape,rightBorderShape,topBorderShape;
+            leftBorderShape=new EdgeShape();
+            bottomBorderShape=new EdgeShape();
+            rightBorderShape= new EdgeShape();
+            topBorderShape=new EdgeShape();
+
+            bottomBorderShape.set(borderVertices[0],borderVertices[1]);
+            rightBorderShape.set(borderVertices[1],borderVertices[2]);
+            topBorderShape.set(borderVertices[2],borderVertices[3]);
+            leftBorderShape.set(borderVertices[3],borderVertices[0]);
+
+            leftBorderBody = world.createBody(borderBodyDef);
+            bottomBorderBody= world.createBody(borderBodyDef);
+            rightBorderBody= world.createBody(borderBodyDef);
+            topBorderBody=world.createBody(borderBodyDef);
+
+            borderFd.shape = leftBorderShape;
+            leftBorderBody.createFixture(borderFd);
+
+            borderFd.shape = bottomBorderShape;
+            bottomBorderBody.createFixture(borderFd);
+
+            borderFd.shape = rightBorderShape;
+            rightBorderBody.createFixture(borderFd);
+
+            borderFd.shape = topBorderShape;
+            topBorderBody.createFixture(borderFd);
+
+            leftBorderShape.dispose();
+            bottomBorderShape.dispose();
+            rightBorderShape.dispose();
+            topBorderShape.dispose();
+        }
     }
 
 }
