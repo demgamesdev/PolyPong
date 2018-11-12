@@ -23,8 +23,10 @@ public interface IGlobals {
         public int[] ballsPlayerScreens;
         public float[] ballsSizes;
 
-        public Vector2 batPosition;
-        public float batOrientation;
+        //TODO generalize to more players
+        public Vector2[] batPositions = new Vector2[2];
+        //public Vector2[] batVelocities = new Vector2[2];
+        public float[] batOrientations = new float[2];
 
         public float friction;
 
@@ -105,7 +107,6 @@ public interface IGlobals {
 
             tcpPort=12000;
             udpPort=12001;
-            udpPort=12001;
 
             server=new Server(4096,4096);
             //server=new Server();
@@ -157,7 +158,9 @@ public interface IGlobals {
         }
 
         static public class SendBat {
+            public  int batPlayerScreen;
             public Vector2 batPosition;
+            //public Vector2 batVelocity;
             public float batOrientation;
         }
 

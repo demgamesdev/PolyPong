@@ -71,8 +71,9 @@ public class GlobalListener extends Listener{
         } else if(object instanceof Globals.SendVariables.SendBat) {
             //Log.d(TAG,"received Bat");
             Globals.SendVariables.SendBat bat=(Globals.SendVariables.SendBat)object;
-            globalVariables.getGameVariables().batPosition=bat.batPosition.cpy().scl(-1f);
-            globalVariables.getGameVariables().batOrientation=bat.batOrientation;
+            globalVariables.getGameVariables().batPositions[bat.batPlayerScreen]=bat.batPosition.cpy().scl(-1f);
+            //globalVariables.getGameVariables().batVelocities[bat.batPlayerScreen]=bat.batVelocity.cpy().scl(-1f);
+            globalVariables.getGameVariables().batOrientations[bat.batPlayerScreen]=bat.batOrientation;
 
         } else if(object instanceof Globals.SendVariables.SendScore) {
             Log.d(TAG,"received Score");
