@@ -55,8 +55,16 @@ public class ClassicGame extends ApplicationAdapter{
     private OrthographicCamera camera;
 
     GameField gameField;
+    final short CATEGORY_BORDER = 0x0001;
+    final short CATEGORY_BALL = 0x0002;
+    final short CATEGORY_BAT = 0x0004;
+    final short CATEGORY_FIELDLINE = 0x0008;
+    final short MASK_BORDER= CATEGORY_BALL | CATEGORY_BAT;
+    final short MASK_BALL = CATEGORY_BORDER | CATEGORY_BALL | CATEGORY_BAT;
+    final short MASK_BAT = CATEGORY_BORDER | CATEGORY_BALL | CATEGORY_BAT | CATEGORY_FIELDLINE;;
+    final short MASK_FIELDLINE  = CATEGORY_BAT;
 
-    private Ball [] balls;
+    private Ball[] balls;
     private Bat myBat, otherBat;
     private ArrayList<Integer> sendBallKineticsAL=new ArrayList<Integer>(Arrays.asList(new Integer[]{}));
     private ArrayList<Integer> sendBallScreenChangeAL=new ArrayList<Integer>(Arrays.asList(new Integer[]{}));
@@ -161,10 +169,6 @@ public class ClassicGame extends ApplicationAdapter{
             balls[i].doPhysics();
         }
 
-        //myBat.batBody.setTransform(touches.touchPos[0].cpy().scl(1/PIXELS_TO_METERS),0);
-        //myBat.batBody.setLinearVelocity(touches.touchPos[0].cpy().sub(touches.lastTouchPos[0]));
-
-
         //Gdx.app.debug("ClassicGame", "force " + Float.toString(forceVector.x) + ", " + Float.toString(forceVector.y));
         myBat.doPhysics(touches.touchPos[0],0);
         otherBat.doPhysics(new Vector2(globalVariables.getGameVariables().batPositions[otherBat.batPlayerScreen].x * width,globalVariables.getGameVariables().batPositions[otherBat.batPlayerScreen].y * height),globalVariables.getGameVariables().batOrientations[otherBat.batPlayerScreen]);
@@ -252,6 +256,7 @@ public class ClassicGame extends ApplicationAdapter{
 
     Vector2 transformZoom(Vector2 vec) {
         Vector2 camPos = new Vector2(0,-height+height/2*zoomLevel);
+        vec.x*=zoomLevel;
         vec.y = - height + (vec.y + height) * zoomLevel;
         return(vec);
     }
@@ -334,7 +339,8 @@ public class ClassicGame extends ApplicationAdapter{
             FixtureDef fixtureDef = new FixtureDef();
             fixtureDef.shape= shape;
             fixtureDef.density=1f;
-            fixtureDef.filter.groupIndex=-1;
+            fixtureDef.filter.categoryBits = CATEGORY_BALL;
+            fixtureDef.filter.maskBits = MASK_BALL;
 
             body.createFixture(fixtureDef);
             shape.dispose();
@@ -447,6 +453,8 @@ public class ClassicGame extends ApplicationAdapter{
             batShape.dispose();
             batFd.density=1f;
             batFd.friction=10f;
+            batFd.filter.categoryBits = CATEGORY_BAT;
+            batFd.filter.maskBits = MASK_BAT;
             this.batBody.createFixture(batFd);
             this.batBody.setLinearDamping(100);
             this.batBody.setAngularDamping(100);
@@ -625,9 +633,11 @@ public class ClassicGame extends ApplicationAdapter{
             borderBodyDef.position.set(0,0);
             FixtureDef borderFd=new FixtureDef();
             borderFd.restitution = 0.7f;
+            borderFd.filter.categoryBits=CATEGORY_BORDER;
+            borderFd.filter.maskBits=MASK_BORDER;
             FixtureDef lineFd=new FixtureDef();
-            lineFd.filter.groupIndex=-1;
-
+            lineFd.filter.categoryBits=CATEGORY_FIELDLINE;
+            lineFd.filter.maskBits=MASK_FIELDLINE;
 
 
             leftBorderBody = world.createBody(borderBodyDef);
