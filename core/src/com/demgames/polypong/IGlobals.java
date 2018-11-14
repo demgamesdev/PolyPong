@@ -152,13 +152,13 @@ public interface IGlobals {
 
         static public class SendBallKinetics {
             public Integer[] ballNumbers;
-            public int[] ballPlayerScreens;
+            public int[] ballPlayerFields;
             public Vector2[] ballPositions;
             public Vector2[] ballVelocities;
         }
 
         static public class SendBat {
-            public  int batPlayerScreen;
+            public  int batPlayerField;
             public Vector2 batPosition;
             //public Vector2 batVelocity;
             public float batOrientation;
@@ -166,7 +166,7 @@ public interface IGlobals {
 
         static public class SendBallScreenChange {
             public Integer[] ballNumbers;
-            public int[] ballPlayerScreens;
+            public int[] ballPlayerFields;
             public Vector2[] ballPositions;
             public Vector2[] ballVelocities;
         }

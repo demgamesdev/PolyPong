@@ -48,7 +48,7 @@ public class GlobalListener extends Listener{
             Globals.SendVariables.SendBallScreenChange ballScreenChange=(Globals.SendVariables.SendBallScreenChange)object;
 
             for (int i =0; i<ballScreenChange.ballNumbers.length;i++) {
-                globalVariables.getGameVariables().ballsPlayerScreens[ballScreenChange.ballNumbers[i]]=ballScreenChange.ballPlayerScreens[i];
+                globalVariables.getGameVariables().ballsPlayerScreens[ballScreenChange.ballNumbers[i]]=ballScreenChange.ballPlayerFields[i];
                 globalVariables.getGameVariables().ballsPositions[ballScreenChange.ballNumbers[i]]=new Vector2(-ballScreenChange.ballPositions[i].x,-ballScreenChange.ballPositions[i].y);
                 globalVariables.getGameVariables().ballsVelocities[ballScreenChange.ballNumbers[i]]=new Vector2(-ballScreenChange.ballVelocities[i].x,-ballScreenChange.ballVelocities[i].y);
             }
@@ -61,7 +61,7 @@ public class GlobalListener extends Listener{
 
             //Log.d(TAG, "ball "+Integer.toString(ballNumber)+" updated to x "+Float.toString(ballPosition.x));
             for (int i =0; i<ballKinetics.ballNumbers.length;i++) {
-                globalVariables.getGameVariables().ballsPlayerScreens[ballKinetics.ballNumbers[i]]=ballKinetics.ballPlayerScreens[i];
+                globalVariables.getGameVariables().ballsPlayerScreens[ballKinetics.ballNumbers[i]]=ballKinetics.ballPlayerFields[i];
                 globalVariables.getGameVariables().ballsPositions[ballKinetics.ballNumbers[i]]=new Vector2(-ballKinetics.ballPositions[i].x,-ballKinetics.ballPositions[i].y);
                 globalVariables.getGameVariables().ballsVelocities[ballKinetics.ballNumbers[i]]=new Vector2(-ballKinetics.ballVelocities[i].x,-ballKinetics.ballVelocities[i].y);
             }
@@ -71,9 +71,9 @@ public class GlobalListener extends Listener{
         } else if(object instanceof Globals.SendVariables.SendBat) {
             //Log.d(TAG,"received Bat");
             Globals.SendVariables.SendBat bat=(Globals.SendVariables.SendBat)object;
-            globalVariables.getGameVariables().batPositions[bat.batPlayerScreen]=bat.batPosition.cpy().scl(-1f);
-            //globalVariables.getGameVariables().batVelocities[bat.batPlayerScreen]=bat.batVelocity.cpy().scl(-1f);
-            globalVariables.getGameVariables().batOrientations[bat.batPlayerScreen]=bat.batOrientation;
+            globalVariables.getGameVariables().batPositions[bat.batPlayerField]=bat.batPosition.cpy().scl(-1f);
+            //globalVariables.getGameVariables().batVelocities[bat.batPlayerField]=bat.batVelocity.cpy().scl(-1f);
+            globalVariables.getGameVariables().batOrientations[bat.batPlayerField]=bat.batOrientation;
 
         } else if(object instanceof Globals.SendVariables.SendScore) {
             Log.d(TAG,"received Score");
