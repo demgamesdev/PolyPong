@@ -9,8 +9,14 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.PolygonRegion;
+import com.badlogic.gdx.graphics.g2d.PolygonSprite;
+import com.badlogic.gdx.graphics.g2d.PolygonSpriteBatch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 import com.badlogic.gdx.math.Matrix4;
@@ -40,7 +46,8 @@ public class ClassicGame extends ApplicationAdapter{
     }
 
     //declare renderer and world related stuff
-    private SpriteBatch batch;
+    private SpriteBatch spriteBatch;
+    private PolygonSpriteBatch polygonSpriteBatch;
     private BitmapFont font;
     private int width, height;
     private ShapeRenderer shapeRenderer;
@@ -62,7 +69,7 @@ public class ClassicGame extends ApplicationAdapter{
     final short MASK_BAT = CATEGORY_BORDER | CATEGORY_BALL | CATEGORY_BAT | CATEGORY_FIELDLINE;
     final short MASK_FIELDLINE  = CATEGORY_BAT;
 
-    //global classes for balls, bats and arraylists for batch sending
+    //global classes for balls, bats and arraylists for spriteBatch sending
     private Ball[] balls;
     private Bat myBat, otherBat;
     private ArrayList<Integer> sendBallKineticsAL=new ArrayList<Integer>(Arrays.asList(new Integer[]{}));
@@ -109,8 +116,9 @@ public class ClassicGame extends ApplicationAdapter{
         debugRenderer=new Box2DDebugRenderer();
         //shaperenderer for rendering shapes duuh
         shapeRenderer = new ShapeRenderer();
-        //set font and batch for drawing fonts and textures
-        batch = new SpriteBatch();
+        //set font and spriteBatch for drawing fonts and textures
+        spriteBatch = new SpriteBatch();
+        polygonSpriteBatch = new PolygonSpriteBatch();
         font = new BitmapFont();
         font.setColor(Color.WHITE);
         font.getData().setScale(2f);
@@ -157,7 +165,7 @@ public class ClassicGame extends ApplicationAdapter{
     //executed when closed i think
     @Override
     public void dispose() {
-        batch.dispose();
+        spriteBatch.dispose();
         font.dispose();
         world.dispose();
         debugRenderer.dispose();
@@ -165,10 +173,6 @@ public class ClassicGame extends ApplicationAdapter{
 
     @Override
     public void render() {
-        //background
-        Gdx.gl.glClearColor(0, 0, 0, 1);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-
         //touch input checking
         touches.checkTouches();
         touches.checkZoomGesture();
@@ -262,7 +266,7 @@ public class ClassicGame extends ApplicationAdapter{
             zoomLevel=newZoomLevel;
 
         } else if(newZoomLevel>2.0f) {
-            zoomLevel=2.0f;
+            zoomLevel=newZoomLevel;//2.0f;
         } else if(newZoomLevel<1.0f) {
             zoomLevel=1.0f;
         }
@@ -281,19 +285,26 @@ public class ClassicGame extends ApplicationAdapter{
         return(vec);
     }
 
+    float[] vecToFloatArray(Vector2[] vectorArray) {
+        float[] floatArray = new float[vectorArray.length*2];
+        for(int i=0;i<vectorArray.length;i++) {
+            floatArray[2*i]=vectorArray[i].x;
+            floatArray[2*i+1]=vectorArray[i].y;
+        }
+        return(floatArray);
+    }
+
+    Vector2[] transformVectorArray(Vector2[] vectorArray, float scale, float degrees) {
+        for(Vector2 vector : vectorArray) {
+            vector.scl(scale).rotate(degrees);
+        }
+        return(vectorArray);
+    }
+
     void drawShapes() {
         shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.begin(ShapeType.Filled);
 
-        //field background
-        shapeRenderer.setColor(89/255f, 89/255f, 89/255f, 1);
-        shapeRenderer.rect(-width/2, -height, width, height*2);
-
-        //field line
-        shapeRenderer.setColor(128/255f,143/255f,133/255f,1);
-        shapeRenderer.rect(-width/2, -5, width, 10);
-
-        shapeRenderer.end();
+        gameField.display();
 
         myBat.display();
         otherBat.display();
@@ -304,13 +315,13 @@ public class ClassicGame extends ApplicationAdapter{
 
         touches.drawTouchPoints();
 
-        batch.setProjectionMatrix(camera.combined);
-        batch.begin();
+        spriteBatch.setProjectionMatrix(camera.combined);
+        spriteBatch.begin();
 
         //show fps
-        font.draw(batch,"fps: "+Float.toString(Gdx.graphics.getFramesPerSecond()), width /3, -20);
+        font.draw(spriteBatch,"fps: "+Float.toString(Gdx.graphics.getFramesPerSecond()), width /3, -20);
 
-        batch.end();
+        spriteBatch.end();
 
         //uncomment for box2d bodies to be shown
         //debugRenderer.render(world,camera.combined.cpy().scale(PIXELS_TO_METERS,PIXELS_TO_METERS,1));
@@ -441,7 +452,7 @@ public class ClassicGame extends ApplicationAdapter{
         void checkPlayerFieldContains() {
             //TODO generalize to more players
             //check in which field ball is contained
-            if(gameField.playerFieldPolygon[(globalVariables.getSettingsVariables().myPlayerScreen+1)%2].contains(this.ballBody.getPosition().cpy().scl(PIXELS_TO_METERS))) {
+            if(gameField.playerFieldPolygons[(globalVariables.getSettingsVariables().myPlayerScreen+1)%2].contains(this.ballBody.getPosition().cpy().scl(PIXELS_TO_METERS))) {
                 sendBallScreenChangeAL.add(this.ballNumber);
                 //Gdx.app.debug("ClassicGame", "ball "+Integer.toString(this.ballNumber)+" on other screen");
             } else {
@@ -491,7 +502,7 @@ public class ClassicGame extends ApplicationAdapter{
             //similar to ball if my bat then physics else only change position etc.
             if(this.batPlayerField ==globalVariables.getSettingsVariables().myPlayerScreen) {
                 //update new position if touch inside my field
-                if(gameField.playerFieldPolygon[globalVariables.getSettingsVariables().myPlayerScreen].contains(position)) {
+                if(gameField.playerFieldPolygons[globalVariables.getSettingsVariables().myPlayerScreen].contains(position)) {
                     this.newPos = position;
                 }
                 //force to physically move to touched position
@@ -514,8 +525,8 @@ public class ClassicGame extends ApplicationAdapter{
 
         void display() {
             //rotate and translate needed to properly display bat with orientation
-            shapeRenderer.setColor(196/255f, 106/255f, 78/255f, 1);
             shapeRenderer.begin(ShapeType.Filled);
+            shapeRenderer.setColor(196/255f, 106/255f, 78/255f, 1);
             shapeRenderer.identity();
             shapeRenderer.translate(this.batBody.getPosition().x*PIXELS_TO_METERS, this.batBody.getPosition().y*PIXELS_TO_METERS,0);
             shapeRenderer.rotate(0, 0,1, this.batBody.getAngle()* (180f/MathUtils.PI));
@@ -611,96 +622,138 @@ public class ClassicGame extends ApplicationAdapter{
     }
 
     class GameField{
-        private Body leftBorderBody,bottomBorderBody,rightBorderBody,topBorderBody,midLineBody;
-        private Polygon[] playerFieldPolygon;
+        private Body fieldLineBody;
+        private Body[] borderBodies;
+        private Polygon[] playerFieldPolygons;
         private Vector2[] gameFieldVertices;
+
+        private PolygonSprite[] playerFieldSprites;
         GameField() {
             //TODO generalize to more players
-            this.gameFieldVertices = new Vector2[6];
-            this.playerFieldPolygon = new Polygon[2];
+            this.gameFieldVertices = new Vector2[14];
+            this.playerFieldPolygons = new Polygon[2];
+            EdgeShape fieldLineShape = new EdgeShape();
+            PolygonShape[] borderShapes = new PolygonShape[8];
+
             for (int i=0;i<2;i++) {
-                this.playerFieldPolygon[i]=new Polygon();
+                this.playerFieldPolygons[i]=new Polygon();
             }
 
-            float rotatePlayerScreenDegrees=0;
-            for (int i=0;i<2;i++) {
-                if(globalVariables.getSettingsVariables().myPlayerScreen==i) {
-                    rotatePlayerScreenDegrees = i * 180;
-                }
+            for (int i=0;i<borderShapes.length;i++) {
+                borderShapes[i] = new PolygonShape();
             }
+            this.borderBodies = new Body[borderShapes.length];
 
             //TODO eliminate tunneling outside field
             //following has to be done cleaner with one set of vertices and rotations
 
-            this.gameFieldVertices[0] = new Vector2(-width/2,-height).rotate(rotatePlayerScreenDegrees);
-            this.gameFieldVertices[1] = new Vector2(width/2,-height).rotate(rotatePlayerScreenDegrees);
-            this.gameFieldVertices[2] = new Vector2(width/2,0).rotate(rotatePlayerScreenDegrees);
-            this.gameFieldVertices[3] = new Vector2(width/2,height).rotate(rotatePlayerScreenDegrees);
-            this.gameFieldVertices[4] = new Vector2(-width/2,height).rotate(rotatePlayerScreenDegrees);
-            this.gameFieldVertices[5] = new Vector2(-width/2,0).rotate(rotatePlayerScreenDegrees);
 
-            this.playerFieldPolygon[0] = new Polygon(new float[]{gameFieldVertices[0].x, gameFieldVertices[0].y, gameFieldVertices[1].x, gameFieldVertices[1].y, gameFieldVertices[2].x,
-                    gameFieldVertices[2].y, gameFieldVertices[5].x, gameFieldVertices[5].y});
-            this.playerFieldPolygon[1] = new Polygon(new float[]{gameFieldVertices[3].x, gameFieldVertices[3].y, gameFieldVertices[4].x, gameFieldVertices[4].y, gameFieldVertices[5].x,
-                    gameFieldVertices[5].y, gameFieldVertices[2].x, gameFieldVertices[2].y});
+            float borderThickness=200;
+            float heightPart=0.9f;
 
-            Vector2 [] borderVertices=new Vector2[4];
-            borderVertices[0]=new Vector2(-width/2/PIXELS_TO_METERS,-height/PIXELS_TO_METERS);
-            borderVertices[1]=new Vector2(width/2/PIXELS_TO_METERS,-height/PIXELS_TO_METERS);
-            borderVertices[2]=new Vector2(width/2/PIXELS_TO_METERS,height/PIXELS_TO_METERS);
-            borderVertices[3]= new Vector2(-width/2/PIXELS_TO_METERS,height/PIXELS_TO_METERS);
+            this.gameFieldVertices[0] = new Vector2(-width/2,0);
+            this.gameFieldVertices[1] = new Vector2(-width/2,-height*heightPart);
+            this.gameFieldVertices[2] = new Vector2(-width/4,-height);
+            this.gameFieldVertices[3] = new Vector2(-width/4,-height-borderThickness);
+            this.gameFieldVertices[4] = new Vector2(width/4,-height-borderThickness);
+            this.gameFieldVertices[5] = new Vector2(width/4,-height);
+            this.gameFieldVertices[6] = new Vector2(width/2,-height*heightPart);
+            this.gameFieldVertices[7] = new Vector2(width/2,0);
+            this.gameFieldVertices[8] = new Vector2(-width/2-borderThickness,0);
+            this.gameFieldVertices[9] = new Vector2(-width/2-borderThickness,-height*heightPart);
+            this.gameFieldVertices[10] = new Vector2(-width/2-borderThickness,-height-borderThickness);
+            this.gameFieldVertices[11] = new Vector2(width/2+borderThickness,0);
+            this.gameFieldVertices[12] = new Vector2(width/2+borderThickness,-height*heightPart);
+            this.gameFieldVertices[13] = new Vector2(width/2+borderThickness,-height-borderThickness);
 
-            final EdgeShape leftBorderShape,bottomBorderShape,rightBorderShape,topBorderShape, midLineShape;
-            leftBorderShape=new EdgeShape();
-            bottomBorderShape=new EdgeShape();
-            rightBorderShape= new EdgeShape();
-            topBorderShape=new EdgeShape();
-            midLineShape=new EdgeShape();
+            this.gameFieldVertices = transformVectorArray(gameFieldVertices,1/PIXELS_TO_METERS,0).clone();
+            fieldLineShape.set(gameFieldVertices[0],gameFieldVertices[7]);
+            this.gameFieldVertices = transformVectorArray(gameFieldVertices,PIXELS_TO_METERS,0).clone();
 
-            bottomBorderShape.set(borderVertices[0],borderVertices[1]);
-            rightBorderShape.set(borderVertices[1],borderVertices[2]);
-            topBorderShape.set(borderVertices[2],borderVertices[3]);
-            leftBorderShape.set(borderVertices[3],borderVertices[0]);
-            midLineShape.set(this.gameFieldVertices[2].cpy().scl(1/PIXELS_TO_METERS), this.gameFieldVertices[5].cpy().scl(1/PIXELS_TO_METERS));
+            //rotate for perspective of player
+            this.gameFieldVertices = transformVectorArray(gameFieldVertices,1,180f*globalVariables.getSettingsVariables().myPlayerScreen).clone();
+
+            for(int i = 0; i< playerFieldPolygons.length; i++) {
+                this.gameFieldVertices = transformVectorArray(this.gameFieldVertices,1,180f*i).clone();
+                this.playerFieldPolygons[i] = new Polygon(vecToFloatArray(new Vector2[]{this.gameFieldVertices[0],this.gameFieldVertices[1],this.gameFieldVertices[2],this.gameFieldVertices[5],this.gameFieldVertices[6],this.gameFieldVertices[7]}));
+                this.gameFieldVertices = transformVectorArray(this.gameFieldVertices,1/PIXELS_TO_METERS,0).clone();
+                borderShapes[0+i*4].set(new Vector2[]{this.gameFieldVertices[8],this.gameFieldVertices[0],this.gameFieldVertices[1],this.gameFieldVertices[9]});
+                borderShapes[1+i*4].set(new Vector2[]{this.gameFieldVertices[9],this.gameFieldVertices[1],this.gameFieldVertices[2],this.gameFieldVertices[3],this.gameFieldVertices[10]});
+                borderShapes[2+i*4].set(new Vector2[]{this.gameFieldVertices[5],this.gameFieldVertices[6],this.gameFieldVertices[12],this.gameFieldVertices[13],this.gameFieldVertices[4]});
+                borderShapes[3+i*4].set(new Vector2[]{this.gameFieldVertices[7],this.gameFieldVertices[11],this.gameFieldVertices[6],this.gameFieldVertices[12]});
+                //borderShapes[4+i*4].set(new Vector2[]{this.gameFieldVertices[3],this.gameFieldVertices[4]});
+                this.gameFieldVertices = transformVectorArray(this.gameFieldVertices,PIXELS_TO_METERS,0).clone();
+            }
 
             BodyDef borderBodyDef= new BodyDef();
             borderBodyDef.type = BodyDef.BodyType.StaticBody;
             borderBodyDef.position.set(0,0);
-            FixtureDef borderFd=new FixtureDef();
-            borderFd.restitution = 0.7f;
-            borderFd.filter.categoryBits=CATEGORY_BORDER;
-            borderFd.filter.maskBits=MASK_BORDER;
-            FixtureDef lineFd=new FixtureDef();
-            lineFd.filter.categoryBits=CATEGORY_FIELDLINE;
-            lineFd.filter.maskBits=MASK_FIELDLINE;
+            FixtureDef borderFixtureDef=new FixtureDef();
+            borderFixtureDef.restitution = 0.7f;
+            borderFixtureDef.filter.categoryBits=CATEGORY_BORDER;
+            borderFixtureDef.filter.maskBits=MASK_BORDER;
+
+            FixtureDef fieldLineFixtureDef=new FixtureDef();
+            fieldLineFixtureDef.filter.categoryBits=CATEGORY_FIELDLINE;
+            fieldLineFixtureDef.filter.maskBits=MASK_FIELDLINE;
+
+            for(int i = 0; i< this.borderBodies.length; i++) {
+                this.borderBodies[i] = world.createBody(borderBodyDef);
+                borderFixtureDef.shape = borderShapes[i];
+                this.borderBodies[i].createFixture(borderFixtureDef);
+            }
+
+            this.fieldLineBody =world.createBody(borderBodyDef);
+            fieldLineFixtureDef.shape = fieldLineShape;
+            this.fieldLineBody.createFixture(fieldLineFixtureDef);
+
+            for (int i=0;i<borderShapes.length;i++) {
+                borderShapes[i].dispose();
+            }
+            fieldLineShape.dispose();
+
+            this.playerFieldSprites = new PolygonSprite[playerFieldPolygons.length];
+            for(int i=0; i<playerFieldPolygons.length;i++) {
+                this.playerFieldSprites[i]=createFilledPolygon(this.playerFieldPolygons[i].getVertices(),new short[] {0,1,5,1,4,5,1,2,4,2,3,4},89/255f, 89/255f, 89/255f, 1f);
+            }
+        }
+
+        void display() {
+            //background
+            Gdx.gl.glClearColor(0, 0, 0, 1);
+            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+            //field background
+            polygonSpriteBatch.setProjectionMatrix(camera.combined);
+            polygonSpriteBatch.begin();
+            for(int i=0; i<playerFieldPolygons.length;i++) {
+                this.playerFieldSprites[i].draw(polygonSpriteBatch);
+            }
+            polygonSpriteBatch.end();
+
+            shapeRenderer.begin(ShapeType.Filled);
+
+            //field line
+            shapeRenderer.setColor(128/255f,143/255f,133/255f,1);
+            shapeRenderer.rect(-width/2, -5, width, 10);
+            shapeRenderer.end();
 
 
-            leftBorderBody = world.createBody(borderBodyDef);
-            bottomBorderBody= world.createBody(borderBodyDef);
-            rightBorderBody= world.createBody(borderBodyDef);
-            topBorderBody=world.createBody(borderBodyDef);
-            midLineBody=world.createBody(borderBodyDef);
 
-            borderFd.shape = leftBorderShape;
-            leftBorderBody.createFixture(borderFd);
 
-            borderFd.shape = bottomBorderShape;
-            bottomBorderBody.createFixture(borderFd);
+        }
 
-            borderFd.shape = rightBorderShape;
-            rightBorderBody.createFixture(borderFd);
+        PolygonSprite createFilledPolygon(float [] verticesXY, short [] triangleIndices, float r, float g, float b, float a) {
+            PolygonSprite poly;
 
-            borderFd.shape = topBorderShape;
-            topBorderBody.createFixture(borderFd);
-
-            lineFd.shape = midLineShape;
-            midLineBody.createFixture(lineFd);
-
-            leftBorderShape.dispose();
-            bottomBorderShape.dispose();
-            rightBorderShape.dispose();
-            topBorderShape.dispose();
-            midLineShape.dispose();
+            // Creating the color filling (but textures would work the same way)
+            Pixmap pix = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+            pix.setColor(r,g,b,a); // DE is red, AD is green and BE is blue.
+            pix.fill();
+            Texture textureSolid = new Texture(pix);
+            PolygonRegion polyRegion = new PolygonRegion(new TextureRegion(textureSolid), verticesXY,triangleIndices);
+            poly = new PolygonSprite(polyRegion);
+            return(poly);
         }
     }
 
