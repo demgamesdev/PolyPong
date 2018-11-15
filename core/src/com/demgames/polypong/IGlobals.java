@@ -22,6 +22,7 @@ public interface IGlobals {
         public Vector2[] ballsVelocities;
         public int[] ballsPlayerScreens;
         public float[] ballsSizes;
+        public boolean[] ballDisplayStates;
 
         //TODO generalize to more players
         public Vector2[] batPositions = new Vector2[2];
@@ -33,8 +34,7 @@ public interface IGlobals {
         public boolean gravityState;
         public boolean attractionState;
 
-        public int myScore;
-        public int otherScore;
+        public int[] playerScores;
 
         GameVariables() {
             numberOfBalls=1;
@@ -42,6 +42,9 @@ public interface IGlobals {
 
             gravityState=false;
             attractionState=true;
+
+            //TODO for more players
+            playerScores=new int[2];
         }
 
         public void setBalls(boolean randomPosition) {
@@ -50,12 +53,14 @@ public interface IGlobals {
             this.ballsVelocities = new Vector2[this.numberOfBalls];
             this.ballsPlayerScreens = new int[this.numberOfBalls];
             this.ballsSizes = new float[this.numberOfBalls];
+            this.ballDisplayStates = new boolean[this.numberOfBalls];
             if (randomPosition) {
                 for (int i = 0; i < this.numberOfBalls; i++) {
                     this.ballsPositions[i] = new Vector2(rand.nextFloat()-0.5f, -0.1f-rand.nextFloat()*0.9f);
                     this.ballsVelocities[i] = new Vector2(0, 0);
                     this.ballsPlayerScreens[i] = 0;
                     this.ballsSizes[i] = rand.nextFloat();
+                    this.ballDisplayStates[i]=true;
                 }
             }
         }
@@ -145,6 +150,7 @@ public interface IGlobals {
             public Vector2[] ballsPositions;
             public Vector2[] ballsVelocities;
             public float[] ballsSizes;
+            public boolean[] ballsDisplayStates;
             public int gameMode;
             public boolean gravityState;
             public boolean attractionState;
@@ -170,6 +176,12 @@ public interface IGlobals {
             public Vector2[] ballPositions;
             public Vector2[] ballVelocities;
         }
+
+        static public class SendBallGoal {
+            public Integer[] ballNumbers;
+            public int[] playerScores;
+        }
+
 
         static public class SendScore {
             public int myScore;

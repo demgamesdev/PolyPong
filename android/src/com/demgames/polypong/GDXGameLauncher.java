@@ -31,6 +31,8 @@ public class GDXGameLauncher extends AndroidApplication {
         Log.d(TAG, "onDestroy: Activity destroyed");
 
         Globals globalVariables=(Globals)getApplicationContext();
+        //TODO for more players
+        globalVariables.getGameVariables().playerScores=new int[2];
 
         if(globalVariables.getSettingsVariables().myPlayerScreen==0) {
             globalVariables.getNetworkVariables().server.stop();

@@ -249,6 +249,7 @@ public class ServerActivity extends AppCompatActivity{
                     mySettings.gameMode=globalVariables.getSettingsVariables().gameMode;
                     mySettings.gravityState=globalVariables.getGameVariables().gravityState;
                     mySettings.attractionState=globalVariables.getGameVariables().attractionState;
+                    mySettings.ballsDisplayStates=globalVariables.getGameVariables().ballDisplayStates;
                     globalVariables.getNetworkVariables().connectionList.get(0).sendTCP(mySettings);
 
                     /*SendBallsKinetics ballPacket= new SendBallsKinetics();

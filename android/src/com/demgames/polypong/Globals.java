@@ -44,6 +44,8 @@ public class Globals extends Application implements IGlobals{
         myKryo.register(Integer[].class);
         myKryo.register(int.class);
         myKryo.register(int[].class);
+        myKryo.register(boolean.class);
+        myKryo.register(boolean[].class);
         myKryo.register(Connection.class);
         myKryo.register(Connection[].class);
         myKryo.register(com.badlogic.gdx.math.Vector2.class);
@@ -51,6 +53,7 @@ public class Globals extends Application implements IGlobals{
         myKryo.register(SendVariables.SendBallKinetics.class);
         myKryo.register(SendVariables.SendSettings.class);
         myKryo.register(SendVariables.SendBallScreenChange.class);
+        myKryo.register(SendVariables.SendBallGoal.class);
         myKryo.register(SendVariables.SendBat.class);
         myKryo.register(SendVariables.SendScore.class);
     }

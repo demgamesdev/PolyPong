@@ -55,6 +55,20 @@ public class GlobalListener extends Listener{
 
             //Log.d(TAG, "ball "+Integer.toString(ballNumber)+" screenchange");
 
+        }else if(object instanceof Globals.SendVariables.SendBallGoal) {
+            //Log.d(TAG, "ballkinetics received");
+            Globals.SendVariables.SendBallGoal ballGoal=(Globals.SendVariables.SendBallGoal)object;
+
+            //Log.d(TAG, "ball "+Integer.toString(ballNumber)+" updated to x "+Float.toString(ballPosition.x));
+            globalVariables.getGameVariables().playerScores[(globalVariables.getSettingsVariables().myPlayerScreen+1)%2]--;
+            for (int i =0; i<ballGoal.ballNumbers.length;i++) {
+                globalVariables.getGameVariables().ballDisplayStates[ballGoal.ballNumbers[i]]=false;
+                Log.d(TAG, "ball "+Integer.toString(ballGoal.ballNumbers[i])+" in goal");
+                //TODO score
+            }
+
+
+
         } else if(object instanceof Globals.SendVariables.SendBallKinetics) {
             //Log.d(TAG, "ballkinetics received");
             Globals.SendVariables.SendBallKinetics ballKinetics=(Globals.SendVariables.SendBallKinetics)object;
@@ -78,34 +92,25 @@ public class GlobalListener extends Listener{
         } else if(object instanceof Globals.SendVariables.SendScore) {
             Log.d(TAG,"received Score");
             Globals.SendVariables.SendScore score=(Globals.SendVariables.SendScore)object;
-            int myScore = score.myScore;
-            int otherScore=score.otherScore;
 
-            globalVariables.getGameVariables().myScore=myScore;
-            globalVariables.getGameVariables().otherScore=otherScore;
 
 
         } else if(object instanceof Globals.SendVariables.SendSettings) {
             Log.d(TAG,"received settings");
             Globals.SendVariables.SendSettings mySettings=(Globals.SendVariables.SendSettings)object;
-            Vector2[] ballsPositions=mySettings.ballsPositions;
-            Vector2[] ballsVelocities=mySettings.ballsVelocities;
-            float[] ballsSizes=mySettings.ballsSizes;
-            int gameMode=mySettings.gameMode;
-            boolean gravityState=mySettings.gravityState;
-            boolean attractionState=mySettings.attractionState;
 
-            globalVariables.getGameVariables().numberOfBalls=ballsPositions.length;
+            globalVariables.getGameVariables().numberOfBalls=mySettings.ballsPositions.length;
             globalVariables.getGameVariables().setBalls(false);
-            globalVariables.getSettingsVariables().gameMode=gameMode;
-            globalVariables.getGameVariables().gravityState=gravityState;
-            globalVariables.getGameVariables().attractionState=attractionState;
+            globalVariables.getSettingsVariables().gameMode=mySettings.gameMode;
+            globalVariables.getGameVariables().gravityState=mySettings.gravityState;
+            globalVariables.getGameVariables().attractionState=mySettings.attractionState;
 
-            for (int i=0; i<ballsPositions.length;i++) {
-                globalVariables.getGameVariables().ballsPositions[i]=new Vector2(-ballsPositions[i].x,-ballsPositions[i].y);
-                globalVariables.getGameVariables().ballsVelocities[i]=new Vector2(-ballsVelocities[i].x,-ballsVelocities[i].y);
+            for (int i=0; i<mySettings.ballsPositions.length;i++) {
+                globalVariables.getGameVariables().ballsPositions[i]=new Vector2(-mySettings.ballsPositions[i].x,-mySettings.ballsPositions[i].y);
+                globalVariables.getGameVariables().ballsVelocities[i]=new Vector2(-mySettings.ballsVelocities[i].x,-mySettings.ballsVelocities[i].y);
                 globalVariables.getGameVariables().ballsPlayerScreens[i]=0;
-                globalVariables.getGameVariables().ballsSizes[i]=ballsSizes[i];
+                globalVariables.getGameVariables().ballsSizes[i]=mySettings.ballsSizes[i];
+                globalVariables.getGameVariables().ballDisplayStates[i]=mySettings.ballsDisplayStates[i];
                 Log.d(TAG,"x "+Float.toString(globalVariables.getGameVariables().ballsPositions[i].x)+", y "+Float.toString(globalVariables.getGameVariables().ballsPositions[i].y));
                 /*tempIpAdress=tempIpAdress.substring(1,tempIpAdress.length()).split(":")[0];
                 Log.e(TAG, "Connection: "+ tempIpAdress);*/
