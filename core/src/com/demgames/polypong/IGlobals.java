@@ -71,17 +71,12 @@ public interface IGlobals {
         public int myPlayerScreen;
         public int gameMode;
 
-        public boolean connectState;
-        public boolean readyState;
-        public boolean gameLaunched;
+        public int connectionState=0;
         public boolean updateListViewState;
 
         public List<String> playerNamesList;
 
         SettingsVariables() {
-            connectState=false;
-            readyState=false;
-            gameLaunched=false;
             updateListViewState=false;
 
             playerNamesList=new ArrayList<String>(Arrays.asList(new String[] {}));
@@ -103,7 +98,7 @@ public interface IGlobals {
         String remoteIpAdress;
         int tcpPort,udpPort;
         List<String> ipAdressList;
-        List<Connection> connectionList;
+        public List<Connection> connectionList;
 
         Server server;
         Client client;
@@ -154,6 +149,10 @@ public interface IGlobals {
             public int gameMode;
             public boolean gravityState;
             public boolean attractionState;
+        }
+
+        static public class SendConnectionState {
+            public int connectionState;
         }
 
         static public class SendBallKinetics {

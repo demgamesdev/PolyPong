@@ -6,6 +6,7 @@ import android.util.Log;
 import com.badlogic.gdx.math.Vector2;
 import com.demgames.polypong.GDXGameLauncher;
 import com.demgames.polypong.Globals;
+import com.demgames.polypong.IGlobals;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
 
@@ -60,7 +61,7 @@ public class GlobalListener extends Listener{
             Globals.SendVariables.SendBallGoal ballGoal=(Globals.SendVariables.SendBallGoal)object;
 
             //Log.d(TAG, "ball "+Integer.toString(ballNumber)+" updated to x "+Float.toString(ballPosition.x));
-            globalVariables.getGameVariables().playerScores[(globalVariables.getSettingsVariables().myPlayerScreen+1)%2]--;
+            globalVariables.getGameVariables().playerScores[(globalVariables.getSettingsVariables().myPlayerScreen+1)%2]=ballGoal.playerScores[(globalVariables.getSettingsVariables().myPlayerScreen+1)%2];
             for (int i =0; i<ballGoal.ballNumbers.length;i++) {
                 globalVariables.getGameVariables().ballDisplayStates[ballGoal.ballNumbers[i]]=false;
                 Log.d(TAG, "ball "+Integer.toString(ballGoal.ballNumbers[i])+" in goal");
@@ -116,7 +117,15 @@ public class GlobalListener extends Listener{
                 Log.e(TAG, "Connection: "+ tempIpAdress);*/
             }
 
-            globalVariables.getSettingsVariables().readyState=true;
+            globalVariables.getSettingsVariables().connectionState=2;
+
+            IGlobals.SendVariables.SendConnectionState sendConnectionState=new IGlobals.SendVariables.SendConnectionState();
+            sendConnectionState.connectionState=2;
+            globalVariables.getNetworkVariables().connectionList.get(0).sendTCP(sendConnectionState);
+
+        } else if(object instanceof Globals.SendVariables.SendConnectionState) {
+            Globals.SendVariables.SendConnectionState connectionState=(Globals.SendVariables.SendConnectionState)object;
+            globalVariables.getSettingsVariables().connectionState=connectionState.connectionState;
         }
     }
 }

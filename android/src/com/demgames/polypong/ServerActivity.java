@@ -60,9 +60,7 @@ public class ServerActivity extends AppCompatActivity{
         /***Decklarationen***/
 
         final Globals globalVariables = (Globals) getApplicationContext();
-        globalVariables.getSettingsVariables().connectState=false;
-        globalVariables.getSettingsVariables().readyState=false;
-        globalVariables.getSettingsVariables().gameLaunched=false;
+        globalVariables.getSettingsVariables().connectionState=0;
 
         globalVariables.getNetworkVariables().ipAdressList=new ArrayList<String>(Arrays.asList(new String[] {}));
         globalVariables.getNetworkVariables().connectionList=new ArrayList<Connection>(Arrays.asList(new Connection[] {}));
@@ -168,7 +166,7 @@ public class ServerActivity extends AppCompatActivity{
 
             Log.d(TAG, "doInBackground: Anfang Suche");
 
-            while(!globalVariables.getSettingsVariables().connectState && !isCancelled()){
+            while(globalVariables.getSettingsVariables().connectionState==0 && !isCancelled()){
                 //sendHostConnect();
                 publishProgress();
                 try {
@@ -206,14 +204,19 @@ public class ServerActivity extends AppCompatActivity{
 
             Log.d(TAG, "doInBackground: Ende Suche");
 
-            while(!globalVariables.getSettingsVariables().readyState && !isCancelled()) {
+            while(globalVariables.getSettingsVariables().connectionState==1 && !isCancelled()) {
 
             }
+
+            IGlobals.SendVariables.SendConnectionState sendConnectionState=new IGlobals.SendVariables.SendConnectionState();
+            sendConnectionState.connectionState=3;
+            globalVariables.getNetworkVariables().connectionList.get(0).sendTCP(sendConnectionState);
+
+            globalVariables.getSettingsVariables().connectionState=3;
 
             if(!isCancelled()) {
                 startActivity(new Intent(getApplicationContext(), GDXGameLauncher.class));
                 //globalVariables.myThread.stop();
-                globalVariables.getSettingsVariables().gameLaunched=true;
                 MyTaskServer.cancel(true);
                 finish();
 
@@ -238,7 +241,6 @@ public class ServerActivity extends AppCompatActivity{
                     Log.d(TAG, "onItemClick: " + Integer.toString(i));
                     Log.d(TAG, "onItemClick: " + globalVariables.getNetworkVariables().ipAdressList.get(i));
                     Toast.makeText(ServerActivity.this, "Zu \"" + globalVariables.getNetworkVariables().ipAdressList.get(i) + "\" wird verbunden", Toast.LENGTH_SHORT).show();
-                    globalVariables.getSettingsVariables().connectState=true;
                     globalVariables.getNetworkVariables().remoteIpAdress=globalVariables.getNetworkVariables().ipAdressList.get(i);
 
                     Globals.SendVariables.SendSettings mySettings=new Globals.SendVariables.SendSettings();
@@ -252,11 +254,10 @@ public class ServerActivity extends AppCompatActivity{
                     mySettings.ballsDisplayStates=globalVariables.getGameVariables().ballDisplayStates;
                     globalVariables.getNetworkVariables().connectionList.get(0).sendTCP(mySettings);
 
+                    globalVariables.getSettingsVariables().connectionState=1;
                     /*SendBallsKinetics ballPacket= new SendBallsKinetics();
                     ballPacket.ballsPositions=new PVector[]{new PVector(-1,100),new PVector(2,-10009)};
                     globalVariables.getConnectionList()[0].sendTCP(ballPacket);*/
-
-                    globalVariables.getSettingsVariables().readyState=true;
                 }
             });
         }

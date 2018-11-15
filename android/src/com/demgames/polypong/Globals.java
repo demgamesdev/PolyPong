@@ -50,8 +50,9 @@ public class Globals extends Application implements IGlobals{
         myKryo.register(Connection[].class);
         myKryo.register(com.badlogic.gdx.math.Vector2.class);
         myKryo.register(com.badlogic.gdx.math.Vector2[].class);
-        myKryo.register(SendVariables.SendBallKinetics.class);
         myKryo.register(SendVariables.SendSettings.class);
+        myKryo.register(SendVariables.SendConnectionState.class);
+        myKryo.register(SendVariables.SendBallKinetics.class);
         myKryo.register(SendVariables.SendBallScreenChange.class);
         myKryo.register(SendVariables.SendBallGoal.class);
         myKryo.register(SendVariables.SendBat.class);

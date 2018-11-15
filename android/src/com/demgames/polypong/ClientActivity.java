@@ -40,7 +40,7 @@ import java.util.Arrays;
 public class ClientActivity extends AppCompatActivity{
 
     private static final String TAG = "Client";
-    private MyTaskClient MyTaskClient;
+    private ClientTask ClientTask;
 
     String file_name = "IPAdressfile";
     String storeIP;
@@ -69,9 +69,7 @@ public class ClientActivity extends AppCompatActivity{
 
         /***Deklarationen***/
         final Globals globalVariables = (Globals) getApplicationContext();
-        globalVariables.getSettingsVariables().connectState=false;
-        globalVariables.getSettingsVariables().readyState=false;
-        globalVariables.getSettingsVariables().gameLaunched=false;
+        globalVariables.getSettingsVariables().connectionState=0;
 
         globalVariables.getNetworkVariables().ipAdressList=new ArrayList<String>(Arrays.asList(new String[] {}));
         globalVariables.getNetworkVariables().connectionList=new ArrayList<Connection>(Arrays.asList(new Connection[] {}));
@@ -82,8 +80,8 @@ public class ClientActivity extends AppCompatActivity{
 
 
         //Thread für den Verbindungsaufbau
-        MyTaskClient = new MyTaskClient();
-        MyTaskClient.execute();
+        ClientTask = new ClientTask();
+        ClientTask.execute();
 
     }
 
@@ -92,7 +90,7 @@ public class ClientActivity extends AppCompatActivity{
     @Override
     protected void onDestroy() {
 
-        MyTaskClient.cancel(true);
+        ClientTask.cancel(true);
         Log.d(TAG, "onDestroy: MyTask beendet");
         final Globals globalVariables=(Globals) getApplication();
         //globalVariables.getClient().stop();
@@ -151,10 +149,10 @@ public class ClientActivity extends AppCompatActivity{
 
 
     /********* Thread Function - Searching IP and displaying *********/
-    class MyTaskClient extends AsyncTask<Void,Void,Void> {
+    class ClientTask extends AsyncTask<Void,Void,Void> {
 
         Globals globalVariables = (Globals) getApplicationContext();
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>
+        ArrayAdapter<String> ClientListViewAdapter = new ArrayAdapter<String>
                 (ClientActivity.this, R.layout.listview, globalVariables.getNetworkVariables().ipAdressList);
         TextView myIpTextView = (TextView) findViewById(R.id.IpAdressTextView);
         EditText manualIpEditText = (EditText) findViewById(R.id.manualIpEditText);
@@ -177,7 +175,7 @@ public class ClientActivity extends AppCompatActivity{
             Log.d(TAG, "doInBackground: Anfang Suche");
 
 
-            while (!globalVariables.getSettingsVariables().connectState&& !isCancelled()) {
+            while (globalVariables.getSettingsVariables().connectionState == 0 && !isCancelled()) {
                 //sendClientConnect();
                 try {
                     Thread.currentThread().sleep(1000);
@@ -191,7 +189,7 @@ public class ClientActivity extends AppCompatActivity{
                         tempIPAdress = tempIPAdress.substring(1, tempIPAdress.length());
                         Log.d("discovery", tempIPAdress);
                         if (globalVariables.getNetworkVariables().addIpTolist(tempIPAdress)) {
-                            globalVariables.setUpdateListViewState(true);
+                            globalVariables.getSettingsVariables().updateListViewState=true;
                         }
                     }
                 }
@@ -202,8 +200,6 @@ public class ClientActivity extends AppCompatActivity{
                     public void run() {
                         if (checkIfIp(globalVariables.getNetworkVariables().myIpAdress)) {
                             myIpTextView.setText("Deine IP-Adresse lautet: " + globalVariables.getNetworkVariables().myIpAdress);
-                            //IP Adresse wird in die Liste Hinzugefügt
-                            //globalVariables.addIpTolist(globalVariables.getMyIpAdress());
 
                         } else {
                             myIpTextView.setText("Unable to get Ip-Adress");
@@ -221,15 +217,18 @@ public class ClientActivity extends AppCompatActivity{
 
             Log.d(TAG, "onPostExecute: Anfang Settings Senden");
 
-            while(!globalVariables.getSettingsVariables().readyState && !isCancelled()) {
+            while(globalVariables.getSettingsVariables().connectionState == 1 && !isCancelled()) {
+
+            }
+
+            while(!(globalVariables.getSettingsVariables().connectionState==3) && !isCancelled()) {
 
             }
 
             if(!isCancelled()) {
                 startActivity(new Intent(getApplicationContext(), GDXGameLauncher.class));
                 //globalVariables.myThread.stop();
-                globalVariables.getSettingsVariables().gameLaunched=true;
-                MyTaskClient.cancel(true);
+                ClientTask.cancel(true);
                 finish();
 
                 Log.d(TAG, "onPostExecute: Ende Settings Senden");
@@ -247,11 +246,11 @@ public class ClientActivity extends AppCompatActivity{
                 loadIPAdress();
 
                 //Vor dem Thread Initialisierung
-                ListView ClientLV = (ListView) findViewById(R.id.ClientListView);
-                ClientLV.setAdapter(adapter);
+                ListView ClientListView = (ListView) findViewById(R.id.ClientListView);
+                ClientListView.setAdapter(ClientListViewAdapter);
                 //globalVariables.setSearchConnecState(true);
                 final Vibrator vib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-                ClientLV.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                ClientListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                     @Override
                     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                         //Toast.makeText(Client.this, globalVariables.getMyIpList().get(i), Toast.LENGTH_SHORT).show();
@@ -259,7 +258,7 @@ public class ClientActivity extends AppCompatActivity{
                         Log.d(TAG, "onItemClick: " + Integer.toString(i));
                         Log.d(TAG, "onItemClick: " + globalVariables.getNetworkVariables().ipAdressList.get(i));
                         Toast.makeText(ClientActivity.this, "Zu \"" + globalVariables.getNetworkVariables().ipAdressList.get(i) + "\" wird verbunden", Toast.LENGTH_SHORT).show();
-                        globalVariables.getSettingsVariables().connectState=true;
+                        globalVariables.getSettingsVariables().connectionState=1;
                         globalVariables.getNetworkVariables().remoteIpAdress=globalVariables.getNetworkVariables().ipAdressList.get(i);
                         //storeIP = globalVariables.getNetworkVariables().remoteIpAdress;
                         //storeIPAdress();
@@ -287,7 +286,7 @@ public class ClientActivity extends AppCompatActivity{
                                 e.printStackTrace();
                             }
                             globalVariables.getNetworkVariables().remoteIpAdress=manualIpEditText.getText().toString();
-                            globalVariables.getSettingsVariables().connectState=true;
+                            globalVariables.getSettingsVariables().connectionState = 1;
                         } else {
                             Toast.makeText(ClientActivity.this, "Gültige Ip-Adresse eingeben", Toast.LENGTH_SHORT).show();
                         }
@@ -307,9 +306,9 @@ public class ClientActivity extends AppCompatActivity{
         protected void onProgressUpdate(Void... values) {
             //Neue IP Adresse wird in die Listview geschrieben
 
-            if(globalVariables.getUpdateListViewState()) {
-                adapter.notifyDataSetChanged();
-                globalVariables.setUpdateListViewState(false);
+            if(globalVariables.getSettingsVariables().updateListViewState) {
+                ClientListViewAdapter.notifyDataSetChanged();
+                globalVariables.getSettingsVariables().updateListViewState=false;
                 //
             }
 
