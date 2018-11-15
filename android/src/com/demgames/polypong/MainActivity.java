@@ -62,6 +62,7 @@ public class MainActivity extends AppCompatActivity {
 
         final Button startHostButton = (Button) findViewById(R.id.startHostButton);
         final Button startClientButton = (Button) findViewById(R.id.startClientButton);
+        final Button startOptionButton = (Button) findViewById(R.id.startOptionButton);
 
         readName();
 
@@ -84,10 +85,17 @@ public class MainActivity extends AppCompatActivity {
                     startActivity(startClient);
                     //myThread.stop();
                 }
+            }
+        });
 
-
-
-
+        startOptionButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (getName()) {
+                    Intent startOption = new Intent(getApplicationContext(), Main_Options.class);
+                    startActivity(startOption);
+                    //myThread.stop();
+                }
             }
         });
     }

@@ -335,6 +335,7 @@ public class ClientActivity extends AppCompatActivity{
 
     }
 
+
     //Loads latest Name entry from internal Storage
 
     public void loadIPAdress(){
@@ -349,13 +350,9 @@ public class ClientActivity extends AppCompatActivity{
                 stringBuffer.append(Message);
             }
 
+            Log.d(TAG, "loadIPAdress: Message= " + Message);
             EditText manualIpEditText = (EditText) findViewById(R.id.manualIpEditText);
             manualIpEditText.setText(stringBuffer.toString());
-
-            //if (globalVariables.getNetworkVariables().addIpTolist(stringBuffer.toString())) {
-                //globalVariables.setUpdateListViewState(true);
-            //}
-            //storedIPadress.setText(stringBuffer.toString());
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
