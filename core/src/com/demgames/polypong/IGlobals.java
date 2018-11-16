@@ -56,7 +56,7 @@ public interface IGlobals {
             this.ballDisplayStates = new boolean[this.numberOfBalls];
             if (randomPosition) {
                 for (int i = 0; i < this.numberOfBalls; i++) {
-                    this.ballsPositions[i] = new Vector2(rand.nextFloat()-0.5f, -0.1f-rand.nextFloat()*0.9f);
+                    this.ballsPositions[i] = new Vector2(rand.nextFloat()*2f-1f, rand.nextFloat()*2f-1f);
                     this.ballsVelocities[i] = new Vector2(0, 0);
                     this.ballsPlayerScreens[i] = 0;
                     this.ballsSizes[i] = rand.nextFloat();
