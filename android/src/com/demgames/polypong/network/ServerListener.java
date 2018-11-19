@@ -27,15 +27,11 @@ public class ServerListener extends Listener{
         String tempIpAdress=connection.getRemoteAddressTCP().toString();
         tempIpAdress=tempIpAdress.substring(1,tempIpAdress.length()).split(":")[0];
         Log.e(TAG, tempIpAdress+" connected.");
-        //globalVariables.getSettingsVariables().addDiscoveryConnectionToList(connection);
     }
 
     @Override
     public void disconnected(Connection connection) {
-        /*String tempIpAdress=connection.getRemoteAddressTCP().toString();
-        tempIpAdress=tempIpAdress.substring(1,tempIpAdress.length()).split(":")[0];*/
         Log.e(TAG, " disconnected.");
-        //GDXGameLauncher.GDXGAME.finish();
     }
 
     @Override
@@ -130,17 +126,20 @@ public class ServerListener extends Listener{
             globalVariables.getSettingsVariables().connectClients();
             globalVariables.getSettingsVariables().setClientListeners(globalVariables.getClientListener());
 
+            globalVariables.getSettingsVariables().setClientConnectionStates();
 
-            globalVariables.getSettingsVariables().connectionState=2;
+
+            globalVariables.getSettingsVariables().setupConnectionState =2;
 
             IGlobals.SendVariables.SendConnectionState sendConnectionState=new IGlobals.SendVariables.SendConnectionState();
+            sendConnectionState.myPlayerNumber=globalVariables.getSettingsVariables().myPlayerNumber;
             sendConnectionState.connectionState=2;
             globalVariables.getSettingsVariables().sendToClients(sendConnectionState,"tcp");
 
         }else if(object instanceof Globals.SendVariables.SendConnectionState) {
             Log.d(TAG, "Connectionstate received.");
             Globals.SendVariables.SendConnectionState connectionState=(Globals.SendVariables.SendConnectionState)object;
-            globalVariables.getSettingsVariables().connectionState=connectionState.connectionState;
+            globalVariables.getSettingsVariables().clientConnectionStates[connectionState.myPlayerNumber]=connectionState.connectionState;
 
         } else if(object instanceof Globals.SendVariables.SendConnectionRequest) {
             Globals.SendVariables.SendConnectionRequest connectionRequest=(Globals.SendVariables.SendConnectionRequest)object;

@@ -31,8 +31,6 @@ import java.net.InetAddress;
 import java.nio.ByteOrder;
 import java.math.BigInteger;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 
@@ -70,12 +68,9 @@ public class ClientActivity extends AppCompatActivity{
         final Globals globalVariables = (Globals) getApplicationContext();
 
         //networkstuff
-        globalVariables.getSettingsVariables().connectionState=0;
+        globalVariables.getSettingsVariables().setupConnectionState =0;
 
-        globalVariables.getSettingsVariables().discoveryIpAdresses =new ArrayList<String>(Arrays.asList(new String[] {}));
-        globalVariables.getSettingsVariables().ipAdresses =new ArrayList<String>(Arrays.asList(new String[] {}));
-        globalVariables.getSettingsVariables().discoveryPlayerNames =new ArrayList<String>(Arrays.asList(new String[] {}));
-        globalVariables.getSettingsVariables().playerNames =new ArrayList<String>(Arrays.asList(new String[] {}));
+        globalVariables.getSettingsVariables().resetArrayLists();
 
         globalVariables.getSettingsVariables().startServerThread();
         globalVariables.getSettingsVariables().startDiscoveryClientThread();
@@ -107,7 +102,7 @@ public class ClientActivity extends AppCompatActivity{
     protected void onDestroy() {
 
         clientListUpdateTask.cancel(true);
-        Log.d(TAG, "onDestroy: MyTask beendet");
+        Log.d(TAG, "onDestroy: UpdateTask beendet");
         final Globals globalVariables=(Globals) getApplication();
         //globalVariables.getClient().stop();
         //Log.d(TAG, "onDestroy: Kryoclient stopped");
@@ -171,7 +166,7 @@ public class ClientActivity extends AppCompatActivity{
 
         Globals globalVariables = (Globals) getApplicationContext();
         ArrayAdapter<String> ClientListViewAdapter = new ArrayAdapter<String>
-                (ClientActivity.this, R.layout.listview, globalVariables.getSettingsVariables().discoveryIpAdresses);
+                (ClientActivity.this, R.layout.serverlistview_row, globalVariables.getSettingsVariables().discoveryIpAdresses);
         TextView myIpTextView = (TextView) findViewById(R.id.IpAdressTextView);
         EditText manualIpEditText = (EditText) findViewById(R.id.manualIpEditText);
         Button manualIpButton = (Button) findViewById(R.id.manualIpButton);
@@ -185,7 +180,7 @@ public class ClientActivity extends AppCompatActivity{
             Log.d(TAG, "doInBackground: Anfang Suche");
 
             List<InetAddress> discoveryHosts;
-            while (globalVariables.getSettingsVariables().connectionState == 0 && !isCancelled()) {
+            while (globalVariables.getSettingsVariables().setupConnectionState == 0 && !isCancelled()) {
                 //sendClientConnect();
                 try {
                     Thread.currentThread().sleep(1000);
@@ -222,13 +217,19 @@ public class ClientActivity extends AppCompatActivity{
 
             Log.d(TAG, "onPostExecute: Anfang Settings Senden");
 
-            while(globalVariables.getSettingsVariables().connectionState == 1 && !isCancelled()) {
+            while(globalVariables.getSettingsVariables().setupConnectionState == 1 && !isCancelled()) {
 
             }
 
-            while(!(globalVariables.getSettingsVariables().connectionState==3) && !isCancelled()) {
+            while(!(globalVariables.getSettingsVariables().clientConnectionStates[0] ==3) && !isCancelled()) {
 
             }
+            IGlobals.SendVariables.SendConnectionState sendConnectionState=new IGlobals.SendVariables.SendConnectionState();
+            sendConnectionState.myPlayerNumber=globalVariables.getSettingsVariables().myPlayerNumber;
+            sendConnectionState.connectionState=3;
+            globalVariables.getSettingsVariables().sendToClients(sendConnectionState,"tcp");
+
+            globalVariables.getSettingsVariables().clientConnectionStates[globalVariables.getSettingsVariables().myPlayerNumber] =3;
 
             if(!isCancelled()) {
                 startActivity(new Intent(getApplicationContext(), GDXGameLauncher.class));
@@ -238,7 +239,7 @@ public class ClientActivity extends AppCompatActivity{
 
                 Log.d(TAG, "onPostExecute: Ende Settings Senden");
 
-                Log.d(TAG, "onPostExecute:  MyTask Abgeschlossen");
+                Log.d(TAG, "onPostExecute:  UpdateTask Abgeschlossen");
             } else {
                 Log.d(TAG,"skipped do in background due to cancelling");
             }
@@ -271,7 +272,7 @@ public class ClientActivity extends AppCompatActivity{
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
-                        globalVariables.getSettingsVariables().connectionState=1;
+                        globalVariables.getSettingsVariables().setupConnectionState =1;
 
                         //sendClientConnect();
                     }
@@ -296,7 +297,7 @@ public class ClientActivity extends AppCompatActivity{
                                 e.printStackTrace();
                             }
 
-                            globalVariables.getSettingsVariables().connectionState = 1;
+                            globalVariables.getSettingsVariables().setupConnectionState = 1;
                         } else {
                             Toast.makeText(ClientActivity.this, "Gültige Ip-Adresse eingeben", Toast.LENGTH_SHORT).show();
                         }

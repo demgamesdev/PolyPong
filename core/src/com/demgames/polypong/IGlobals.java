@@ -13,6 +13,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
+import sun.rmi.runtime.Log;
+
 public interface IGlobals {
 
     class GameVariables {
@@ -75,9 +77,11 @@ public interface IGlobals {
         int tcpPort,udpPort;
 
         public List<String> discoveryIpAdresses;
+        public List<Boolean> discoveryIsChecked;
         public List<String> ipAdresses;
         public List<String> playerNames;
         public List<String> discoveryPlayerNames;
+        public int[] clientConnectionStates;
 
         public Server server;
         public Client[] clients;
@@ -89,7 +93,7 @@ public interface IGlobals {
 
         public int gameMode;
 
-        public int connectionState=0;
+        public int setupConnectionState =0;
         public boolean updateListViewState;
 
         public int myPlayerNumber;
@@ -100,10 +104,7 @@ public interface IGlobals {
             this.tcpPort=12000;
             this.udpPort=12001;
 
-            this.discoveryIpAdresses = new ArrayList<String>(Arrays.asList(new String[] {}));
-            this.ipAdresses = new ArrayList<String>(Arrays.asList(new String[] {}));
-            this.playerNames =new ArrayList<String>(Arrays.asList(new String[] {}));
-            this.discoveryPlayerNames =new ArrayList<String>(Arrays.asList(new String[] {}));
+            this.resetArrayLists();
 
             this.updateListViewState=false;
         }
@@ -186,6 +187,7 @@ public interface IGlobals {
         public boolean addDiscoveryIpToList(String IpAdress){
             if(!this.discoveryIpAdresses.contains(IpAdress)){
                 this.discoveryIpAdresses.add(IpAdress);
+                this.discoveryIsChecked.add(false);
                 this.updateListViewState=true;
                 //Log.d("addiptolist",IpAdress +" added");
                 return(true);
@@ -227,8 +229,31 @@ public interface IGlobals {
             return(false);
         }
 
+        public void resetArrayLists() {
+            this.discoveryIpAdresses = new ArrayList<String>(Arrays.asList(new String[] {}));
+            this.ipAdresses = new ArrayList<String>(Arrays.asList(new String[] {}));
+            this.playerNames =new ArrayList<String>(Arrays.asList(new String[] {}));
+            this.discoveryPlayerNames =new ArrayList<String>(Arrays.asList(new String[] {}));
+            this.discoveryIsChecked =new ArrayList<Boolean>(Arrays.asList(new Boolean[]{}));
+        }
 
+        public void setClientConnectionStates() {
+            this.clientConnectionStates=new int[this.numberOfPlayers];
+            for(int i=0;i<this.numberOfPlayers;i++) {
+                this.clientConnectionStates[i]=1;
+            }
+        }
 
+        public boolean checkClientConnectionState(int state) {
+            for(int i=0;i<this.numberOfPlayers;i++) {
+                if(!(this.clientConnectionStates[i]==state)) {
+                    com.esotericsoftware.minlog.Log.debug("client"+i+" not in state "+state);
+                    return(false);
+                }
+            }
+            com.esotericsoftware.minlog.Log.debug("all clients in state "+state);
+            return(true);
+        }
     }
 
     class SendVariables {
@@ -248,6 +273,7 @@ public interface IGlobals {
         }
 
         static public class SendConnectionState {
+            public int myPlayerNumber;
             public int connectionState;
         }
 

@@ -8,12 +8,12 @@
     tools:context="com.demgames.polypong.ServerActivity">
 
     <TextView
-        android:id="@+id/erstellenClienttextView"
+        android:id="@+id/infoTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
         android:text="@string/hostGame"
         android:textColor="@color/TColor"
         android:textSize="24sp"
@@ -35,13 +35,13 @@
         app:layout_constraintTop_toBottomOf="@+id/progressBar2" />
 
     <Button
-        android:id="@+id/devBtn"
+        android:id="@+id/startGameButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
-        android:text="Dev Button"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="16dp"
+        android:text="Start Game"
         android:textColor="@color/BtnTColor"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -89,12 +89,12 @@
         android:id="@+id/serverListView"
         android:layout_width="336dp"
         android:layout_height="242dp"
-        android:layout_marginBottom="8dp"
-        android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
         android:textColor="@color/TColor"
-        app:layout_constraintBottom_toTopOf="@+id/devBtn"
+        app:layout_constraintBottom_toTopOf="@+id/startGameButton"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView2"
