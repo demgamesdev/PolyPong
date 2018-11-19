@@ -19,7 +19,7 @@ import android.view.KeyEvent;
 import android.widget.Toast;
 import android.os.Vibrator;
 
-import com.esotericsoftware.kryonet.Connection;
+import com.demgames.polypong.network.ClientListener;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -34,7 +34,7 @@ import java.util.Arrays;
 public class ServerActivity extends AppCompatActivity{
 
     private static final String TAG = "ServerActivity";
-    private MyTask MyTaskServer;
+    private MyTask serverListUpdateTask;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,15 +62,28 @@ public class ServerActivity extends AppCompatActivity{
         final Globals globalVariables = (Globals) getApplicationContext();
         globalVariables.getSettingsVariables().connectionState=0;
 
-        globalVariables.getNetworkVariables().ipAdressList=new ArrayList<String>(Arrays.asList(new String[] {}));
-        globalVariables.getNetworkVariables().connectionList=new ArrayList<Connection>(Arrays.asList(new Connection[] {}));
+        globalVariables.getSettingsVariables().discoveryIpAdresses =new ArrayList<String>(Arrays.asList(new String[] {}));
+        globalVariables.getSettingsVariables().ipAdresses =new ArrayList<String>(Arrays.asList(new String[] {}));
+        globalVariables.getSettingsVariables().discoveryPlayerNames =new ArrayList<String>(Arrays.asList(new String[] {}));
+        globalVariables.getSettingsVariables().playerNames =new ArrayList<String>(Arrays.asList(new String[] {}));
 
-        globalVariables.getSettingsVariables().myPlayerScreen=0;
+        globalVariables.getSettingsVariables().startServerThread();
+
+        globalVariables.setListeners(getApplicationContext());
+        globalVariables.getSettingsVariables().server.addListener(globalVariables.getServerListener());
+
+        try {
+            globalVariables.getSettingsVariables().server.bind(globalVariables.getSettingsVariables().tcpPort,globalVariables.getSettingsVariables().udpPort);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        globalVariables.getSettingsVariables().myPlayerNumber =0;
 
 
         //IP Suche
-        MyTaskServer= new MyTask();
-        MyTaskServer.execute();
+        serverListUpdateTask = new MyTask();
+        serverListUpdateTask.execute();
 
         globalVariables.getGameVariables().setBalls(true);
 
@@ -80,13 +93,9 @@ public class ServerActivity extends AppCompatActivity{
     @Override
     protected void onDestroy() {
 
-        MyTaskServer.cancel(true);
+        serverListUpdateTask.cancel(true);
         Log.d(TAG, "onDestroy: MyTask canceled");
         final Globals globalVariables=(Globals) getApplication();
-        //globalVariables.getServer().stop();
-        //Log.d(TAG, "onDestroy: kryoserver stopped");
-        //globalVariables.setSearchConnecState(false);
-        //Toast.makeText(Client.this, "Suche wird beendet", Toast.LENGTH_SHORT).show();
         Log.d(TAG, "onDestroy: updatethread interrupted");
 
         super.onDestroy();
@@ -131,7 +140,9 @@ public class ServerActivity extends AppCompatActivity{
         if ((keyCode == KeyEvent.KEYCODE_BACK)) {
             Log.d(this.getClass().getName(), "back button pressed");
             Globals globalVariables = (Globals) getApplicationContext();
-            globalVariables.getNetworkVariables().server.stop();
+            globalVariables.getSettingsVariables().server.stop();
+            globalVariables.getSettingsVariables().stopClients();
+
         }
         return super.onKeyDown(keyCode, event);
     }
@@ -143,7 +154,7 @@ public class ServerActivity extends AppCompatActivity{
 
         Globals globalVariables = (Globals) getApplicationContext();
         ArrayAdapter<String> adapter = new ArrayAdapter<String>
-                (ServerActivity.this, R.layout.listview, globalVariables.getNetworkVariables().ipAdressList);
+                (ServerActivity.this, R.layout.listview, globalVariables.getSettingsVariables().discoveryIpAdresses);
         final TextView myIpTextView = (TextView) findViewById(R.id.IPtextView);
 
 
@@ -151,18 +162,6 @@ public class ServerActivity extends AppCompatActivity{
         protected Void doInBackground(Void... voids) {
 
             //kryostuff--------------------------------------
-            globalVariables.getNetworkVariables().server.start();
-            try {
-                globalVariables.getNetworkVariables().server.bind(globalVariables.getNetworkVariables().tcpPort,globalVariables.getNetworkVariables().udpPort);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            globalVariables.setGlobalListener(getApplicationContext());
-
-            globalVariables.getNetworkVariables().server.addListener(globalVariables.getGlobalListener());
-
-            globalVariables.registerKryoClasses(globalVariables.getNetworkVariables().server.getKryo());
 
             Log.d(TAG, "doInBackground: Anfang Suche");
 
@@ -174,19 +173,13 @@ public class ServerActivity extends AppCompatActivity{
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                globalVariables.getNetworkVariables().myIpAdress=wifiIpAddress(getApplicationContext());
-
-                if(globalVariables.getNetworkVariables().connectionList.size()!=0 ) {
-                    Log.d(TAG,"Connectionlist not empty");
-                } else {
-                    Log.d(TAG,"Connectionlist empty");
-                }
+                globalVariables.getSettingsVariables().myIpAdress=wifiIpAddress(getApplicationContext());
 
                 myIpTextView.post(new Runnable() {
                     @Override
                     public void run() {
-                        if (checkIfIp(globalVariables.getNetworkVariables().myIpAdress)) {
-                            myIpTextView.setText("Deine IP-Adresse lautet: " + globalVariables.getNetworkVariables().myIpAdress);
+                        if (checkIfIp(globalVariables.getSettingsVariables().myIpAdress)) {
+                            myIpTextView.setText("Deine IP-Adresse lautet: " + globalVariables.getSettingsVariables().myIpAdress);
                         }
                         else {
                             myIpTextView.setText("Unable to get Ip-Adress");
@@ -210,14 +203,14 @@ public class ServerActivity extends AppCompatActivity{
 
             IGlobals.SendVariables.SendConnectionState sendConnectionState=new IGlobals.SendVariables.SendConnectionState();
             sendConnectionState.connectionState=3;
-            globalVariables.getNetworkVariables().connectionList.get(0).sendTCP(sendConnectionState);
+            globalVariables.getSettingsVariables().sendToClients(sendConnectionState,"tcp");
 
             globalVariables.getSettingsVariables().connectionState=3;
 
             if(!isCancelled()) {
                 startActivity(new Intent(getApplicationContext(), GDXGameLauncher.class));
                 //globalVariables.myThread.stop();
-                MyTaskServer.cancel(true);
+                serverListUpdateTask.cancel(true);
                 finish();
 
                 Log.d(TAG, "Game started");
@@ -239,20 +232,39 @@ public class ServerActivity extends AppCompatActivity{
                     //Toast.makeText(Client.this, globalVariables.getMyIpList().get(i), Toast.LENGTH_SHORT).show();
                     v.vibrate(50);
                     Log.d(TAG, "onItemClick: " + Integer.toString(i));
-                    Log.d(TAG, "onItemClick: " + globalVariables.getNetworkVariables().ipAdressList.get(i));
-                    Toast.makeText(ServerActivity.this, "Zu \"" + globalVariables.getNetworkVariables().ipAdressList.get(i) + "\" wird verbunden", Toast.LENGTH_SHORT).show();
-                    globalVariables.getNetworkVariables().remoteIpAdress=globalVariables.getNetworkVariables().ipAdressList.get(i);
+                    Log.d(TAG, "onItemClick: " + globalVariables.getSettingsVariables().discoveryIpAdresses.get(i));
+                    Toast.makeText(ServerActivity.this, "Zu \"" + globalVariables.getSettingsVariables().discoveryIpAdresses.get(i) + "\" wird verbunden", Toast.LENGTH_SHORT).show();
+                    //Generalize
+                    globalVariables.getSettingsVariables().ipAdresses.add(globalVariables.getSettingsVariables().myIpAdress);
+                    globalVariables.getSettingsVariables().ipAdresses.add(globalVariables.getSettingsVariables().discoveryIpAdresses.get(i));
 
-                    Globals.SendVariables.SendSettings mySettings=new Globals.SendVariables.SendSettings();
-                    //mySettings.connectionList=globalVariables.getConnectionList();
-                    mySettings.ballsPositions=globalVariables.getGameVariables().ballsPositions;
-                    mySettings.ballsVelocities=globalVariables.getGameVariables().ballsVelocities;
-                    mySettings.ballsSizes=globalVariables.getGameVariables().ballsSizes;
-                    mySettings.gameMode=globalVariables.getSettingsVariables().gameMode;
-                    mySettings.gravityState=globalVariables.getGameVariables().gravityState;
-                    mySettings.attractionState=globalVariables.getGameVariables().attractionState;
-                    mySettings.ballsDisplayStates=globalVariables.getGameVariables().ballDisplayStates;
-                    globalVariables.getNetworkVariables().connectionList.get(0).sendTCP(mySettings);
+                    globalVariables.getSettingsVariables().numberOfPlayers=globalVariables.getSettingsVariables().ipAdresses.size();
+
+                    globalVariables.getSettingsVariables().startGameThreads();
+                    globalVariables.getSettingsVariables().connectClients();
+                    globalVariables.getSettingsVariables().setClientListeners(globalVariables.getClientListener());
+
+                    globalVariables.getSettingsVariables().playerNames.add("test1");
+                    globalVariables.getSettingsVariables().playerNames.add("test2");
+
+
+                    Globals.SendVariables.SendSettings settings=new Globals.SendVariables.SendSettings();
+
+                    settings.yourPlayerNumber=1;
+                    settings.numberOfPlayers=globalVariables.getSettingsVariables().numberOfPlayers;
+                    settings.ipAdresses=globalVariables.getSettingsVariables().ipAdresses.toArray(new String[0]);
+                    settings.playerNames=globalVariables.getSettingsVariables().playerNames.toArray(new String[0]);
+
+                    settings.ballsPositions=globalVariables.getGameVariables().ballsPositions;
+                    settings.ballsVelocities=globalVariables.getGameVariables().ballsVelocities;
+                    settings.ballsSizes=globalVariables.getGameVariables().ballsSizes;
+                    settings.gameMode=globalVariables.getSettingsVariables().gameMode;
+                    settings.gravityState=globalVariables.getGameVariables().gravityState;
+                    settings.attractionState=globalVariables.getGameVariables().attractionState;
+                    settings.ballsDisplayStates=globalVariables.getGameVariables().ballDisplayStates;
+
+                    globalVariables.getSettingsVariables().sendToClients(settings,"tcp");
+                    //globalVariables.getSettingsVariables().connections.get(0).sendTCP(settings);
 
                     globalVariables.getSettingsVariables().connectionState=1;
                     /*SendBallsKinetics ballPacket= new SendBallsKinetics();
@@ -264,9 +276,9 @@ public class ServerActivity extends AppCompatActivity{
 
         @Override
         protected void onProgressUpdate(Void... values) {
-            if(globalVariables.getUpdateListViewState()) {
+            if(globalVariables.getSettingsVariables().updateListViewState) {
                 adapter.notifyDataSetChanged();
-                globalVariables.setUpdateListViewState(false);
+                globalVariables.getSettingsVariables().updateListViewState=false;
                 //
             }
         }

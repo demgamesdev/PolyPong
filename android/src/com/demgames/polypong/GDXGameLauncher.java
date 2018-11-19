@@ -34,12 +34,8 @@ public class GDXGameLauncher extends AndroidApplication {
         //TODO for more players
         globalVariables.getGameVariables().playerScores=new int[2];
 
-        if(globalVariables.getSettingsVariables().myPlayerScreen==0) {
-            globalVariables.getNetworkVariables().server.stop();
-        } else {
-            globalVariables.getNetworkVariables().client.stop();
-        }
-
+        globalVariables.getSettingsVariables().server.stop();
+        globalVariables.getSettingsVariables().stopClients();
         super.onDestroy();
     }
 

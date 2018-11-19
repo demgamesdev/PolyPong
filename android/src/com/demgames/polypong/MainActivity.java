@@ -27,7 +27,7 @@ import android.widget.Toast;
 
 
 public class MainActivity extends AppCompatActivity {
-    private static final String TAG = "MyActivity";
+    private static final String TAG = "MainActivity";
 
     //Always On
     protected PowerManager.WakeLock mWakeLock;
@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
     }
 
-    String Name;
+    String myPlayerName;
     String file_name = "name_file";
 
     @Override
@@ -68,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
         startHostButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (getName()) {
+                if (getMyPlayerName()) {
                     Intent startHost = new Intent(getApplicationContext(), OptionsActivity.class);
                     startActivity(startHost);
                 }
@@ -79,7 +79,7 @@ public class MainActivity extends AppCompatActivity {
         startClientButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (getName()) {
+                if (getMyPlayerName()) {
                     Intent startClient = new Intent(getApplicationContext(), ClientActivity.class);
                     startActivity(startClient);
                     //myThread.stop();
@@ -92,31 +92,25 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    boolean getName(){
+    boolean getMyPlayerName(){
         Globals globalVariables = (Globals) getApplicationContext();
         EditText YourName = (EditText) findViewById(R.id.nameEditText);
-        Name = YourName.getText().toString();
-        if (YourName.getText().toString().matches("")){
+        myPlayerName = YourName.getText().toString();
+        if (myPlayerName.matches("")){
             Context context = getApplicationContext();
-            CharSequence text = "Name ist ungültig!";
+            CharSequence text = "myPlayerName ist ungültig!";
             int duration = Toast.LENGTH_SHORT;
 
             Toast toast = Toast.makeText(context, text, duration);
             toast.show();
-            Log.e(TAG, "MainActivity getName: Kein name eingegeben");
+            Log.e(TAG, "myPlayerName: Kein name eingegeben");
             return false;
         }
         else{
-
+            globalVariables.getSettingsVariables().myPlayerName= myPlayerName;
             writeName();
 
-            //Name in Globals Speichern
-            String[] name = new String[2];
-            name[0]=YourName.getText().toString();
-            globalVariables.getSettingsVariables().playerNamesList=new ArrayList<String>(Arrays.asList(name));
-            List<String> supplierNames1 = new ArrayList<String>();
-            supplierNames1 = globalVariables.getSettingsVariables().playerNamesList;
-            Log.d(TAG, "MainActivity getName: "+ supplierNames1.get(0));
+            Log.d(TAG, "myPlayerName: "+ globalVariables.getSettingsVariables().myPlayerName);
             return true;
         }
 
@@ -124,11 +118,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    //Saves latest Name entry onto internal Storage
+    //Saves latest myPlayerName entry onto internal Storage
     public void writeName(){
         try {
             FileOutputStream fileOutputStream = openFileOutput(file_name, MODE_PRIVATE);
-            fileOutputStream.write(Name.getBytes());
+            fileOutputStream.write(myPlayerName.getBytes());
             fileOutputStream.close();
 
         } catch (FileNotFoundException e) {
@@ -139,7 +133,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    //Loads latest Name entry from internal Storage
+    //Loads latest myPlayerName entry from internal Storage
     public void readName(){
         try {
             String Message;

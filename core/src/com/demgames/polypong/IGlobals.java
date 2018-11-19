@@ -1,12 +1,13 @@
 package com.demgames.polypong;
 
-import com.badlogic.gdx.Game;
 import com.badlogic.gdx.math.Vector2;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryonet.Client;
 import com.esotericsoftware.kryonet.Connection;
+import com.esotericsoftware.kryonet.Listener;
 import com.esotericsoftware.kryonet.Server;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -66,71 +67,161 @@ public interface IGlobals {
         }
     }
 
+
     class SettingsVariables {
-        String mode;
-        public int myPlayerScreen;
+        public String myPlayerName;
+        public String myIpAdress;
+        public String manualConnectIpAdress;
+        int tcpPort,udpPort;
+
+        public List<String> discoveryIpAdresses;
+        public List<String> ipAdresses;
+        public List<String> playerNames;
+        public List<String> discoveryPlayerNames;
+
+        public Server server;
+        public Client[] clients;
+        public Client discoveryClient;
+
+        public Thread serverThread;
+        public Thread[] clientThreads;
+        public Thread discoveryClientThread;
+
         public int gameMode;
 
         public int connectionState=0;
         public boolean updateListViewState;
 
-        public List<String> playerNamesList;
+        public int myPlayerNumber;
+        public int numberOfPlayers=0;
 
         SettingsVariables() {
-            updateListViewState=false;
 
-            playerNamesList=new ArrayList<String>(Arrays.asList(new String[] {}));
+            this.tcpPort=12000;
+            this.udpPort=12001;
+
+            this.discoveryIpAdresses = new ArrayList<String>(Arrays.asList(new String[] {}));
+            this.ipAdresses = new ArrayList<String>(Arrays.asList(new String[] {}));
+            this.playerNames =new ArrayList<String>(Arrays.asList(new String[] {}));
+            this.discoveryPlayerNames =new ArrayList<String>(Arrays.asList(new String[] {}));
+
+            this.updateListViewState=false;
         }
 
-        boolean addPlayerNameTolist(String newPlayerName){
-            if(!this.playerNamesList.contains(newPlayerName)){
-                this.playerNamesList.add(newPlayerName);
+        public void startServerThread() {
+            this.server=new Server(4096,4096);
+            this.serverThread = new Thread(this.server);
+            this.serverThread.start();
+            this.registerKryoClasses(this.server.getKryo());
+
+        }
+
+        public void startDiscoveryClientThread() {
+            this.discoveryClient =new Client(4096,4096);
+            this.discoveryClientThread = new Thread(this.discoveryClient);
+            this.discoveryClientThread.start();
+            this.registerKryoClasses(this.discoveryClient.getKryo());
+        }
+
+        public void connectClients() {
+            for(int i=0;i<this.numberOfPlayers;i++) {
+                if(i!=this.myPlayerNumber) {
+                    try {
+                        this.clients[i].connect(5000, this.ipAdresses.get(i),
+                                this.tcpPort, this.udpPort);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+
+        public void sendToClients(Object object, String protocol) {
+            for(int i=0;i<this.numberOfPlayers;i++) {
+
+                if(i!=this.myPlayerNumber) {
+
+                    if(protocol.equals("tcp")) {
+                        this.clients[i].sendTCP(object);
+
+                    } else if(protocol.equals("udp")) {
+                        this.clients[i].sendUDP(object);
+
+                    }
+                }
+            }
+        }
+
+        public void setClientListeners(Listener listener) {
+            for(int i=0;i<this.numberOfPlayers;i++) {
+
+                if(i!=this.myPlayerNumber) {
+                    this.clients[i].addListener(listener);
+                }
+            }
+        }
+
+        public void stopClients() {
+            for(int i=0;i<this.numberOfPlayers;i++) {
+
+                if(i!=this.myPlayerNumber) {
+                    this.clients[i].stop();
+                }
+            }
+        }
+
+        public void startGameThreads() {
+            this.clients = new Client[this.numberOfPlayers];
+            this.clientThreads = new Thread[this.numberOfPlayers];
+            for(int i=0; i<this.numberOfPlayers; i++) {
+                if(i!=this.myPlayerNumber) {
+                    this.clients[i] = new Client(4096,4096);
+                    this.clientThreads[i] = new Thread(this.clients[i]);
+                    this.clientThreads[i].start();
+                    this.registerKryoClasses(this.clients[i].getKryo());
+                }
+            }
+        }
+
+        public boolean addDiscoveryIpToList(String IpAdress){
+            if(!this.discoveryIpAdresses.contains(IpAdress)){
+                this.discoveryIpAdresses.add(IpAdress);
+                this.updateListViewState=true;
+                //Log.d("addiptolist",IpAdress +" added");
                 return(true);
             }
             return(false);
         }
 
-
-    }
-
-    class NetworkVariables {
-        String myIpAdress;
-        String remoteIpAdress;
-        int tcpPort,udpPort;
-        List<String> ipAdressList;
-        public List<Connection> connectionList;
-
-        Server server;
-        Client client;
-
-        NetworkVariables() {
-
-            tcpPort=12000;
-            udpPort=12001;
-
-            server=new Server(4096,4096);
-            //server=new Server();
-            client=new Client(4096,4096);
-            //client=new Client();
-
-            ipAdressList= new ArrayList<String>(Arrays.asList(new String[] {}));
-            connectionList = new ArrayList<Connection>(Arrays.asList(new Connection[]{}));
+        public void registerKryoClasses(Kryo myKryo) {
+            myKryo.register(float.class);
+            myKryo.register(float[].class);
+            myKryo.register(Integer.class);
+            myKryo.register(Integer[].class);
+            myKryo.register(int.class);
+            myKryo.register(int[].class);
+            myKryo.register(String.class);
+            myKryo.register(String[].class);
+            myKryo.register(boolean.class);
+            myKryo.register(boolean[].class);
+            myKryo.register(Connection.class);
+            myKryo.register(Connection[].class);
+            myKryo.register(Object.class);
+            myKryo.register(com.badlogic.gdx.math.Vector2.class);
+            myKryo.register(com.badlogic.gdx.math.Vector2[].class);
+            myKryo.register(SendVariables.SendSettings.class);
+            myKryo.register(SendVariables.SendConnectionState.class);
+            myKryo.register(SendVariables.SendConnectionRequest.class);
+            myKryo.register(SendVariables.SendBallKinetics.class);
+            myKryo.register(SendVariables.SendBallScreenChange.class);
+            myKryo.register(SendVariables.SendBallGoal.class);
+            myKryo.register(SendVariables.SendBat.class);
+            myKryo.register(SendVariables.SendScore.class);
         }
 
-        Connection [] getConnectionArray() {
-            return(this.connectionList.toArray(new Connection[0]));
-        }
-
-        public void addToConnectionList(Connection newConnection){
-            if(!this.connectionList.contains(newConnection)){
-                this.connectionList.add(newConnection);
-            }
-        }
-
-        public boolean addIpTolist(String IpAdress){
-            if(!this.ipAdressList.contains(IpAdress)){
-                this.ipAdressList.add(IpAdress);
-                //Log.d("addiptolist",IpAdress +" added");
+        public boolean addDiscoveryPlayerNameToList(String playerName){
+            if(!this.discoveryPlayerNames.contains(playerName)){
+                this.discoveryPlayerNames.add(playerName);
                 return(true);
             }
             return(false);
@@ -142,6 +233,11 @@ public interface IGlobals {
 
     class SendVariables {
         static public class SendSettings {
+            public int numberOfPlayers;
+            public int yourPlayerNumber;
+            public String[] ipAdresses;
+            public String[] playerNames;
+
             public Vector2[] ballsPositions;
             public Vector2[] ballsVelocities;
             public float[] ballsSizes;
@@ -153,6 +249,10 @@ public interface IGlobals {
 
         static public class SendConnectionState {
             public int connectionState;
+        }
+
+        static public class SendConnectionRequest {
+            public String myPlayerName;
         }
 
         static public class SendBallKinetics {
@@ -188,11 +288,6 @@ public interface IGlobals {
         }
     }
 
-    class testClass {
-        String test;
-    }
-
     GameVariables getGameVariables();
     SettingsVariables getSettingsVariables();
-    NetworkVariables getNetworkVariables();
 }
