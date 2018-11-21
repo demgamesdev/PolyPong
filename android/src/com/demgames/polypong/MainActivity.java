@@ -4,6 +4,8 @@ import android.content.Context;
 import android.os.Bundle;
 import android.content.Intent;
 import android.os.PowerManager;
+import android.os.StrictMode;
+import android.util.DisplayMetrics;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -34,6 +36,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onDestroy() {
         this.mWakeLock.release();
+        //turn off debug maybe causing fc
+        StrictMode.allowThreadDiskReads();
         super.onDestroy();
     }
 
@@ -58,6 +62,15 @@ public class MainActivity extends AppCompatActivity {
         /*requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,WindowManager.LayoutParams.FLAG_FULLSCREEN);*/
         setContentView(R.layout.activity_main);
+
+
+        final Globals globalVariables = (Globals) getApplicationContext();
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        globalVariables.getGameVariables().height= displayMetrics.heightPixels;
+        globalVariables.getGameVariables().width = displayMetrics.widthPixels;
+
+        Log.d(TAG, "screen width "+globalVariables.getGameVariables().width + " height "+globalVariables.getGameVariables().height);
 
 
         final Button startHostButton = (Button) findViewById(R.id.startHostButton);

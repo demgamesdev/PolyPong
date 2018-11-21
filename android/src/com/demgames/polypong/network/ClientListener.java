@@ -38,7 +38,7 @@ public class ClientListener extends Listener{
 
     @Override
     public void received(Connection connection,Object object) {
-        Log.d(TAG, "Package received.");
+        //Log.d(TAG, "Package received.");
 
 
     }

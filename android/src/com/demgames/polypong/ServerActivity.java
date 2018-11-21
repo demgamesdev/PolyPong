@@ -21,6 +21,8 @@ import android.view.KeyEvent;
 import android.widget.Toast;
 import android.os.Vibrator;
 
+import com.badlogic.gdx.math.Vector2;
+
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.InetAddress;
@@ -79,8 +81,6 @@ public class ServerActivity extends AppCompatActivity{
         serverListUpdateTask = new UpdateTask();
         serverListUpdateTask.execute();
 
-        globalVariables.getGameVariables().setBalls(true);
-
         Button startGameButton= (Button) findViewById(R.id.startGameButton);
         final Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         startGameButton.setOnClickListener(new View.OnClickListener() {
@@ -95,40 +95,56 @@ public class ServerActivity extends AppCompatActivity{
 
                 globalVariables.getSettingsVariables().numberOfPlayers=globalVariables.getSettingsVariables().ipAdresses.size();
 
+                globalVariables.getGameVariables().setBalls(true);
+                globalVariables.getGameVariables().setBats(globalVariables.getSettingsVariables().numberOfPlayers);
+
                 vibrator.vibrate(50);
                 Toast.makeText(ServerActivity.this, "Verbindung zu" + Integer.toString(globalVariables.getSettingsVariables().numberOfPlayers-1)
                         + " Spielern wird hergestellt", Toast.LENGTH_SHORT).show();
 
-                globalVariables.getSettingsVariables().startGameThreads();
-                globalVariables.getSettingsVariables().connectClients();
-                globalVariables.getSettingsVariables().setClientListeners(globalVariables.getClientListener());
+
+                globalVariables.getSettingsVariables().startAllClientThreads();
+                globalVariables.getSettingsVariables().setAllClientListeners(globalVariables.getClientListener());
+                globalVariables.getSettingsVariables().connectAllClients();
+                Log.d(TAG, "Connected to all clients.");
 
                 globalVariables.getSettingsVariables().playerNames.add("test1");
                 globalVariables.getSettingsVariables().playerNames.add("test2");
 
 
-                Globals.SendVariables.SendSettings settings=new Globals.SendVariables.SendSettings();
 
-                settings.yourPlayerNumber=1;
-                settings.numberOfPlayers=globalVariables.getSettingsVariables().numberOfPlayers;
-                settings.ipAdresses=globalVariables.getSettingsVariables().ipAdresses.toArray(new String[0]);
-                settings.playerNames=globalVariables.getSettingsVariables().playerNames.toArray(new String[0]);
 
-                settings.ballsPositions=globalVariables.getGameVariables().ballsPositions;
-                settings.ballsVelocities=globalVariables.getGameVariables().ballsVelocities;
-                settings.ballsSizes=globalVariables.getGameVariables().ballsSizes;
-                settings.gameMode=globalVariables.getSettingsVariables().gameMode;
-                settings.gravityState=globalVariables.getGameVariables().gravityState;
-                settings.attractionState=globalVariables.getGameVariables().attractionState;
-                settings.ballsDisplayStates=globalVariables.getGameVariables().ballDisplayStates;
-
-                for(int i=1; i< globalVariables.getSettingsVariables().ipAdresses.size();i++) {
-                    settings.yourPlayerNumber=i;
-                    globalVariables.getSettingsVariables().clients[i].sendTCP(settings);
+                globalVariables.getSettingsVariables().setAllClientConnectionStates();
+                Vector2[] tempPositions= new Vector2[globalVariables.getGameVariables().numberOfBalls];
+                Vector2[] tempVelocities = new Vector2[globalVariables.getGameVariables().numberOfBalls];
+                for(int i=0;i<globalVariables.getGameVariables().numberOfBalls;i++) {
+                    tempPositions[i] = globalVariables.getGameVariables().downScaleVector(globalVariables.getGameVariables().ballsPositions[i]);
+                    tempVelocities[i] = globalVariables.getGameVariables().downScaleVector(globalVariables.getGameVariables().ballsVelocities[i]);
                 }
 
+                for(int i=1; i< globalVariables.getSettingsVariables().numberOfPlayers;i++) {
+                    Globals.SendVariables.SendSettings settings=new Globals.SendVariables.SendSettings();
+                    settings.yourPlayerNumber=i;
+                    settings.numberOfPlayers=globalVariables.getSettingsVariables().numberOfPlayers;
+                    settings.ipAdresses=globalVariables.getSettingsVariables().ipAdresses.toArray(new String[0]);
+                    settings.playerNames=globalVariables.getSettingsVariables().playerNames.toArray(new String[0]);
+
+                    settings.ballsPositions=tempPositions;
+                    settings.ballsVelocities=tempVelocities;
+                    settings.ballsSizes=globalVariables.getGameVariables().ballsSizes;
+                    settings.gameMode=globalVariables.getSettingsVariables().gameMode;
+                    settings.gravityState=globalVariables.getGameVariables().gravityState;
+                    settings.attractionState=globalVariables.getGameVariables().attractionState;
+                    settings.ballsDisplayStates=globalVariables.getGameVariables().ballDisplayStates;
+
+                    globalVariables.getSettingsVariables().clientThreads[i].sendObject(settings,"tcp");
+                }
+                /*settings.yourPlayerNumber=1;
+                globalVariables.getSettingsVariables().clientThreads[1].sendObject(settings,"tcp");
+                settings.yourPlayerNumber=2;
+                globalVariables.getSettingsVariables().clientThreads[2].sendObject(settings,"tcp");*/
+
                 globalVariables.getSettingsVariables().setupConnectionState =2;
-                globalVariables.getSettingsVariables().setClientConnectionStates();
                 globalVariables.getSettingsVariables().clientConnectionStates[globalVariables.getSettingsVariables().myPlayerNumber]=2;
             }
         });
@@ -185,7 +201,7 @@ public class ServerActivity extends AppCompatActivity{
             Log.d(this.getClass().getName(), "back button pressed");
             Globals globalVariables = (Globals) getApplicationContext();
             globalVariables.getSettingsVariables().server.stop();
-            globalVariables.getSettingsVariables().stopClients();
+            globalVariables.getSettingsVariables().shutdownAllClients();
 
         }
         return super.onKeyDown(keyCode, event);
@@ -238,14 +254,14 @@ public class ServerActivity extends AppCompatActivity{
 
             }
 
-            while(!globalVariables.getSettingsVariables().checkClientConnectionState(2) && !isCancelled()) {
+            while(!globalVariables.getSettingsVariables().checkAllClientConnectionStates(2) && !isCancelled()) {
 
             }
 
             IGlobals.SendVariables.SendConnectionState sendConnectionState=new IGlobals.SendVariables.SendConnectionState();
             sendConnectionState.myPlayerNumber=globalVariables.getSettingsVariables().myPlayerNumber;
             sendConnectionState.connectionState=3;
-            globalVariables.getSettingsVariables().sendToClients(sendConnectionState,"tcp");
+            globalVariables.getSettingsVariables().sendToAllClients(sendConnectionState,"tcp");
 
             globalVariables.getSettingsVariables().clientConnectionStates[globalVariables.getSettingsVariables().myPlayerNumber] =3;
 

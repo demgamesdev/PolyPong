@@ -78,7 +78,7 @@ public class ClientActivity extends AppCompatActivity{
 
         globalVariables.setListeners(getApplicationContext());
         globalVariables.getSettingsVariables().server.addListener(globalVariables.getServerListener());
-        //globalVariables.getSettingsVariables().discoveryClient.addListener(globalVariables.getClientListener());
+        //globalVariables.getSettingsVariables().discoveryClientThread.getClient().addListener(globalVariables.getClientListener());
 
 
         try {
@@ -103,9 +103,6 @@ public class ClientActivity extends AppCompatActivity{
 
         clientListUpdateTask.cancel(true);
         Log.d(TAG, "onDestroy: UpdateTask beendet");
-        final Globals globalVariables=(Globals) getApplication();
-        //globalVariables.getClient().stop();
-        //Log.d(TAG, "onDestroy: Kryoclient stopped");
         Log.d(TAG, "onDestroy: Activity geschlossen");
 
         super.onDestroy();
@@ -153,8 +150,8 @@ public class ClientActivity extends AppCompatActivity{
             Log.d(this.getClass().getName(), "back button pressed");
             Globals globalVariables = (Globals) getApplicationContext();
             globalVariables.getSettingsVariables().server.stop();
-            globalVariables.getSettingsVariables().discoveryClient.stop();
-            globalVariables.getSettingsVariables().stopClients();
+            globalVariables.getSettingsVariables().discoveryClientThread.shutdownClient();
+            globalVariables.getSettingsVariables().shutdownAllClients();
         }
         return super.onKeyDown(keyCode, event);
     }
@@ -166,7 +163,7 @@ public class ClientActivity extends AppCompatActivity{
 
         Globals globalVariables = (Globals) getApplicationContext();
         ArrayAdapter<String> ClientListViewAdapter = new ArrayAdapter<String>
-                (ClientActivity.this, R.layout.serverlistview_row, globalVariables.getSettingsVariables().discoveryIpAdresses);
+                (ClientActivity.this, R.layout.clientlistview_row, globalVariables.getSettingsVariables().discoveryIpAdresses);
         TextView myIpTextView = (TextView) findViewById(R.id.IpAdressTextView);
         EditText manualIpEditText = (EditText) findViewById(R.id.manualIpEditText);
         Button manualIpButton = (Button) findViewById(R.id.manualIpButton);
@@ -187,7 +184,7 @@ public class ClientActivity extends AppCompatActivity{
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                discoveryHosts=globalVariables.getSettingsVariables().discoveryClient.discoverHosts(globalVariables.getSettingsVariables().udpPort,500);
+                discoveryHosts=globalVariables.getSettingsVariables().discoveryClientThread.getClient().discoverHosts(globalVariables.getSettingsVariables().udpPort,500);
                 for (int i = 0; i < discoveryHosts.toArray().length; i++) {
                     String tempIpAdress = discoveryHosts.toArray()[i].toString();
                     tempIpAdress = tempIpAdress.substring(1, tempIpAdress.length());
@@ -227,7 +224,7 @@ public class ClientActivity extends AppCompatActivity{
             IGlobals.SendVariables.SendConnectionState sendConnectionState=new IGlobals.SendVariables.SendConnectionState();
             sendConnectionState.myPlayerNumber=globalVariables.getSettingsVariables().myPlayerNumber;
             sendConnectionState.connectionState=3;
-            globalVariables.getSettingsVariables().sendToClients(sendConnectionState,"tcp");
+            globalVariables.getSettingsVariables().sendToAllClients(sendConnectionState,"tcp");
 
             globalVariables.getSettingsVariables().clientConnectionStates[globalVariables.getSettingsVariables().myPlayerNumber] =3;
 
@@ -267,11 +264,14 @@ public class ClientActivity extends AppCompatActivity{
 
                         //storeIP = globalVariables.getSettingsVariables().remoteIpAdress;
                         //storeIPAdress();
-                        try {
-                            globalVariables.getSettingsVariables().discoveryClient.connect(5000,globalVariables.getSettingsVariables().discoveryIpAdresses.get(i),globalVariables.getSettingsVariables().tcpPort,globalVariables.getSettingsVariables().udpPort);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
+                        globalVariables.getSettingsVariables().connectDiscoveryClient(globalVariables.getSettingsVariables().discoveryIpAdresses.get(i));
+                        //globalVariables.getSettingsVariables().discoveryClient.connect(5000,globalVariables.getSettingsVariables().discoveryIpAdresses.get(i),globalVariables.getSettingsVariables().tcpPort,globalVariables.getSettingsVariables().udpPort);
+
+                        Globals.SendVariables.SendConnectionRequest sendConnectionRequest = new IGlobals.SendVariables.SendConnectionRequest();
+                        sendConnectionRequest.myPlayerName=globalVariables.getSettingsVariables().myPlayerName;
+
+                        globalVariables.getSettingsVariables().discoveryClientThread.sendObject(sendConnectionRequest,"tcp");
+
                         globalVariables.getSettingsVariables().setupConnectionState =1;
 
                         //sendClientConnect();
@@ -287,15 +287,12 @@ public class ClientActivity extends AppCompatActivity{
                             //storeIP = globalVariables.getSettingsVariables().remoteIpAdress;
                             //storeIPAdress();
 
-                            try {
-                                globalVariables.getSettingsVariables().discoveryClient.connect(5000, globalVariables.getSettingsVariables().manualConnectIpAdress, globalVariables.getSettingsVariables().tcpPort, globalVariables.getSettingsVariables().udpPort);
-                                Globals.SendVariables.SendConnectionRequest sendConnectionRequest = new IGlobals.SendVariables.SendConnectionRequest();
-                                sendConnectionRequest.myPlayerName=globalVariables.getSettingsVariables().myPlayerName;
+                            globalVariables.getSettingsVariables().connectDiscoveryClient(globalVariables.getSettingsVariables().manualConnectIpAdress);
+                            //globalVariables.getSettingsVariables().discoveryClient.connect(5000,globalVariables.getSettingsVariables().discoveryIpAdresses.get(i),globalVariables.getSettingsVariables().tcpPort,globalVariables.getSettingsVariables().udpPort);
+                            Globals.SendVariables.SendConnectionRequest sendConnectionRequest = new IGlobals.SendVariables.SendConnectionRequest();
+                            sendConnectionRequest.myPlayerName=globalVariables.getSettingsVariables().myPlayerName;
 
-                                globalVariables.getSettingsVariables().discoveryClient.sendTCP(sendConnectionRequest);
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
+                            globalVariables.getSettingsVariables().discoveryClientThread.sendObject(sendConnectionRequest,"tcp");
 
                             globalVariables.getSettingsVariables().setupConnectionState = 1;
                         } else {

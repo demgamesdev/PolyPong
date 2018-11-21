@@ -13,8 +13,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import sun.rmi.runtime.Log;
-
 public interface IGlobals {
 
     class GameVariables {
@@ -27,10 +25,11 @@ public interface IGlobals {
         public float[] ballsSizes;
         public boolean[] ballDisplayStates;
 
+        public float width, height;
         //TODO generalize to more players
-        public Vector2[] batPositions = new Vector2[2];
+        public Vector2[] batPositions;
         //public Vector2[] batVelocities = new Vector2[2];
-        public float[] batOrientations = new float[2];
+        public float[] batOrientations;
 
         public float friction;
 
@@ -45,9 +44,6 @@ public interface IGlobals {
 
             gravityState=false;
             attractionState=true;
-
-            //TODO for more players
-            playerScores=new int[2];
         }
 
         public void setBalls(boolean randomPosition) {
@@ -57,15 +53,30 @@ public interface IGlobals {
             this.ballsPlayerScreens = new int[this.numberOfBalls];
             this.ballsSizes = new float[this.numberOfBalls];
             this.ballDisplayStates = new boolean[this.numberOfBalls];
+
+
             if (randomPosition) {
                 for (int i = 0; i < this.numberOfBalls; i++) {
-                    this.ballsPositions[i] = new Vector2(rand.nextFloat()*2f-1f, rand.nextFloat()*2f-1f);
-                    this.ballsVelocities[i] = new Vector2(0, 0);
+                    this.ballsPositions[i] = this.upScaleVector(new Vector2((rand.nextFloat()-0.5f)*0.8f, (rand.nextFloat()-1f)*0.6f-0.2f));
+                    this.ballsVelocities[i] = this.upScaleVector(new Vector2(0, 0));
                     this.ballsPlayerScreens[i] = 0;
                     this.ballsSizes[i] = rand.nextFloat();
                     this.ballDisplayStates[i]=true;
                 }
             }
+        }
+
+        public void setBats(int numberOfPlayers) {
+            this.batPositions=new Vector2[numberOfPlayers];
+            this.batOrientations= new float[numberOfPlayers];
+        }
+
+        public Vector2 downScaleVector(Vector2 vector) {
+            return(new Vector2(vector.x/width,vector.y/height));
+        }
+
+        public Vector2 upScaleVector(Vector2 vector) {
+            return(new Vector2(vector.x*width,vector.y*height));
         }
     }
 
@@ -84,12 +95,10 @@ public interface IGlobals {
         public int[] clientConnectionStates;
 
         public Server server;
-        public Client[] clients;
-        public Client discoveryClient;
 
         public Thread serverThread;
-        public Thread[] clientThreads;
-        public Thread discoveryClientThread;
+        public ClientThread[] clientThreads;
+        public ClientThread discoveryClientThread;
 
         public int gameMode;
 
@@ -118,81 +127,80 @@ public interface IGlobals {
         }
 
         public void startDiscoveryClientThread() {
-            this.discoveryClient =new Client(4096,4096);
-            this.discoveryClientThread = new Thread(this.discoveryClient);
+            this.discoveryClientThread = new ClientThread("discoveryClientThread",this.tcpPort,this.udpPort);
+            this.registerKryoClasses(this.discoveryClientThread.getClient().getKryo());
+        }
+
+        public void connectDiscoveryClient(String ipAdress_) {
+            this.discoveryClientThread.setIpAdress(ipAdress_);
             this.discoveryClientThread.start();
-            this.registerKryoClasses(this.discoveryClient.getKryo());
         }
 
-        public void connectClients() {
-            for(int i=0;i<this.numberOfPlayers;i++) {
-                if(i!=this.myPlayerNumber) {
-                    try {
-                        this.clients[i].connect(5000, this.ipAdresses.get(i),
-                                this.tcpPort, this.udpPort);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }
-
-        public void sendToClients(Object object, String protocol) {
-            for(int i=0;i<this.numberOfPlayers;i++) {
-
-                if(i!=this.myPlayerNumber) {
-
-                    if(protocol.equals("tcp")) {
-                        this.clients[i].sendTCP(object);
-
-                    } else if(protocol.equals("udp")) {
-                        this.clients[i].sendUDP(object);
-
-                    }
-                }
-            }
-        }
-
-        public void setClientListeners(Listener listener) {
-            for(int i=0;i<this.numberOfPlayers;i++) {
-
-                if(i!=this.myPlayerNumber) {
-                    this.clients[i].addListener(listener);
-                }
-            }
-        }
-
-        public void stopClients() {
-            for(int i=0;i<this.numberOfPlayers;i++) {
-
-                if(i!=this.myPlayerNumber) {
-                    this.clients[i].stop();
-                }
-            }
-        }
-
-        public void startGameThreads() {
-            this.clients = new Client[this.numberOfPlayers];
-            this.clientThreads = new Thread[this.numberOfPlayers];
+        public void startAllClientThreads() {
+            this.clientThreads = new ClientThread[this.numberOfPlayers];
             for(int i=0; i<this.numberOfPlayers; i++) {
                 if(i!=this.myPlayerNumber) {
-                    this.clients[i] = new Client(4096,4096);
-                    this.clientThreads[i] = new Thread(this.clients[i]);
-                    this.clientThreads[i].start();
-                    this.registerKryoClasses(this.clients[i].getKryo());
+                    this.clientThreads[i] = new ClientThread("clientThread "+i,this.tcpPort,this.udpPort);
+                    this.registerKryoClasses(this.clientThreads[i].getClient().getKryo());
+
                 }
             }
         }
 
-        public boolean addDiscoveryIpToList(String IpAdress){
-            if(!this.discoveryIpAdresses.contains(IpAdress)){
-                this.discoveryIpAdresses.add(IpAdress);
-                this.discoveryIsChecked.add(false);
-                this.updateListViewState=true;
-                //Log.d("addiptolist",IpAdress +" added");
-                return(true);
+        public void setAllClientListeners(Listener listener) {
+            for(int i=0;i<this.numberOfPlayers;i++) {
+
+                if(i!=this.myPlayerNumber) {
+                    this.clientThreads[i].getClient().addListener(listener);
+                }
             }
-            return(false);
+        }
+
+        public void connectAllClients() {
+            for(int i=0;i<this.numberOfPlayers;i++) {
+                if(i!=this.myPlayerNumber) {
+                    this.clientThreads[i].setIpAdress(this.ipAdresses.get(i));
+                    this.clientThreads[i].start();
+                    //this.clientThreads[i].start();
+
+                }
+            }
+        }
+
+        public void sendToAllClients(Object object, String protocol) {
+            for(int i=0;i<this.numberOfPlayers;i++) {
+
+                if(i!=this.myPlayerNumber) {
+                    this.clientThreads[i].sendObject(object, protocol);
+                }
+            }
+        }
+
+        public void shutdownAllClients() {
+            for(int i=0;i<this.numberOfPlayers;i++) {
+
+                if(i!=this.myPlayerNumber) {
+                    this.clientThreads[i].shutdownClient();
+                }
+            }
+        }
+
+        public void setAllClientConnectionStates() {
+            this.clientConnectionStates=new int[this.numberOfPlayers];
+            for(int i=0;i<this.numberOfPlayers;i++) {
+                this.clientConnectionStates[i]=1;
+            }
+        }
+
+        public boolean checkAllClientConnectionStates(int state) {
+            for(int i=0;i<this.numberOfPlayers;i++) {
+                if(!(this.clientConnectionStates[i]==state)) {
+                    com.esotericsoftware.minlog.Log.debug("client"+i+" not in state "+state);
+                    return(false);
+                }
+            }
+            com.esotericsoftware.minlog.Log.debug("all clients in state "+state);
+            return(true);
         }
 
         public void registerKryoClasses(Kryo myKryo) {
@@ -221,6 +229,17 @@ public interface IGlobals {
             myKryo.register(SendVariables.SendScore.class);
         }
 
+        public boolean addDiscoveryIpToList(String IpAdress){
+            if(!this.discoveryIpAdresses.contains(IpAdress)){
+                this.discoveryIpAdresses.add(IpAdress);
+                this.discoveryIsChecked.add(false);
+                this.updateListViewState=true;
+                //Log.d("addiptolist",IpAdress +" added");
+                return(true);
+            }
+            return(false);
+        }
+
         public boolean addDiscoveryPlayerNameToList(String playerName){
             if(!this.discoveryPlayerNames.contains(playerName)){
                 this.discoveryPlayerNames.add(playerName);
@@ -237,22 +256,91 @@ public interface IGlobals {
             this.discoveryIsChecked =new ArrayList<Boolean>(Arrays.asList(new Boolean[]{}));
         }
 
-        public void setClientConnectionStates() {
-            this.clientConnectionStates=new int[this.numberOfPlayers];
-            for(int i=0;i<this.numberOfPlayers;i++) {
-                this.clientConnectionStates[i]=1;
-            }
-        }
+        public class ClientThread extends Thread {
+            private Client client;
+            private String ipAdress;
+            private int tcpPort, udpPort, udpPendingSize;
+            private boolean isRunnning;
+            private boolean tcpPending;
+            private boolean udpPending;
+            private ArrayList<Object> tcpPendingObjects;
+            private ArrayList<Object> tempTcpPendingObjects;
+            private ArrayList<Object> udpPendingObjects;
+            private ArrayList<Object> tempUdpPendingObjects;
 
-        public boolean checkClientConnectionState(int state) {
-            for(int i=0;i<this.numberOfPlayers;i++) {
-                if(!(this.clientConnectionStates[i]==state)) {
-                    com.esotericsoftware.minlog.Log.debug("client"+i+" not in state "+state);
-                    return(false);
+            private String threadName;
+
+            public ClientThread(String threadName_, int tcpPort_, int udpPort_) {
+                this.threadName=threadName_;
+                this.client = new Client(4096,4096);
+                this.client.start();
+
+                this.tcpPort = tcpPort_;
+                this.udpPort = udpPort_;
+                this.isRunnning=true;
+                this.tcpPending=false;
+                this.udpPending=false;
+                this.udpPendingSize=2;
+
+                this.tcpPendingObjects = new ArrayList<Object>(Arrays.asList(new Object[] {}));
+                this.udpPendingObjects = new ArrayList<Object>(Arrays.asList(new Object[] {}));
+
+            }
+
+            public void run() {
+                try {
+                    this.client.connect(5000, this.ipAdress,this.tcpPort, this.udpPort);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                while (this.isRunnning) {
+                    if(this.tcpPending) {
+                        this.tempTcpPendingObjects = new ArrayList<Object>(this.tcpPendingObjects);
+                        for (int i = 0; i < this.tempTcpPendingObjects.size(); i++) {
+                            this.client.sendTCP(this.tempTcpPendingObjects.get(i));
+                        }
+                        this.tcpPendingObjects = new ArrayList<Object>(Arrays.asList(new Object[]{}));
+                        this.tcpPending=false;
+                    }
+
+                    if(this.udpPending) {
+                        this.tempUdpPendingObjects=new ArrayList<Object>(this.udpPendingObjects);
+                        for(int i=0; i<this.tempUdpPendingObjects.size();i++) {
+                            this.client.sendUDP(this.tempUdpPendingObjects.get(i));
+                        }
+                        this.udpPendingObjects = new ArrayList<Object>(Arrays.asList(new Object[] {}));
+                        this.udpPending=false;
+                    }
+                }
+
+            }
+
+            public void sendObject(Object object, String protocol) {
+                if(protocol.equals("tcp")) {
+                    this.tcpPendingObjects.add(object);
+                    this.tcpPending=true;
+
+                } else if(protocol.equals("udp")) {
+                    this.udpPendingObjects.add(object);
+                    if(this.udpPendingObjects.size() > this.udpPendingSize) {
+                        this.udpPendingObjects.remove(0);
+                    }
+                    this.udpPending=true;
                 }
             }
-            com.esotericsoftware.minlog.Log.debug("all clients in state "+state);
-            return(true);
+
+            public void setIpAdress(String ipAdress_) {
+                this.ipAdress=ipAdress_;
+            }
+
+            public void shutdownClient() {
+                this.isRunnning=false;
+                this.client.stop();
+            }
+
+            public Client getClient() {
+                return(this.client);
+            }
         }
     }
 
@@ -282,6 +370,7 @@ public interface IGlobals {
         }
 
         static public class SendBallKinetics {
+            public int myPlayerNumber;
             public Integer[] ballNumbers;
             public int[] ballPlayerFields;
             public Vector2[] ballPositions;
@@ -289,6 +378,7 @@ public interface IGlobals {
         }
 
         static public class SendBat {
+            public int myPlayerNumber;
             public  int batPlayerField;
             public Vector2 batPosition;
             //public Vector2 batVelocity;
@@ -296,6 +386,7 @@ public interface IGlobals {
         }
 
         static public class SendBallScreenChange {
+            public int myPlayerNumber;
             public Integer[] ballNumbers;
             public int[] ballPlayerFields;
             public Vector2[] ballPositions;
@@ -303,6 +394,7 @@ public interface IGlobals {
         }
 
         static public class SendBallGoal {
+            public int myPlayerNumber;
             public Integer[] ballNumbers;
             public int[] playerScores;
         }
@@ -311,6 +403,23 @@ public interface IGlobals {
         static public class SendScore {
             public int myScore;
             public int otherScore;
+        }
+    }
+
+    class BoundedArrayList<T> extends ArrayList<T> {
+        private int maxSize;
+        public BoundedArrayList(int size)
+        {
+            this.maxSize = size;
+        }
+
+        public void addLast(T e)
+        {
+            this.add(e);
+            if(this.size() > this.maxSize) {
+                this.remove(0);
+            }
+
         }
     }
 

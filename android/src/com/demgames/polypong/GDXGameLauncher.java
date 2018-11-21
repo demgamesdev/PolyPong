@@ -21,6 +21,8 @@ public class GDXGameLauncher extends AndroidApplication {
 
 		AndroidApplicationConfiguration config = new AndroidApplicationConfiguration();
 
+        globalVariables.getGameVariables().playerScores=new int[globalVariables.getSettingsVariables().numberOfPlayers];
+
         ClassicGame classicGame = new ClassicGame(globalVariables);
 		initialize(classicGame, config);
 	}
@@ -32,10 +34,9 @@ public class GDXGameLauncher extends AndroidApplication {
 
         Globals globalVariables=(Globals)getApplicationContext();
         //TODO for more players
-        globalVariables.getGameVariables().playerScores=new int[2];
 
         globalVariables.getSettingsVariables().server.stop();
-        globalVariables.getSettingsVariables().stopClients();
+        globalVariables.getSettingsVariables().shutdownAllClients();
         super.onDestroy();
     }
 
