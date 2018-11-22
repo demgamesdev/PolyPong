@@ -33,7 +33,9 @@ public class ClientListener extends Listener{
     @Override
     public void disconnected(Connection connection) {
         Log.e(TAG, " disconnected.");
-        GDXGameLauncher.GDXGAME.finish();
+        if(GDXGameLauncher.GDXGAME!=null) {
+            GDXGameLauncher.GDXGAME.finish();
+        }
     }
 
     @Override

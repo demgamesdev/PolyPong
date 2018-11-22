@@ -37,140 +37,161 @@ public class ServerListener extends Listener{
     @Override
     public void received(Connection connection,Object object) {
 
-        if(object instanceof Globals.SendVariables.SendBallScreenChange) {
-            Log.d(TAG,"screenchange received");
-            Globals.SendVariables.SendBallScreenChange ballScreenChange=(Globals.SendVariables.SendBallScreenChange)object;
+        if(object instanceof Globals.SendVariables.SendClass) {
+            Globals.SendVariables.SendClass sendClass = (Globals.SendVariables.SendClass) object;
 
-            float rotateRad=(2f*MathUtils.PI/globalVariables.getSettingsVariables().numberOfPlayers*(ballScreenChange.myPlayerNumber-globalVariables.getSettingsVariables().myPlayerNumber));
-            for (int i =0; i<ballScreenChange.ballNumbers.length;i++) {
-                globalVariables.getGameVariables().ballsPlayerScreens[ballScreenChange.ballNumbers[i]]=ballScreenChange.ballPlayerFields[i];
-                globalVariables.getGameVariables().ballsPositions[ballScreenChange.ballNumbers[i]]=globalVariables.getGameVariables().upScaleVector(ballScreenChange.ballPositions[i]).rotateRad(rotateRad);
-                globalVariables.getGameVariables().ballsVelocities[ballScreenChange.ballNumbers[i]]=globalVariables.getGameVariables().upScaleVector(ballScreenChange.ballVelocities[i]).rotateRad(rotateRad);
-            }
+            for(int obj=0;obj<sendClass.sendObjects.length;obj++) {
+                if (sendClass.sendObjects[obj] instanceof Globals.SendVariables.SendBallScreenChange) {
+                    Globals.SendVariables.SendBallScreenChange ballScreenChange = (Globals.SendVariables.SendBallScreenChange) sendClass.sendObjects[obj];
 
-            //Log.d(TAG, "ball "+Integer.toString(ballNumber)+" screenchange");
+                    float rotateRad = (2f * MathUtils.PI / globalVariables.getSettingsVariables().numberOfPlayers * (ballScreenChange.myPlayerNumber - globalVariables.getSettingsVariables().myPlayerNumber));
+                    //Log.d(TAG, "degrees " + rotateRad/MathUtils.PI*180);
+                    for (int i = 0; i < ballScreenChange.ballNumbers.length; i++) {
+                        //Log.d(TAG, "fieldchange of ball " + ballScreenChange.ballNumbers[i] + " received");
+                        globalVariables.getGameVariables().updateBallStates[ballScreenChange.ballNumbers[i]]=true;
+                        globalVariables.getGameVariables().ballsPlayerScreens[ballScreenChange.ballNumbers[i]] = ballScreenChange.ballPlayerFields[i];
+                        globalVariables.getGameVariables().ballsPositions[ballScreenChange.ballNumbers[i]] = globalVariables.getGameVariables().upScaleVector(ballScreenChange.ballPositions[i]).rotateRad(rotateRad);
+                        globalVariables.getGameVariables().ballsVelocities[ballScreenChange.ballNumbers[i]] = globalVariables.getGameVariables().upScaleVector(ballScreenChange.ballVelocities[i]).rotateRad(rotateRad);
+                        /*Log.d(TAG, "ballposition x " + globalVariables.getGameVariables().upScaleVector(ballScreenChange.ballPositions[i]).rotateRad(rotateRad).x +
+                                " y " + globalVariables.getGameVariables().upScaleVector(ballScreenChange.ballPositions[i]).rotateRad(rotateRad).y);*/
+                    }
 
-        }else if(object instanceof Globals.SendVariables.SendBallGoal) {
-            Log.d(TAG, "ballgoal received");
-            Globals.SendVariables.SendBallGoal ballGoal=(Globals.SendVariables.SendBallGoal)object;
+                    //Log.d(TAG, "ball "+Integer.toString(ballNumber)+" screenchange");
 
-            //Log.d(TAG, "ball "+Integer.toString(ballNumber)+" updated to x "+Float.toString(ballPosition.x));
-            globalVariables.getGameVariables().playerScores[ballGoal.myPlayerNumber]=ballGoal.playerScores[ballGoal.myPlayerNumber];
-            for (int i =0; i<ballGoal.ballNumbers.length;i++) {
-                globalVariables.getGameVariables().ballDisplayStates[ballGoal.ballNumbers[i]]=false;
-                Log.d(TAG, "ball "+Integer.toString(ballGoal.ballNumbers[i])+" in goal");
-                //TODO score
-            }
+                } else if (sendClass.sendObjects[obj] instanceof Globals.SendVariables.SendBallGoal) {
+                    //Log.d(TAG, "ballgoal received");
+                    Globals.SendVariables.SendBallGoal ballGoal = (Globals.SendVariables.SendBallGoal) sendClass.sendObjects[obj];
 
-
-
-        } else if(object instanceof Globals.SendVariables.SendBallKinetics) {
-            //Log.d(TAG, "ballkinetics received");
-            Globals.SendVariables.SendBallKinetics ballKinetics=(Globals.SendVariables.SendBallKinetics)object;
-            float rotateRad=(2f*MathUtils.PI/globalVariables.getSettingsVariables().numberOfPlayers*(ballKinetics.myPlayerNumber-globalVariables.getSettingsVariables().myPlayerNumber));
-
-
-            //Log.d(TAG, "ball "+Integer.toString(ballNumber)+" updated to x "+Float.toString(ballPosition.x));
-            Log.d(TAG, "ball kinetics 0 x "+ ballKinetics.ballPositions[0].x +" y "+ballKinetics.ballPositions[0].y);
-            for (int i =0; i<ballKinetics.ballNumbers.length;i++) {
-                globalVariables.getGameVariables().ballsPlayerScreens[ballKinetics.ballNumbers[i]]=ballKinetics.ballPlayerFields[i];
-                globalVariables.getGameVariables().ballsPositions[ballKinetics.ballNumbers[i]]=globalVariables.getGameVariables().upScaleVector(ballKinetics.ballPositions[i]).rotateRad(rotateRad);
-                globalVariables.getGameVariables().ballsVelocities[ballKinetics.ballNumbers[i]]=globalVariables.getGameVariables().upScaleVector(ballKinetics.ballVelocities[i]).rotateRad(rotateRad);
-            }
+                    //Log.d(TAG, "ball "+Integer.toString(ballNumber)+" updated to x "+Float.toString(ballPosition.x));
+                    globalVariables.getGameVariables().playerScores[ballGoal.myPlayerNumber] = ballGoal.playerScores[ballGoal.myPlayerNumber];
+                    for (int i = 0; i < ballGoal.ballNumbers.length; i++) {
+                        globalVariables.getGameVariables().updateBallStates[ballGoal.ballNumbers[i]]=true;
+                        globalVariables.getGameVariables().ballDisplayStates[ballGoal.ballNumbers[i]] = false;
+                        //Log.d(TAG, "ball "+Integer.toString(ballGoal.ballNumbers[i])+" in goal");
+                        //TODO score
+                    }
 
 
-
-        } else if(object instanceof Globals.SendVariables.SendBat) {
-            Globals.SendVariables.SendBat bat=(Globals.SendVariables.SendBat)object;
-            float rotateRad=(2f*MathUtils.PI/globalVariables.getSettingsVariables().numberOfPlayers*(bat.myPlayerNumber-globalVariables.getSettingsVariables().myPlayerNumber));
-
-            //Log.d(TAG,"received Bat at x " + globalVariables.getGameVariables().batPositions[bat.batPlayerField].x + " y " + globalVariables.getGameVariables().batPositions[bat.batPlayerField].y);
-
-            globalVariables.getGameVariables().batPositions[bat.batPlayerField]=globalVariables.getGameVariables().upScaleVector(bat.batPosition).rotateRad(rotateRad);
-            //globalVariables.getGameVariables().batVelocities[bat.batPlayerField]=bat.batVelocity.cpy().scl(-1f);
-            globalVariables.getGameVariables().batOrientations[bat.batPlayerField]=bat.batOrientation+rotateRad;
+                }else if(sendClass.sendObjects[obj] instanceof Globals.SendVariables.SendBallKinetics) {
+                    //Log.d(TAG, "ballkinetics received");
+                    //TODO investigate nullpointer exception in udp
+                    try {
+                        Globals.SendVariables.SendBallKinetics ballKinetics=(Globals.SendVariables.SendBallKinetics)sendClass.sendObjects[obj];
+                        float rotateRad=(2f*MathUtils.PI/globalVariables.getSettingsVariables().numberOfPlayers*(ballKinetics.myPlayerNumber-globalVariables.getSettingsVariables().myPlayerNumber));
 
 
-        } else if(object instanceof Globals.SendVariables.SendScore) {
-            Log.d(TAG,"received Score");
-            Globals.SendVariables.SendScore score=(Globals.SendVariables.SendScore)object;
+                        //Log.d(TAG, "ball "+Integer.toString(ballNumber)+" updated to x "+Float.toString(ballPosition.x));
+                        //Log.d(TAG, "ball kinetics 0 x "+ ballKinetics.ballPositions[0].x +" y "+ballKinetics.ballPositions[0].y);
+                        for (int i =0; i<ballKinetics.ballNumbers.length;i++) {
+                            globalVariables.getGameVariables().updateBallStates[ballKinetics.ballNumbers[i]]=true;
+                            globalVariables.getGameVariables().ballsPlayerScreens[ballKinetics.ballNumbers[i]]=ballKinetics.ballPlayerFields[i];
+                            globalVariables.getGameVariables().ballsPositions[ballKinetics.ballNumbers[i]]=globalVariables.getGameVariables().upScaleVector(ballKinetics.ballPositions[i]).rotateRad(rotateRad);
+                            globalVariables.getGameVariables().ballsVelocities[ballKinetics.ballNumbers[i]]=globalVariables.getGameVariables().upScaleVector(ballKinetics.ballVelocities[i]).rotateRad(rotateRad);
+                        }
+                    } catch (NullPointerException e) {
+                        e.printStackTrace();
+                    }
 
 
 
-        } else if(object instanceof Globals.SendVariables.SendSettings) {
-            Log.d(TAG,"received settings");
-            Globals.SendVariables.SendSettings settings=(Globals.SendVariables.SendSettings)object;
+                } else if(sendClass.sendObjects[obj] instanceof Globals.SendVariables.SendBat) {
+                    //TODO investigate nullpointer exception in udp
+                    try {
+                        Globals.SendVariables.SendBat bat=(Globals.SendVariables.SendBat)sendClass.sendObjects[obj];
+                        float rotateRad=(2f*MathUtils.PI/globalVariables.getSettingsVariables().numberOfPlayers*(bat.myPlayerNumber-globalVariables.getSettingsVariables().myPlayerNumber));
 
-            globalVariables.getSettingsVariables().myPlayerNumber=settings.yourPlayerNumber;
-            globalVariables.getSettingsVariables().numberOfPlayers=settings.numberOfPlayers;
-            globalVariables.getSettingsVariables().ipAdresses=new ArrayList<String>(Arrays.asList(settings.ipAdresses));
-            globalVariables.getSettingsVariables().playerNames=new ArrayList<String>(Arrays.asList(settings.playerNames));
+                        //Log.d(TAG,"received Bat at x " + globalVariables.getGameVariables().batPositions[bat.batPlayerField].x + " y " + globalVariables.getGameVariables().batPositions[bat.batPlayerField].y);
 
-            Log.d(TAG, "settings yourPlayerNumber: "+settings.yourPlayerNumber);
-            Log.d(TAG, "myPlayerNumber: "+globalVariables.getSettingsVariables().myPlayerNumber);
+                        globalVariables.getGameVariables().batPositions[bat.batPlayerField]=globalVariables.getGameVariables().upScaleVector(bat.batPosition).rotateRad(rotateRad);
+                        //globalVariables.getGameVariables().batVelocities[bat.batPlayerField]=bat.batVelocity.cpy().scl(-1f);
+                        globalVariables.getGameVariables().batOrientations[bat.batPlayerField]=bat.batOrientation+rotateRad;
+                    } catch (NullPointerException e) {
+                        e.printStackTrace();
+                    }
 
-            for(int i=0; i<globalVariables.getSettingsVariables().ipAdresses.size();i++) {
-                Log.d(TAG,"received ip adresses "+globalVariables.getSettingsVariables().ipAdresses.get(i));
-            }
 
-            //globalVariables.getSettingsVariables().playerNames=settings.playerNames;
+                } else if(sendClass.sendObjects[obj] instanceof Globals.SendVariables.SendScore) {
+                    Log.d(TAG,"received Score");
+                    Globals.SendVariables.SendScore score=(Globals.SendVariables.SendScore)sendClass.sendObjects[obj];
 
-            globalVariables.getGameVariables().numberOfBalls=settings.ballsPositions.length;
-            globalVariables.getSettingsVariables().gameMode=settings.gameMode;
-            globalVariables.getGameVariables().gravityState=settings.gravityState;
-            globalVariables.getGameVariables().attractionState=settings.attractionState;
 
-            globalVariables.getGameVariables().setBalls(false);
-            globalVariables.getGameVariables().setBats(globalVariables.getSettingsVariables().numberOfPlayers);
 
-            float rotateRad=(-2f*MathUtils.PI/globalVariables.getSettingsVariables().numberOfPlayers*globalVariables.getSettingsVariables().myPlayerNumber);
+                } else if(sendClass.sendObjects[obj] instanceof Globals.SendVariables.SendSettings) {
+                    Log.d(TAG,"received settings");
+                    Globals.SendVariables.SendSettings settings=(Globals.SendVariables.SendSettings)sendClass.sendObjects[obj];
 
-            for (int i=0; i<settings.ballsPositions.length;i++) {
-                globalVariables.getGameVariables().ballsPositions[i]=globalVariables.getGameVariables().upScaleVector(settings.ballsPositions[i]).rotateRad(rotateRad);
-                globalVariables.getGameVariables().ballsVelocities[i]=globalVariables.getGameVariables().upScaleVector(settings.ballsVelocities[i]).rotateRad(rotateRad);
-                //globalVariables.getGameVariables().ballsPlayerScreens[i]=0;
-                globalVariables.getGameVariables().ballsSizes[i]=settings.ballsSizes[i];
-                globalVariables.getGameVariables().ballDisplayStates[i]=settings.ballsDisplayStates[i];
-                //Log.d(TAG,"x "+Float.toString(globalVariables.getGameVariables().ballsPositions[i].x)+", y "+Float.toString(globalVariables.getGameVariables().ballsPositions[i].y));
+                    globalVariables.getSettingsVariables().myPlayerNumber=settings.yourPlayerNumber;
+                    globalVariables.getSettingsVariables().numberOfPlayers=settings.numberOfPlayers;
+                    globalVariables.getSettingsVariables().ipAdresses=new ArrayList<String>(Arrays.asList(settings.ipAdresses));
+                    globalVariables.getSettingsVariables().playerNames=new ArrayList<String>(Arrays.asList(settings.playerNames));
+
+                    Log.d(TAG, "settings yourPlayerNumber: "+settings.yourPlayerNumber);
+                    Log.d(TAG, "myPlayerNumber: "+globalVariables.getSettingsVariables().myPlayerNumber);
+
+                    for(int i=0; i<globalVariables.getSettingsVariables().ipAdresses.size();i++) {
+                        Log.d(TAG,"received ip adresses "+globalVariables.getSettingsVariables().ipAdresses.get(i));
+                    }
+
+                    //globalVariables.getSettingsVariables().playerNames=settings.playerNames;
+
+                    globalVariables.getGameVariables().numberOfBalls=settings.ballsPositions.length;
+                    globalVariables.getSettingsVariables().gameMode=settings.gameMode;
+                    globalVariables.getGameVariables().gravityState=settings.gravityState;
+                    globalVariables.getGameVariables().attractionState=settings.attractionState;
+
+                    globalVariables.getGameVariables().setBalls(false);
+                    globalVariables.getGameVariables().setBats(globalVariables.getSettingsVariables().numberOfPlayers);
+
+                    float rotateRad=(-2f*MathUtils.PI/globalVariables.getSettingsVariables().numberOfPlayers*globalVariables.getSettingsVariables().myPlayerNumber);
+
+                    for (int i=0; i<settings.ballsPositions.length;i++) {
+                        globalVariables.getGameVariables().ballsPositions[i]=globalVariables.getGameVariables().upScaleVector(settings.ballsPositions[i]).rotateRad(rotateRad);
+                        globalVariables.getGameVariables().ballsVelocities[i]=globalVariables.getGameVariables().upScaleVector(settings.ballsVelocities[i]).rotateRad(rotateRad);
+                        //globalVariables.getGameVariables().ballsPlayerScreens[i]=0;
+                        globalVariables.getGameVariables().ballsSizes[i]=settings.ballsSizes[i];
+                        globalVariables.getGameVariables().ballDisplayStates[i]=settings.ballsDisplayStates[i];
+                        //Log.d(TAG,"x "+Float.toString(globalVariables.getGameVariables().ballsPositions[i].x)+", y "+Float.toString(globalVariables.getGameVariables().ballsPositions[i].y));
                 /*tempIpAdress=tempIpAdress.substring(1,tempIpAdress.length()).split(":")[0];
                 Log.e(TAG, "Connection: "+ tempIpAdress);*/
+                    }
+
+                    globalVariables.getSettingsVariables().discoveryClientThread.shutdownClient();
+
+                    Log.d(TAG, "Connection of discoveryClient ended");
+
+                    globalVariables.getSettingsVariables().startAllClientThreads();
+                    globalVariables.getSettingsVariables().setAllClientListeners(globalVariables.getClientListener());
+                    globalVariables.getSettingsVariables().connectAllClients();
+
+                    globalVariables.getSettingsVariables().setupConnectionState =2;
+
+                    IGlobals.SendVariables.SendConnectionState sendConnectionState=new IGlobals.SendVariables.SendConnectionState();
+                    sendConnectionState.myPlayerNumber=globalVariables.getSettingsVariables().myPlayerNumber;
+                    sendConnectionState.connectionState=2;
+                    globalVariables.getSettingsVariables().sendToAllClients(sendConnectionState,"tcp");
+
+                } else if(sendClass.sendObjects[obj] instanceof Globals.SendVariables.SendConnectionState) {
+                    Globals.SendVariables.SendConnectionState connectionState=(Globals.SendVariables.SendConnectionState)sendClass.sendObjects[obj];
+                    Log.d(TAG, "Connectionstate received from player "+connectionState.myPlayerNumber);
+                    globalVariables.getSettingsVariables().clientConnectionStates[connectionState.myPlayerNumber]=connectionState.connectionState;
+
+                } else if(sendClass.sendObjects[obj] instanceof Globals.SendVariables.SendConnectionRequest) {
+                    Globals.SendVariables.SendConnectionRequest connectionRequest=(Globals.SendVariables.SendConnectionRequest)sendClass.sendObjects[obj];
+
+                    String tempIpAdress=connection.getRemoteAddressTCP().toString();
+                    tempIpAdress=tempIpAdress.substring(1,tempIpAdress.length()).split(":")[0];
+                    Log.e(TAG, tempIpAdress+" connectionrequest of "+ connectionRequest.myPlayerName);
+
+
+                    globalVariables.getSettingsVariables().addDiscoveryIpToList(tempIpAdress);
+                    globalVariables.getSettingsVariables().addDiscoveryPlayerNameToList(connectionRequest.myPlayerName);
+                }
+
             }
 
-            globalVariables.getSettingsVariables().discoveryClientThread.shutdownClient();
 
-            Log.d(TAG, "Connection of discoveryClient ended");
-
-            globalVariables.getSettingsVariables().startAllClientThreads();
-            globalVariables.getSettingsVariables().setAllClientListeners(globalVariables.getClientListener());
-            globalVariables.getSettingsVariables().connectAllClients();
-
-            globalVariables.getSettingsVariables().setAllClientConnectionStates();
-
-
-            globalVariables.getSettingsVariables().setupConnectionState =2;
-
-            IGlobals.SendVariables.SendConnectionState sendConnectionState=new IGlobals.SendVariables.SendConnectionState();
-            sendConnectionState.myPlayerNumber=globalVariables.getSettingsVariables().myPlayerNumber;
-            sendConnectionState.connectionState=2;
-            globalVariables.getSettingsVariables().sendToAllClients(sendConnectionState,"tcp");
-
-        }else if(object instanceof Globals.SendVariables.SendConnectionState) {
-            Globals.SendVariables.SendConnectionState connectionState=(Globals.SendVariables.SendConnectionState)object;
-            Log.d(TAG, "Connectionstate received from player "+connectionState.myPlayerNumber);
-            globalVariables.getSettingsVariables().clientConnectionStates[connectionState.myPlayerNumber]=connectionState.connectionState;
-
-        } else if(object instanceof Globals.SendVariables.SendConnectionRequest) {
-            Globals.SendVariables.SendConnectionRequest connectionRequest=(Globals.SendVariables.SendConnectionRequest)object;
-
-            String tempIpAdress=connection.getRemoteAddressTCP().toString();
-            tempIpAdress=tempIpAdress.substring(1,tempIpAdress.length()).split(":")[0];
-            Log.e(TAG, tempIpAdress+" connectionrequest of "+ connectionRequest.myPlayerName);
-
-
-            globalVariables.getSettingsVariables().addDiscoveryIpToList(tempIpAdress);
-            globalVariables.getSettingsVariables().addDiscoveryPlayerNameToList(connectionRequest.myPlayerName);
         } else {
-            Log.d(TAG, "Some Package received.");
+            //Log.d(TAG, "Some Package received.");
         }
     }
 }

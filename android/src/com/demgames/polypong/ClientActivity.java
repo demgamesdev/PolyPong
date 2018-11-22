@@ -77,15 +77,8 @@ public class ClientActivity extends AppCompatActivity{
 
 
         globalVariables.setListeners(getApplicationContext());
-        globalVariables.getSettingsVariables().server.addListener(globalVariables.getServerListener());
-        //globalVariables.getSettingsVariables().discoveryClientThread.getClient().addListener(globalVariables.getClientListener());
-
-
-        try {
-            globalVariables.getSettingsVariables().server.bind(globalVariables.getSettingsVariables().tcpPort,globalVariables.getSettingsVariables().udpPort);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        globalVariables.getSettingsVariables().serverThread.getServer().addListener(globalVariables.getServerListener());
+        //globalVariables.getSettingsVariables().discoveryClientThread.getServer().addListener(globalVariables.getClientListener());
 
         //--------------------------------------------------
 
@@ -149,7 +142,7 @@ public class ClientActivity extends AppCompatActivity{
         if ((keyCode == KeyEvent.KEYCODE_BACK)) {
             Log.d(this.getClass().getName(), "back button pressed");
             Globals globalVariables = (Globals) getApplicationContext();
-            globalVariables.getSettingsVariables().server.stop();
+            globalVariables.getSettingsVariables().serverThread.shutdownServer();
             globalVariables.getSettingsVariables().discoveryClientThread.shutdownClient();
             globalVariables.getSettingsVariables().shutdownAllClients();
         }

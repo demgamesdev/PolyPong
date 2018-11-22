@@ -24,6 +24,7 @@ public interface IGlobals {
         public int[] ballsPlayerScreens;
         public float[] ballsSizes;
         public boolean[] ballDisplayStates;
+        public boolean[] updateBallStates;
 
         public float width, height;
         //TODO generalize to more players
@@ -53,6 +54,7 @@ public interface IGlobals {
             this.ballsPlayerScreens = new int[this.numberOfBalls];
             this.ballsSizes = new float[this.numberOfBalls];
             this.ballDisplayStates = new boolean[this.numberOfBalls];
+            this.updateBallStates = new boolean[this.numberOfBalls];
 
 
             if (randomPosition) {
@@ -62,6 +64,7 @@ public interface IGlobals {
                     this.ballsPlayerScreens[i] = 0;
                     this.ballsSizes[i] = rand.nextFloat();
                     this.ballDisplayStates[i]=true;
+                    this.updateBallStates[i]=false;
                 }
             }
         }
@@ -94,9 +97,7 @@ public interface IGlobals {
         public List<String> discoveryPlayerNames;
         public int[] clientConnectionStates;
 
-        public Server server;
-
-        public Thread serverThread;
+        public ServerThread serverThread;
         public ClientThread[] clientThreads;
         public ClientThread discoveryClientThread;
 
@@ -116,24 +117,27 @@ public interface IGlobals {
             this.resetArrayLists();
 
             this.updateListViewState=false;
+
+            //TODO adapt number
+            this.clientConnectionStates=new int[10];
         }
 
         public void startServerThread() {
-            this.server=new Server(4096,4096);
-            this.serverThread = new Thread(this.server);
+            this.serverThread = new ServerThread("serverThread",this.tcpPort,this.udpPort);
+            this.registerKryoClasses(this.serverThread.getServer().getKryo());
             this.serverThread.start();
-            this.registerKryoClasses(this.server.getKryo());
+            this.serverThread.bind();
 
         }
 
         public void startDiscoveryClientThread() {
             this.discoveryClientThread = new ClientThread("discoveryClientThread",this.tcpPort,this.udpPort);
             this.registerKryoClasses(this.discoveryClientThread.getClient().getKryo());
+            this.discoveryClientThread.start();
         }
 
         public void connectDiscoveryClient(String ipAdress_) {
-            this.discoveryClientThread.setIpAdress(ipAdress_);
-            this.discoveryClientThread.start();
+            this.discoveryClientThread.connect(ipAdress_);
         }
 
         public void startAllClientThreads() {
@@ -142,7 +146,7 @@ public interface IGlobals {
                 if(i!=this.myPlayerNumber) {
                     this.clientThreads[i] = new ClientThread("clientThread "+i,this.tcpPort,this.udpPort);
                     this.registerKryoClasses(this.clientThreads[i].getClient().getKryo());
-
+                    this.clientThreads[i].start();
                 }
             }
         }
@@ -159,8 +163,7 @@ public interface IGlobals {
         public void connectAllClients() {
             for(int i=0;i<this.numberOfPlayers;i++) {
                 if(i!=this.myPlayerNumber) {
-                    this.clientThreads[i].setIpAdress(this.ipAdresses.get(i));
-                    this.clientThreads[i].start();
+                    this.clientThreads[i].connect(this.ipAdresses.get(i));
                     //this.clientThreads[i].start();
 
                 }
@@ -185,14 +188,10 @@ public interface IGlobals {
             }
         }
 
-        public void setAllClientConnectionStates() {
-            this.clientConnectionStates=new int[this.numberOfPlayers];
-            for(int i=0;i<this.numberOfPlayers;i++) {
-                this.clientConnectionStates[i]=1;
-            }
-        }
-
         public boolean checkAllClientConnectionStates(int state) {
+            if(this.clientThreads==null){
+                return(false);
+            }
             for(int i=0;i<this.numberOfPlayers;i++) {
                 if(!(this.clientConnectionStates[i]==state)) {
                     com.esotericsoftware.minlog.Log.debug("client"+i+" not in state "+state);
@@ -217,8 +216,10 @@ public interface IGlobals {
             myKryo.register(Connection.class);
             myKryo.register(Connection[].class);
             myKryo.register(Object.class);
+            myKryo.register(Object[].class);
             myKryo.register(com.badlogic.gdx.math.Vector2.class);
             myKryo.register(com.badlogic.gdx.math.Vector2[].class);
+            myKryo.register(SendVariables.SendClass.class);
             myKryo.register(SendVariables.SendSettings.class);
             myKryo.register(SendVariables.SendConnectionState.class);
             myKryo.register(SendVariables.SendConnectionRequest.class);
@@ -256,6 +257,57 @@ public interface IGlobals {
             this.discoveryIsChecked =new ArrayList<Boolean>(Arrays.asList(new Boolean[]{}));
         }
 
+        public class ServerThread extends Thread {
+            private Server server;
+            private String ipAdress;
+            private int tcpPort, udpPort, udpPendingSize;
+            private boolean isRunnning;
+            private boolean tcpPending;
+            private boolean udpPending;
+            private boolean bindPending;
+
+            private String threadName;
+
+            public ServerThread(String threadName_, int tcpPort_, int udpPort_) {
+                this.threadName=threadName_;
+                this.server = new Server(4096,4096);
+                this.server.start();
+
+                this.tcpPort = tcpPort_;
+                this.udpPort = udpPort_;
+                this.isRunnning=true;
+                this.bindPending=false;
+
+            }
+
+            public void run() {
+                while (this.isRunnning) {
+                    if(this.bindPending) {
+                        try {
+                            this.server.bind(this.tcpPort, this.udpPort);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        this.bindPending = false;
+                    }
+                }
+                this.server.stop();
+
+            }
+
+            public void bind() {
+                this.bindPending=true;
+            }
+
+            public void shutdownServer() {
+                this.isRunnning=false;
+            }
+
+            public Server getServer() {
+                return(this.server);
+            }
+        }
+
         public class ClientThread extends Thread {
             private Client client;
             private String ipAdress;
@@ -263,10 +315,14 @@ public interface IGlobals {
             private boolean isRunnning;
             private boolean tcpPending;
             private boolean udpPending;
+            private boolean connectionPending;
             private ArrayList<Object> tcpPendingObjects;
-            private ArrayList<Object> tempTcpPendingObjects;
             private ArrayList<Object> udpPendingObjects;
-            private ArrayList<Object> tempUdpPendingObjects;
+            private SendVariables.SendClass tcpSendClass;
+            private SendVariables.SendClass udpSendClass;
+            //private ArrayList<Object> udpPendingObjects;
+            //private ArrayList<Object> tempUdpPendingObjects;
+            private Object udpPendingObject;
 
             private String threadName;
 
@@ -280,62 +336,81 @@ public interface IGlobals {
                 this.isRunnning=true;
                 this.tcpPending=false;
                 this.udpPending=false;
+                this.connectionPending=false;
                 this.udpPendingSize=2;
 
                 this.tcpPendingObjects = new ArrayList<Object>(Arrays.asList(new Object[] {}));
                 this.udpPendingObjects = new ArrayList<Object>(Arrays.asList(new Object[] {}));
+                this.tcpSendClass = new SendVariables.SendClass();
+                this.udpSendClass = new SendVariables.SendClass();
+
+                //this.udpPendingObjects = new ArrayList<Object>(Arrays.asList(new Object[] {}));
 
             }
 
             public void run() {
-                try {
-                    this.client.connect(5000, this.ipAdress,this.tcpPort, this.udpPort);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
                 while (this.isRunnning) {
-                    if(this.tcpPending) {
-                        this.tempTcpPendingObjects = new ArrayList<Object>(this.tcpPendingObjects);
-                        for (int i = 0; i < this.tempTcpPendingObjects.size(); i++) {
-                            this.client.sendTCP(this.tempTcpPendingObjects.get(i));
+                    if(this.connectionPending) {
+                        try {
+                            this.client.connect(5000, this.ipAdress,this.tcpPort, this.udpPort);
+                        } catch (IOException e) {
+                            e.printStackTrace();
                         }
-                        this.tcpPendingObjects = new ArrayList<Object>(Arrays.asList(new Object[]{}));
+                        this.connectionPending=false;
+                    }
+                    if(this.tcpPending) {
+                        try {
+                            this.tcpSendClass.sendObjects = this.tcpPendingObjects.toArray(new Object[0]);
+                            this.tcpPendingObjects = new ArrayList<Object>(Arrays.asList(new Object[]{}));
+                            this.client.sendTCP(this.tcpSendClass);
+                        } catch (NullPointerException e) {
+                            e.printStackTrace();
+                        }
                         this.tcpPending=false;
                     }
 
                     if(this.udpPending) {
-                        this.tempUdpPendingObjects=new ArrayList<Object>(this.udpPendingObjects);
-                        for(int i=0; i<this.tempUdpPendingObjects.size();i++) {
-                            this.client.sendUDP(this.tempUdpPendingObjects.get(i));
+                        try {
+                            this.udpSendClass.sendObjects = this.udpPendingObjects.toArray(new Object[0]);
+                            this.udpPendingObjects = new ArrayList<Object>(Arrays.asList(new Object[]{}));
+                            this.client.sendUDP(this.udpSendClass);
+                        } catch (NullPointerException e) {
+                            e.printStackTrace();
                         }
-                        this.udpPendingObjects = new ArrayList<Object>(Arrays.asList(new Object[] {}));
                         this.udpPending=false;
                     }
                 }
+                this.client.stop();
+
+            }
+
+            void connect(String ipAdress_) {
+                this.ipAdress=ipAdress_;
+                this.connectionPending=true;
 
             }
 
             public void sendObject(Object object, String protocol) {
                 if(protocol.equals("tcp")) {
-                    this.tcpPendingObjects.add(object);
+                    try {
+                        this.tcpPendingObjects.add(object);
+                    } catch (NullPointerException e) {
+                        e.printStackTrace();
+                    }
                     this.tcpPending=true;
 
                 } else if(protocol.equals("udp")) {
-                    this.udpPendingObjects.add(object);
-                    if(this.udpPendingObjects.size() > this.udpPendingSize) {
-                        this.udpPendingObjects.remove(0);
+                    try {
+                        this.udpPendingObjects.add(object);
+                    } catch (NullPointerException e) {
+                        e.printStackTrace();
                     }
                     this.udpPending=true;
                 }
             }
 
-            public void setIpAdress(String ipAdress_) {
-                this.ipAdress=ipAdress_;
-            }
-
             public void shutdownClient() {
                 this.isRunnning=false;
-                this.client.stop();
             }
 
             public Client getClient() {
@@ -345,6 +420,10 @@ public interface IGlobals {
     }
 
     class SendVariables {
+        static public class SendClass {
+            public Object[] sendObjects;
+        }
+
         static public class SendSettings {
             public int numberOfPlayers;
             public int yourPlayerNumber;
@@ -372,7 +451,7 @@ public interface IGlobals {
         static public class SendBallKinetics {
             public int myPlayerNumber;
             public Integer[] ballNumbers;
-            public int[] ballPlayerFields;
+            public Integer[] ballPlayerFields;
             public Vector2[] ballPositions;
             public Vector2[] ballVelocities;
         }
@@ -388,7 +467,7 @@ public interface IGlobals {
         static public class SendBallScreenChange {
             public int myPlayerNumber;
             public Integer[] ballNumbers;
-            public int[] ballPlayerFields;
+            public Integer[] ballPlayerFields;
             public Vector2[] ballPositions;
             public Vector2[] ballVelocities;
         }
@@ -403,23 +482,6 @@ public interface IGlobals {
         static public class SendScore {
             public int myScore;
             public int otherScore;
-        }
-    }
-
-    class BoundedArrayList<T> extends ArrayList<T> {
-        private int maxSize;
-        public BoundedArrayList(int size)
-        {
-            this.maxSize = size;
-        }
-
-        public void addLast(T e)
-        {
-            this.add(e);
-            if(this.size() > this.maxSize) {
-                this.remove(0);
-            }
-
         }
     }
 
