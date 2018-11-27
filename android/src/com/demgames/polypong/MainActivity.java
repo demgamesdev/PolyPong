@@ -121,6 +121,7 @@ public class MainActivity extends AppCompatActivity {
         }
         else{
             globalVariables.getSettingsVariables().myPlayerName= myPlayerName;
+
             writeName();
 
             Log.d(TAG, "myPlayerName: "+ globalVariables.getSettingsVariables().myPlayerName);

@@ -84,10 +84,14 @@ public class ServerActivity extends AppCompatActivity{
             @Override
             public void onClick(View v) {
                 globalVariables.getSettingsVariables().ipAdresses= new ArrayList<String>(Arrays.asList(new String[] {}));
+                globalVariables.getSettingsVariables().playerNames= new ArrayList<String>(Arrays.asList(new String[] {}));
                 globalVariables.getSettingsVariables().ipAdresses.add(globalVariables.getSettingsVariables().myIpAdress);
+                globalVariables.getSettingsVariables().playerNames.add(globalVariables.getSettingsVariables().myPlayerName);
+
                 for(int i=0; i<globalVariables.getSettingsVariables().discoveryIpAdresses.size();i++) {
                     if(globalVariables.getSettingsVariables().discoveryIsChecked.get(i)){
                         globalVariables.getSettingsVariables().ipAdresses.add(globalVariables.getSettingsVariables().discoveryIpAdresses.get(i));
+                        globalVariables.getSettingsVariables().playerNames.add(globalVariables.getSettingsVariables().discoveryPlayerNames.get(i));
                     }
                 }
 
@@ -108,10 +112,6 @@ public class ServerActivity extends AppCompatActivity{
                     }
                     globalVariables.getSettingsVariables().connectAllClients();
                     Log.d(TAG, "Connected to all clients.");
-
-                    globalVariables.getSettingsVariables().playerNames.add("test1");
-                    globalVariables.getSettingsVariables().playerNames.add("test2");
-
 
                     Vector2[] tempPositions = new Vector2[globalVariables.getGameVariables().numberOfBalls];
                     Vector2[] tempVelocities = new Vector2[globalVariables.getGameVariables().numberOfBalls];

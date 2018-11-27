@@ -46,14 +46,16 @@ public class ServerListener extends Listener{
 
                     float rotateRad = (2f * MathUtils.PI / globalVariables.getSettingsVariables().numberOfPlayers * (ballScreenChange.myPlayerNumber - globalVariables.getSettingsVariables().myPlayerNumber));
                     //Log.d(TAG, "degrees " + rotateRad/MathUtils.PI*180);
-                    for (int i = 0; i < ballScreenChange.ballNumbers.length; i++) {
-                        //Log.d(TAG, "fieldchange of ball " + ballScreenChange.ballNumbers[i] + " received");
-                        globalVariables.getGameVariables().updateBallStates[ballScreenChange.ballNumbers[i]]=true;
-                        globalVariables.getGameVariables().ballsPlayerScreens[ballScreenChange.ballNumbers[i]] = ballScreenChange.ballPlayerFields[i];
-                        globalVariables.getGameVariables().ballsPositions[ballScreenChange.ballNumbers[i]] = globalVariables.getGameVariables().upScaleVector(ballScreenChange.ballPositions[i]).rotateRad(rotateRad);
-                        globalVariables.getGameVariables().ballsVelocities[ballScreenChange.ballNumbers[i]] = globalVariables.getGameVariables().upScaleVector(ballScreenChange.ballVelocities[i]).rotateRad(rotateRad);
+                    synchronized (globalVariables.getGameVariables()) {
+                        for (int i = 0; i < ballScreenChange.ballNumbers.length; i++) {
+                            Log.d(TAG, "fieldchange of ball " + ballScreenChange.ballNumbers[i] + " received");
+                            globalVariables.getGameVariables().updateBallStates[ballScreenChange.ballNumbers[i]]=true;
+                            globalVariables.getGameVariables().ballsPlayerScreens[ballScreenChange.ballNumbers[i]] = ballScreenChange.ballPlayerFields[i];
+                            globalVariables.getGameVariables().ballsPositions[ballScreenChange.ballNumbers[i]] = globalVariables.getGameVariables().upScaleVector(ballScreenChange.ballPositions[i]).rotateRad(rotateRad);
+                            globalVariables.getGameVariables().ballsVelocities[ballScreenChange.ballNumbers[i]] = globalVariables.getGameVariables().upScaleVector(ballScreenChange.ballVelocities[i]).rotateRad(rotateRad);
                         /*Log.d(TAG, "ballposition x " + globalVariables.getGameVariables().upScaleVector(ballScreenChange.ballPositions[i]).rotateRad(rotateRad).x +
                                 " y " + globalVariables.getGameVariables().upScaleVector(ballScreenChange.ballPositions[i]).rotateRad(rotateRad).y);*/
+                        }
                     }
 
                     //Log.d(TAG, "ball "+Integer.toString(ballNumber)+" screenchange");

@@ -10,6 +10,7 @@ import com.esotericsoftware.kryonet.Server;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -242,10 +243,7 @@ public interface IGlobals {
         }
 
         public boolean addDiscoveryPlayerNameToList(String playerName){
-            if(!this.discoveryPlayerNames.contains(playerName)){
-                this.discoveryPlayerNames.add(playerName);
-                return(true);
-            }
+            this.discoveryPlayerNames.add(playerName);
             return(false);
         }
 
@@ -270,7 +268,7 @@ public interface IGlobals {
 
             public ServerThread(String threadName_, int tcpPort_, int udpPort_) {
                 this.threadName=threadName_;
-                this.server = new Server(4096,4096);
+                this.server = new Server(10240,10240);
                 this.server.start();
 
                 this.tcpPort = tcpPort_;
@@ -316,19 +314,20 @@ public interface IGlobals {
             private boolean tcpPending;
             private boolean udpPending;
             private boolean connectionPending;
-            private ArrayList<Object> tcpPendingObjects;
-            private ArrayList<Object> udpPendingObjects;
+            private List<Object> tcpPendingObjects;
+            private Object udpPendingObject;
             private SendVariables.SendClass tcpSendClass;
             private SendVariables.SendClass udpSendClass;
+            private long referenceTime;
+            private int updateTime;
             //private ArrayList<Object> udpPendingObjects;
             //private ArrayList<Object> tempUdpPendingObjects;
-            private Object udpPendingObject;
 
             private String threadName;
 
             public ClientThread(String threadName_, int tcpPort_, int udpPort_) {
                 this.threadName=threadName_;
-                this.client = new Client(4096,4096);
+                this.client = new Client(10240,10240);
                 this.client.start();
 
                 this.tcpPort = tcpPort_;
@@ -339,10 +338,14 @@ public interface IGlobals {
                 this.connectionPending=false;
                 this.udpPendingSize=2;
 
-                this.tcpPendingObjects = new ArrayList<Object>(Arrays.asList(new Object[] {}));
-                this.udpPendingObjects = new ArrayList<Object>(Arrays.asList(new Object[] {}));
+                this.tcpPendingObjects = Collections.synchronizedList(new ArrayList());
+                this.udpPendingObject = new Object();
                 this.tcpSendClass = new SendVariables.SendClass();
                 this.udpSendClass = new SendVariables.SendClass();
+
+
+                this.updateTime = 0;
+                this.referenceTime = System.currentTimeMillis();
 
                 //this.udpPendingObjects = new ArrayList<Object>(Arrays.asList(new Object[] {}));
 
@@ -350,35 +353,40 @@ public interface IGlobals {
 
             public void run() {
                 while (this.isRunnning) {
-                    if(this.connectionPending) {
-                        try {
-                            this.client.connect(5000, this.ipAdress,this.tcpPort, this.udpPort);
-                        } catch (IOException e) {
-                            e.printStackTrace();
+                    if(System.currentTimeMillis() - this.referenceTime > this.updateTime) {
+                        if (this.connectionPending) {
+                            try {
+                                this.client.connect(5000, this.ipAdress, this.tcpPort, this.udpPort);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                            this.connectionPending = false;
                         }
-                        this.connectionPending=false;
-                    }
-                    if(this.tcpPending) {
-                        try {
-                            this.tcpSendClass.sendObjects = this.tcpPendingObjects.toArray(new Object[0]);
-                            this.tcpPendingObjects = new ArrayList<Object>(Arrays.asList(new Object[]{}));
-                            this.client.sendTCP(this.tcpSendClass);
-                        } catch (NullPointerException e) {
-                            e.printStackTrace();
+                        if (this.tcpPending) {
+                            synchronized (this.tcpPendingObjects) {
+                                this.tcpSendClass.sendObjects = this.tcpPendingObjects.toArray(new Object[0]);
+                                this.tcpPendingObjects = Collections.synchronizedList(new ArrayList());
+                            }
+                            try {
+                                this.client.sendTCP(this.tcpSendClass);
+                            } catch (NullPointerException e) {
+                                e.printStackTrace();
+                            }
+                            this.tcpPending = false;
                         }
-                        this.tcpPending=false;
+
+                        if (this.udpPending) {
+                            try {
+                                this.udpSendClass = (SendVariables.SendClass) this.udpPendingObject;
+                                this.client.sendUDP(this.udpSendClass);
+                            } catch (NullPointerException e) {
+                                e.printStackTrace();
+                            }
+                            this.udpPending = false;
+                        }
+                        this.referenceTime = System.currentTimeMillis();
                     }
 
-                    if(this.udpPending) {
-                        try {
-                            this.udpSendClass.sendObjects = this.udpPendingObjects.toArray(new Object[0]);
-                            this.udpPendingObjects = new ArrayList<Object>(Arrays.asList(new Object[]{}));
-                            this.client.sendUDP(this.udpSendClass);
-                        } catch (NullPointerException e) {
-                            e.printStackTrace();
-                        }
-                        this.udpPending=false;
-                    }
                 }
                 this.client.stop();
 
@@ -393,7 +401,9 @@ public interface IGlobals {
             public void sendObject(Object object, String protocol) {
                 if(protocol.equals("tcp")) {
                     try {
-                        this.tcpPendingObjects.add(object);
+                        synchronized (this.tcpPendingObjects) {
+                            this.tcpPendingObjects.add(object);
+                        }
                     } catch (NullPointerException e) {
                         e.printStackTrace();
                     }
@@ -401,7 +411,7 @@ public interface IGlobals {
 
                 } else if(protocol.equals("udp")) {
                     try {
-                        this.udpPendingObjects.add(object);
+                        this.udpPendingObject = object;
                     } catch (NullPointerException e) {
                         e.printStackTrace();
                     }
