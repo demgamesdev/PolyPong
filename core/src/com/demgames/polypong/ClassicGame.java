@@ -205,8 +205,8 @@ public class ClassicGame extends ApplicationAdapter{
             }
         });
 
-        globalVariables.getSettingsVariables().clientConnectionStates[globalVariables.getSettingsVariables().myPlayerNumber] =4;
-        sendConnectionStateFunction();
+
+        //sendConnectionStateFunction();
     }
 
     //executed when closed i think
@@ -221,66 +221,81 @@ public class ClassicGame extends ApplicationAdapter{
 
     @Override
     public void render() {
+        //Gdx.app.debug("ClassicGame", " has focus " + globalVariables.getSettingsVariables().hasFocus);
         Gdx.app.postRunnable(new Runnable() {
             @Override
             public void run() {
-                drawScreen();
-                touches.checkTouches();
-                touches.checkZoomGesture();
-                Gdx.app.debug("ClassicGame", " here 1");
-                //Gdx.app.debug("ClassicGame", " here");
 
-                if(globalVariables.getSettingsVariables().checkAllClientConnectionStates(4) && true) {
-                    //touch input checking
+            }
+        });
+        drawScreen();
+        touches.checkTouches();
+        touches.checkZoomGesture();
+        Gdx.app.debug("ClassicGame", " here 1");
 
-                    //do physics calculations of balls
-                    for (Ball ball : balls) {
-                        ball.updatefromGlobals();
-                        ball.doPhysics();
-                        //Gdx.app.debug("ClassicGame", "ball player field " + globalVariables.getGameVariables().ballsPlayerScreens[ball.ballNumber]);
+
+
+        if(globalVariables.getSettingsVariables().checkAllClientConnectionStates(4)) {
+            //touch input checking
+
+            //do physics calculations of balls
+            for (Ball ball : balls) {
+                ball.updatefromGlobals();
+                ball.doPhysics();
+                //Gdx.app.debug("ClassicGame", "ball player field " + globalVariables.getGameVariables().ballsPlayerScreens[ball.ballNumber]);
                 /*Gdx.app.debug("ClassicGame", "ball position " + globalVariables.getGameVariables().ballsPositions[ball.ballNumber].x *PIXELS_TO_METERS
                         + " y " + globalVariables.getGameVariables().ballsPositions[ball.ballNumber].y *PIXELS_TO_METERS);*/
-                    }
+            }
 
-                    //do physics calculations of bats
-                    for (Bat bat : bats) {
-                        bat.doPhysics();
-                    }
+            //do physics calculations of bats
+            for (Bat bat : bats) {
+                bat.doPhysics();
+            }
 
-                    world.step(1 / 60f, 6, 4);
+            world.step(1 / 60f, 6, 4);
 
-                    for (Ball ball : balls) {
-                        ball.updateToGlobals();
-                    }
-                    //step world one timestep further, ideally for 60fps, maybe needs to be adapted variably for same speeds etc
-                    sendFrequentFunction();
-                    sendFieldChangeFunction();
-                    sendGoalFunction();
-                    //sendBatFunction(bats[globalVariables.getSettingsVariables().myPlayerNumber]);
-                    //sendBallFunction();
+            for (Ball ball : balls) {
+                ball.updateToGlobals();
+            }
+            //step world one timestep further, ideally for 60fps, maybe needs to be adapted variably for same speeds etc
+            sendFrequentFunction();
+            sendFieldChangeFunction();
+            sendGoalFunction();
+            //sendBatFunction(bats[globalVariables.getSettingsVariables().myPlayerNumber]);
+            //sendBallFunction();
 
 
 
             /*Gdx.app.debug("ClassicGame", "bat position at " + bats[globalVariables.getSettingsVariables().myPlayerNumber].batBody.getPosition().x/width *PIXELS_TO_METERS
                     + " y " + bats[globalVariables.getSettingsVariables().myPlayerNumber].batBody.getPosition().y/height *PIXELS_TO_METERS);*/
-                    //send everything
+            //send everything
 
-                    sendBallKineticsAL = new ArrayList<Integer>(Arrays.asList(new Integer[]{}));
-                    sendFieldChangeBallsAL = new ArrayList<Integer>(Arrays.asList(new Integer[]{}));
-                    sendFieldChangePlayersAL =new ArrayList<Integer>(Arrays.asList(new Integer[]{}));
-                    sendGoalAL = new ArrayList<Integer>(Arrays.asList(new Integer[]{}));
+            sendBallKineticsAL = new ArrayList<Integer>(Arrays.asList(new Integer[]{}));
+            sendFieldChangeBallsAL = new ArrayList<Integer>(Arrays.asList(new Integer[]{}));
+            sendFieldChangePlayersAL =new ArrayList<Integer>(Arrays.asList(new Integer[]{}));
+            sendGoalAL = new ArrayList<Integer>(Arrays.asList(new Integer[]{}));
 
-                } else {
-                    Gdx.app.debug("ClassicGame", " not all players ready");
-                    for(int i=0; i<globalVariables.getSettingsVariables().numberOfPlayers;i++){
-                        Gdx.app.debug("ClassicGame", " state of player "+i + " : " + globalVariables.getSettingsVariables().clientConnectionStates[i]);
-                    }
+        } else {
+            String message = " Waiting for:\n";
+            for(int i=0; i<globalVariables.getSettingsVariables().numberOfPlayers;i++) {
+                if(globalVariables.getSettingsVariables().clientConnectionStates[i]!=4) {
+                    message += "          "+globalVariables.getSettingsVariables().playerNames.get(i);
                 }
-                touches.updateLasts();
-                frameNumber++;
-                Gdx.app.debug("ClassicGame", " here 2");
             }
-        });
+
+            spriteBatch.begin();
+            font.draw(spriteBatch,message, -width/4, -height*0.2f);
+
+            spriteBatch.end();
+
+            Gdx.app.debug("ClassicGame", " not all players ready");
+            for(int i=0; i<globalVariables.getSettingsVariables().numberOfPlayers;i++){
+                Gdx.app.debug("ClassicGame", " state of player "+i + " : " + globalVariables.getSettingsVariables().clientConnectionStates[i]);
+            }
+        }
+        touches.updateLasts();
+        frameNumber++;
+        Gdx.app.debug("ClassicGame", " here 2");
 
 
     }

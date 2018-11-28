@@ -103,6 +103,7 @@ public interface IGlobals {
         public ClientThread discoveryClientThread;
 
         public int gameMode;
+        public boolean hasFocus;
 
         public int setupConnectionState =0;
         public boolean updateListViewState;
@@ -121,6 +122,7 @@ public interface IGlobals {
 
             //TODO adapt number
             this.clientConnectionStates=new int[10];
+            this.hasFocus=true;
         }
 
         public void startServerThread() {
@@ -338,7 +340,7 @@ public interface IGlobals {
                 this.connectionPending=false;
                 this.udpPendingSize=2;
 
-                this.tcpPendingObjects = Collections.synchronizedList(new ArrayList());
+                this.tcpPendingObjects = new ArrayList<Object>();
                 this.udpPendingObject = new Object();
                 this.tcpSendClass = new SendVariables.SendClass();
                 this.udpSendClass = new SendVariables.SendClass();
@@ -366,18 +368,19 @@ public interface IGlobals {
                             if (this.tcpPending) {
                                 synchronized (this.tcpPendingObjects) {
                                     this.tcpSendClass.sendObjects = this.tcpPendingObjects.toArray(new Object[0]);
-                                    this.tcpPendingObjects = Collections.synchronizedList(new ArrayList());
+                                    this.tcpPendingObjects = new ArrayList();
+                                    this.tcpPending = false;
                                 }
                                 this.client.sendTCP(this.tcpSendClass);
-                                this.tcpPending = false;
                             }
 
                             if (this.udpPending) {
-                                synchronized (this.udpPendingObject) {
+                                synchronized (this.tcpPendingObjects) {
                                     this.udpSendClass = (SendVariables.SendClass) this.udpPendingObject;
+                                    this.udpPending = false;
                                 }
                                 this.client.sendUDP(this.udpSendClass);
-                                this.udpPending = false;
+
                             }
 
                         }catch (NullPointerException e) {
@@ -398,23 +401,22 @@ public interface IGlobals {
             }
 
             public void sendObject(Object object, String protocol) {
-                if(protocol.equals("tcp")) {
-                    try {
+                try {
+                    if (protocol.equals("tcp")) {
                         synchronized (this.tcpPendingObjects) {
                             this.tcpPendingObjects.add(object);
+                            this.tcpPending = true;
                         }
-                    } catch (NullPointerException e) {
-                        e.printStackTrace();
-                    }
-                    this.tcpPending=true;
 
-                } else if(protocol.equals("udp")) {
-                    try {
-                        this.udpPendingObject = object;
-                    } catch (NullPointerException e) {
-                        e.printStackTrace();
+                    } else if (protocol.equals("udp")) {
+                        synchronized (this.udpPendingObject) {
+                            this.udpPendingObject= object;
+                            this.udpPending = true;
+                        }
+
                     }
-                    this.udpPending=true;
+                }catch (NullPointerException e) {
+                    e.printStackTrace();
                 }
             }
 

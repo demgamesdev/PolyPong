@@ -43,6 +43,8 @@ public class GDXGameLauncher extends AndroidApplication {
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
+        Globals globalVariables=(Globals)getApplicationContext();
+        globalVariables.getSettingsVariables().hasFocus = hasFocus;
         if (hasFocus) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 getWindow().getDecorView().setSystemUiVisibility(
@@ -53,6 +55,17 @@ public class GDXGameLauncher extends AndroidApplication {
                                 | View.SYSTEM_UI_FLAG_FULLSCREEN
                                 | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
             }
+            globalVariables.getSettingsVariables().clientConnectionStates[globalVariables.getSettingsVariables().myPlayerNumber] =4;
+            IGlobals.SendVariables.SendConnectionState sendConnectionState = new IGlobals.SendVariables.SendConnectionState();
+            sendConnectionState.myPlayerNumber = globalVariables.getSettingsVariables().myPlayerNumber;
+            sendConnectionState.connectionState = 4;
+            globalVariables.getSettingsVariables().sendToAllClients(sendConnectionState, "tcp");
+        } else {
+            globalVariables.getSettingsVariables().clientConnectionStates[globalVariables.getSettingsVariables().myPlayerNumber]=5;
+            IGlobals.SendVariables.SendConnectionState sendConnectionState = new IGlobals.SendVariables.SendConnectionState();
+            sendConnectionState.myPlayerNumber = globalVariables.getSettingsVariables().myPlayerNumber;
+            sendConnectionState.connectionState = 5;
+            globalVariables.getSettingsVariables().sendToAllClients(sendConnectionState, "tcp");
         }
     }
 }

@@ -25,10 +25,10 @@ public class Globals extends Application implements IGlobals{
     private IGlobals.GameVariables gameVariables=new IGlobals.GameVariables();
     private IGlobals.SettingsVariables settingsVariables =new IGlobals.SettingsVariables();
 
-    public GameVariables getGameVariables() {
+    public synchronized IGlobals.GameVariables getGameVariables() {
         return(this.gameVariables);
     }
-    public IGlobals.SettingsVariables getSettingsVariables() {
+    public synchronized IGlobals.SettingsVariables getSettingsVariables() {
         return(this.settingsVariables);
     }
 
