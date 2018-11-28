@@ -362,27 +362,26 @@ public interface IGlobals {
                             }
                             this.connectionPending = false;
                         }
-                        if (this.tcpPending) {
-                            synchronized (this.tcpPendingObjects) {
-                                this.tcpSendClass.sendObjects = this.tcpPendingObjects.toArray(new Object[0]);
-                                this.tcpPendingObjects = Collections.synchronizedList(new ArrayList());
-                            }
-                            try {
+                        try {
+                            if (this.tcpPending) {
+                                synchronized (this.tcpPendingObjects) {
+                                    this.tcpSendClass.sendObjects = this.tcpPendingObjects.toArray(new Object[0]);
+                                    this.tcpPendingObjects = Collections.synchronizedList(new ArrayList());
+                                }
                                 this.client.sendTCP(this.tcpSendClass);
-                            } catch (NullPointerException e) {
-                                e.printStackTrace();
+                                this.tcpPending = false;
                             }
-                            this.tcpPending = false;
-                        }
 
-                        if (this.udpPending) {
-                            try {
-                                this.udpSendClass = (SendVariables.SendClass) this.udpPendingObject;
+                            if (this.udpPending) {
+                                synchronized (this.udpPendingObject) {
+                                    this.udpSendClass = (SendVariables.SendClass) this.udpPendingObject;
+                                }
                                 this.client.sendUDP(this.udpSendClass);
-                            } catch (NullPointerException e) {
-                                e.printStackTrace();
+                                this.udpPending = false;
                             }
-                            this.udpPending = false;
+
+                        }catch (NullPointerException e) {
+                            e.printStackTrace();
                         }
                         this.referenceTime = System.currentTimeMillis();
                     }
