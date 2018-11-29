@@ -265,7 +265,7 @@ public class ClassicGame extends ApplicationAdapter{
                 bat.doPhysics();
             }
 
-            world.step(1 / 60f, 6, 4);
+            world.step(1 / 60f, 8, 3);
 
             for (Ball ball : balls) {
                 ball.updateToGlobals();
@@ -482,7 +482,13 @@ public class ClassicGame extends ApplicationAdapter{
                 }*/
                 if (globalVariables.getGameVariables().updateBallStates[this.ballNumber]) {
                     this.ballBody.setType(BodyDef.BodyType.KinematicBody);
-                    this.playerField = globalVariables.getGameVariables().ballsPlayerScreens[this.ballNumber];
+                    if(globalVariables.getGameVariables().ballsPlayerScreens[this.ballNumber] == globalVariables.getSettingsVariables().myPlayerNumber) {
+                        if(gameField.playerFieldPolygons[globalVariables.getSettingsVariables().myPlayerNumber].contains(globalVariables.getGameVariables().ballsPositions[this.ballNumber])) {
+                            this.playerField = globalVariables.getGameVariables().ballsPlayerScreens[this.ballNumber];
+                        }
+                    } else {
+                        this.playerField = globalVariables.getGameVariables().ballsPlayerScreens[this.ballNumber];
+                    }
                     this.ballBody.setTransform(globalVariables.getGameVariables().ballsPositions[this.ballNumber].cpy().scl(1 / PIXELS_TO_METERS), 0);
                     this.ballBody.setLinearVelocity(globalVariables.getGameVariables().ballsVelocities[this.ballNumber].cpy().scl(1 / PIXELS_TO_METERS));
                     globalVariables.getGameVariables().updateBallStates[this.ballNumber] = false;
@@ -492,6 +498,7 @@ public class ClassicGame extends ApplicationAdapter{
 
         void updateToGlobals() {
             if(globalVariables.getGameVariables().ballDisplayStates[this.ballNumber]) {
+                this.checkAbnormalPlayerField();
                 this.ballForwardPosition = this.getBallForwardPosition(this.ballBody.getPosition().cpy().scl(PIXELS_TO_METERS),this.ballBody.getLinearVelocity().cpy());
                 if (this.playerField == globalVariables.getSettingsVariables().myPlayerNumber) {
                     globalVariables.getGameVariables().ballsPositions[this.ballNumber] = this.ballBody.getPosition().cpy().scl(PIXELS_TO_METERS);
@@ -515,21 +522,33 @@ public class ClassicGame extends ApplicationAdapter{
             }
         }
 
+        boolean checkAbnormalPlayerField() {
+            if(this.playerField!= globalVariables.getSettingsVariables().myPlayerNumber && gameField.playerFieldPolygons[globalVariables.getSettingsVariables().myPlayerNumber].contains(this.ballBody.getPosition().cpy().scl(PIXELS_TO_METERS))) {
+                Gdx.app.error("ClassicGame", "ball " + this.ballNumber + " in my field with wrong playernumber");
+                return(true);
+            }
+            return(false);
+        }
+
         int checkPlayerField() {
             if(!gameField.gameFieldPolygon.contains(this.ballBody.getPosition().cpy().scl(PIXELS_TO_METERS))) {
                 this.lostState = true;
                 Gdx.app.error("ClassicGame", "ball " + this.ballNumber + " outside gamefield "+ this.playerField +" x " + this.ballBody.getPosition().x *PIXELS_TO_METERS+ " y " + this.ballBody.getPosition().y *PIXELS_TO_METERS);
                 return(999);
             }
+            if(!gameField.playerFieldPolygons[globalVariables.getSettingsVariables().myPlayerNumber].contains(this.ballForwardPosition)) {
                 for (int i = 0; i < globalVariables.getSettingsVariables().numberOfPlayers; i++) {
-                    if (gameField.playerFieldPolygons[i].contains(this.ballForwardPosition)) {
-                        if (gameField.playerFieldPolygons[i].contains(this.ballBody.getPosition().cpy().scl(PIXELS_TO_METERS))) {
-                            //Gdx.app.debug("ClassicGame", "ball on playerField " + i);
-                            return (i);
+                    if(i!=globalVariables.getSettingsVariables().myPlayerNumber) {
+                        if (gameField.playerFieldPolygons[i].contains(this.ballForwardPosition)) {
+                            if (gameField.playerFieldPolygons[i].contains(this.ballBody.getPosition().cpy().scl(PIXELS_TO_METERS))) {
+                                //Gdx.app.debug("ClassicGame", "ball on playerField " + i);
+                                return (i);
 
+                            }
                         }
                     }
                 }
+            }
             return(this.playerField);
         }
 
