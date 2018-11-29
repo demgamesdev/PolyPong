@@ -2,6 +2,8 @@ package com.demgames.polypong;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.badlogic.gdx.Application;
 import com.badlogic.gdx.ApplicationAdapter;
@@ -35,6 +37,8 @@ import com.badlogic.gdx.physics.box2d.Manifold;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.math.MathUtils;
+
+import javax.xml.soap.Text;
 
 public class ClassicGame extends ApplicationAdapter{
     //use of private etc is not consistently done
@@ -70,6 +74,9 @@ public class ClassicGame extends ApplicationAdapter{
     final short MASK_FIELDLINE  = CATEGORY_BAT;
 
     //global classes for balls, bats and arraylists for spriteBatch sending
+    private Map<String, Texture> texturesMap = new HashMap<String, Texture>();
+    private Map<String, Sprite> spritesMap = new HashMap<String, Sprite>();
+
     private Texture[] ballTextures;
     private Texture ballTextureOff;
     private Texture[] batTextures;
@@ -164,6 +171,11 @@ public class ClassicGame extends ApplicationAdapter{
 
 
         goalTexture = new Texture(Gdx.files.internal("field/playerfield_goal.png"));
+
+        texturesMap.put("boom",new Texture(Gdx.files.internal("effects/boom.png")));
+        spritesMap.put("boom",new Sprite(texturesMap.get("boom")));
+
+
 
 
         gameField=new GameField();
@@ -321,6 +333,8 @@ public class ClassicGame extends ApplicationAdapter{
         private long ballUpdateCounter=0;
 
         private Vector2 ballForwardPosition;
+        private Vector2 destroyPosition;
+        private long destroyTime;
 
         private Sprite ballSprite;
         private Sprite traceSprite;
@@ -452,6 +466,12 @@ public class ClassicGame extends ApplicationAdapter{
                 }
                 //spriteBatch.setColor(1,1,1,1);
                 //font.draw(spriteBatch,Integer.toString(this.ballNumber), this.ballBody.getPosition().x * PIXELS_TO_METERS, this.ballBody.getPosition().y * PIXELS_TO_METERS);
+            } else {
+                if(System.currentTimeMillis() - this.destroyTime <100) {
+                    spritesMap.get("boom").setScale(width*0.0005f*this.ballRadius);
+                    spritesMap.get("boom").setPosition(this.destroyPosition.x - spritesMap.get("boom").getWidth() / 2, this.destroyPosition.y - spritesMap.get("boom").getHeight() / 2);
+                    spritesMap.get("boom").draw(spriteBatch);
+                }
             }
         }
 
@@ -527,6 +547,8 @@ public class ClassicGame extends ApplicationAdapter{
         void destroyBall() {
             if(this.ballBody!=null) {
                 globalVariables.getGameVariables().ballDisplayStates[this.ballNumber] = false;
+                this.destroyPosition = new Vector2(this.ballBody.getPosition().cpy().scl(PIXELS_TO_METERS));
+                this.destroyTime = System.currentTimeMillis();
                 world.destroyBody(this.ballBody);
                 this.ballBody.setUserData(null);
                 this.ballBody = null;
