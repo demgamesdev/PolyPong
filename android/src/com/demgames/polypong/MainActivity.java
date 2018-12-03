@@ -1,6 +1,7 @@
 package com.demgames.polypong;
 
 import android.content.Context;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.content.Intent;
 import android.os.PowerManager;
@@ -43,6 +44,7 @@ public class MainActivity extends AppCompatActivity {
 
     String myPlayerName;
     String file_name = "name_file";
+    EditText YourName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,7 +53,6 @@ public class MainActivity extends AppCompatActivity {
         //Vollbildmodus
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-
 
 
          /* will make the screen be always on until this Activity gets destroyed. */
@@ -75,6 +76,12 @@ public class MainActivity extends AppCompatActivity {
 
         final Button startHostButton = (Button) findViewById(R.id.startHostButton);
         final Button startClientButton = (Button) findViewById(R.id.startClientButton);
+        Typeface typeface = Typeface.createFromAsset(getAssets(), "fonts/Quicksand-Regular.ttf");
+        startHostButton.setTypeface(typeface);
+        startClientButton.setTypeface(typeface);
+
+        YourName = (EditText) findViewById(R.id.nameEditText);
+        YourName.setTypeface(typeface);
 
         readName();
 
@@ -107,7 +114,6 @@ public class MainActivity extends AppCompatActivity {
 
     boolean getMyPlayerName(){
         Globals globalVariables = (Globals) getApplicationContext();
-        EditText YourName = (EditText) findViewById(R.id.nameEditText);
         myPlayerName = YourName.getText().toString();
         if (myPlayerName.matches("")){
             Context context = getApplicationContext();

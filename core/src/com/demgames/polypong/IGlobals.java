@@ -26,6 +26,7 @@ public interface IGlobals {
         public float[] ballsSizes;
         public boolean[] ballDisplayStates;
         public boolean[] updateBallStates;
+        public boolean[] updateBatStates;
 
         public float width, height;
         //TODO generalize to more players
@@ -39,6 +40,8 @@ public interface IGlobals {
         public boolean attractionState;
 
         public int[] playerScores;
+
+        private float factor =1;
 
         GameVariables() {
             numberOfBalls=1;
@@ -60,10 +63,10 @@ public interface IGlobals {
 
             if (randomPosition) {
                 for (int i = 0; i < this.numberOfBalls; i++) {
-                    this.ballsPositions[i] = this.upScaleVector(new Vector2((rand.nextFloat()-0.5f)*0.8f, (rand.nextFloat()-1f)*0.6f-0.2f));
-                    this.ballsVelocities[i] = this.upScaleVector(new Vector2(0, 0));
+                    this.ballsPositions[i] = new Vector2((rand.nextFloat()-0.5f)*0.8f * this.factor, ((rand.nextFloat()-1f)*0.6f-0.2f)*this.factor);
+                    this.ballsVelocities[i] = new Vector2(0, 0);
                     this.ballsPlayerScreens[i] = 0;
-                    this.ballsSizes[i] = rand.nextFloat();
+                    this.ballsSizes[i] = (rand.nextFloat()+0.5f)*0.03f * this.factor;
                     this.ballDisplayStates[i]=true;
                     this.updateBallStates[i]=false;
                 }
@@ -73,14 +76,6 @@ public interface IGlobals {
         public void setBats(int numberOfPlayers) {
             this.batPositions=new Vector2[numberOfPlayers];
             this.batOrientations= new float[numberOfPlayers];
-        }
-
-        public Vector2 downScaleVector(Vector2 vector) {
-            return(new Vector2(vector.x/width,vector.y/height));
-        }
-
-        public Vector2 upScaleVector(Vector2 vector) {
-            return(new Vector2(vector.x*width,vector.y*height));
         }
     }
 

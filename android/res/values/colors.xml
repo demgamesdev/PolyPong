@@ -6,4 +6,5 @@
     <color name="TColor">#eceff1</color>
     <color name="BtnTColor">#263238</color>
     <color name="HintColor">#CFD8DC</color>
+    <color name="backgroundColor">#595959</color>
 </resources>

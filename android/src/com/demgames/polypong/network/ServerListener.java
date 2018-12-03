@@ -50,10 +50,10 @@ public class ServerListener extends Listener{
                             Log.d(TAG, "fieldchange of ball " + ballScreenChange.ballNumbers[i] + " received");
                             globalVariables.getGameVariables().updateBallStates[ballScreenChange.ballNumbers[i]]=true;
                             globalVariables.getGameVariables().ballsPlayerScreens[ballScreenChange.ballNumbers[i]] = ballScreenChange.ballPlayerFields[i];
-                            globalVariables.getGameVariables().ballsPositions[ballScreenChange.ballNumbers[i]] = globalVariables.getGameVariables().upScaleVector(ballScreenChange.ballPositions[i]).rotateRad(rotateRad);
-                            globalVariables.getGameVariables().ballsVelocities[ballScreenChange.ballNumbers[i]] = globalVariables.getGameVariables().upScaleVector(ballScreenChange.ballVelocities[i]).rotateRad(rotateRad);
-                        /*Log.d(TAG, "ballposition x " + globalVariables.getGameVariables().upScaleVector(ballScreenChange.ballPositions[i]).rotateRad(rotateRad).x +
-                                " y " + globalVariables.getGameVariables().upScaleVector(ballScreenChange.ballPositions[i]).rotateRad(rotateRad).y);*/
+                            globalVariables.getGameVariables().ballsPositions[ballScreenChange.ballNumbers[i]] = ballScreenChange.ballPositions[i].rotateRad(rotateRad);
+                            globalVariables.getGameVariables().ballsVelocities[ballScreenChange.ballNumbers[i]] = ballScreenChange.ballVelocities[i].rotateRad(rotateRad);
+                        /*Log.d(TAG, "ballposition x " + ballScreenChange.ballPositions[i].rotateRad(rotateRad).x +
+                                " y " + ballScreenChange.ballPositions[i].rotateRad(rotateRad).y);*/
                         }
 
                         //Log.d(TAG, "ball "+Integer.toString(ballNumber)+" screenchange");
@@ -80,13 +80,13 @@ public class ServerListener extends Listener{
                         float rotateRad = (2f * MathUtils.PI / globalVariables.getSettingsVariables().numberOfPlayers * (ballKinetics.myPlayerNumber - globalVariables.getSettingsVariables().myPlayerNumber));
 
 
-                        //Log.d(TAG, "ball "+Integer.toString(ballNumber)+" updated to x "+Float.toString(ballPosition.x));
+                        //Log.d(TAG, "ball "+Integer.toString(ballKinetics.ballNumbers[0])+" updated to x "+Float.toString(ballKinetics.ballPositions[0].x));
                         //Log.d(TAG, "ball kinetics 0 x "+ ballKinetics.ballPositions[0].x +" y "+ballKinetics.ballPositions[0].y);
                         for (int i = 0; i < ballKinetics.ballNumbers.length; i++) {
                             globalVariables.getGameVariables().updateBallStates[ballKinetics.ballNumbers[i]] = true;
                             globalVariables.getGameVariables().ballsPlayerScreens[ballKinetics.ballNumbers[i]] = ballKinetics.ballPlayerFields[i];
-                            globalVariables.getGameVariables().ballsPositions[ballKinetics.ballNumbers[i]] = globalVariables.getGameVariables().upScaleVector(ballKinetics.ballPositions[i]).rotateRad(rotateRad);
-                            globalVariables.getGameVariables().ballsVelocities[ballKinetics.ballNumbers[i]] = globalVariables.getGameVariables().upScaleVector(ballKinetics.ballVelocities[i]).rotateRad(rotateRad);
+                            globalVariables.getGameVariables().ballsPositions[ballKinetics.ballNumbers[i]] = ballKinetics.ballPositions[i].rotateRad(rotateRad);
+                            globalVariables.getGameVariables().ballsVelocities[ballKinetics.ballNumbers[i]] = ballKinetics.ballVelocities[i].rotateRad(rotateRad);
                         }
 
 
@@ -100,7 +100,7 @@ public class ServerListener extends Listener{
 
                         //Log.d(TAG,"received Bat at x " + globalVariables.getGameVariables().batPositions[bat.batPlayerField].x + " y " + globalVariables.getGameVariables().batPositions[bat.batPlayerField].y);
 
-                        globalVariables.getGameVariables().batPositions[bat.batPlayerField]=globalVariables.getGameVariables().upScaleVector(bat.batPosition).rotateRad(rotateRad);
+                        globalVariables.getGameVariables().batPositions[bat.batPlayerField]=bat.batPosition.rotateRad(rotateRad);
                         //globalVariables.getGameVariables().batVelocities[bat.batPlayerField]=bat.batVelocity.cpy().scl(-1f);
                         globalVariables.getGameVariables().batOrientations[bat.batPlayerField]=bat.batOrientation+rotateRad;
 
@@ -142,8 +142,8 @@ public class ServerListener extends Listener{
                             float rotateRad = (-2f * MathUtils.PI / globalVariables.getSettingsVariables().numberOfPlayers * globalVariables.getSettingsVariables().myPlayerNumber);
 
                             for (int i = 0; i < settings.ballsPositions.length; i++) {
-                                globalVariables.getGameVariables().ballsPositions[i] = globalVariables.getGameVariables().upScaleVector(settings.ballsPositions[i]).rotateRad(rotateRad);
-                                globalVariables.getGameVariables().ballsVelocities[i] = globalVariables.getGameVariables().upScaleVector(settings.ballsVelocities[i]).rotateRad(rotateRad);
+                                globalVariables.getGameVariables().ballsPositions[i] = settings.ballsPositions[i].rotateRad(rotateRad);
+                                globalVariables.getGameVariables().ballsVelocities[i] = settings.ballsVelocities[i].rotateRad(rotateRad);
                                 //globalVariables.getGameVariables().ballsPlayerScreens[i]=0;
                                 globalVariables.getGameVariables().ballsSizes[i] = settings.ballsSizes[i];
                                 globalVariables.getGameVariables().ballDisplayStates[i] = settings.ballsDisplayStates[i];

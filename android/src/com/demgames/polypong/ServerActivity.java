@@ -116,8 +116,8 @@ public class ServerActivity extends AppCompatActivity{
                     Vector2[] tempPositions = new Vector2[globalVariables.getGameVariables().numberOfBalls];
                     Vector2[] tempVelocities = new Vector2[globalVariables.getGameVariables().numberOfBalls];
                     for (int i = 0; i < globalVariables.getGameVariables().numberOfBalls; i++) {
-                        tempPositions[i] = globalVariables.getGameVariables().downScaleVector(globalVariables.getGameVariables().ballsPositions[i]);
-                        tempVelocities[i] = globalVariables.getGameVariables().downScaleVector(globalVariables.getGameVariables().ballsVelocities[i]);
+                        tempPositions[i] = globalVariables.getGameVariables().ballsPositions[i];
+                        tempVelocities[i] = globalVariables.getGameVariables().ballsVelocities[i];
                     }
 
                     for (int i = 1; i < globalVariables.getSettingsVariables().numberOfPlayers; i++) {
