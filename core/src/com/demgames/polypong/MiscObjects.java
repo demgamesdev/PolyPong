@@ -13,7 +13,6 @@ public class MiscObjects {
     private IGlobals globalVariables;
 
     //global sendclasses
-    private IGlobals.SendVariables.SendClass frequentSendClass=new IGlobals.SendVariables.SendClass();
 
     private IGlobals.SendVariables.SendFrequents sendFrequents=new IGlobals.SendVariables.SendFrequents();
     private IGlobals.SendVariables.SendFieldChange sendFieldChange =new IGlobals.SendVariables.SendFieldChange();
@@ -80,8 +79,10 @@ public class MiscObjects {
                 sendFieldChange.balls[i].ballNumber = sendFieldChangeBallsAL.get(i).ballNumber;
                 sendFieldChange.balls[i].ballPlayerField = sendFieldChangeBallsAL.get(i).tempPlayerField;
                 sendFieldChange.balls[i].ballDisplayState = sendFieldChangeBallsAL.get(i).ballDisplayState;
-                sendFieldChange.balls[i].ballPosition = sendFieldChangeBallsAL.get(i).ballBody.getPosition();
-                sendFieldChange.balls[i].ballVelocity = sendFieldChangeBallsAL.get(i).ballBody.getLinearVelocity();
+                sendFieldChange.balls[i].ballPositionX = sendFieldChangeBallsAL.get(i).ballBody.getPosition().x;
+                sendFieldChange.balls[i].ballPositionY = sendFieldChangeBallsAL.get(i).ballBody.getPosition().y;
+                sendFieldChange.balls[i].ballVelocityX = sendFieldChangeBallsAL.get(i).ballBody.getLinearVelocity().x;
+                sendFieldChange.balls[i].ballVelocityY = sendFieldChangeBallsAL.get(i).ballBody.getLinearVelocity().y;
                 sendFieldChange.balls[i].ballAngle = sendFieldChangeBallsAL.get(i).ballBody.getAngle();
                 sendFieldChange.balls[i].ballAngularVelocity = sendFieldChangeBallsAL.get(i).ballBody.getAngularVelocity();
                 Gdx.app.debug(TAG, "fieldchange of ball "+ sendFieldChange.balls[i].ballNumber +" sent");
@@ -109,25 +110,26 @@ public class MiscObjects {
             sendFrequents.balls[i].ballDisplayState = sendBallsAL.get(i).ballDisplayState;
 
             if(sendFrequents.balls[i].ballDisplayState ==1) {
-                sendFrequents.balls[i].ballPosition = sendBallsAL.get(i).ballBody.getPosition();
-                sendFrequents.balls[i].ballVelocity = sendBallsAL.get(i).ballBody.getLinearVelocity();
+                sendFrequents.balls[i].ballPositionX = sendBallsAL.get(i).ballBody.getPosition().x;
+                sendFrequents.balls[i].ballPositionY = sendBallsAL.get(i).ballBody.getPosition().y;
+                sendFrequents.balls[i].ballVelocityX = sendBallsAL.get(i).ballBody.getLinearVelocity().x;
+                sendFrequents.balls[i].ballVelocityY = sendBallsAL.get(i).ballBody.getLinearVelocity().y;
                 sendFrequents.balls[i].ballAngle = sendBallsAL.get(i).ballBody.getAngle();
                 sendFrequents.balls[i].ballAngularVelocity = sendBallsAL.get(i).ballBody.getAngularVelocity();
-                Gdx.app.debug(TAG, "ball "+Integer.toString(sendFrequents.balls[i].ballNumber)+" position "+Float.toString(sendBallsAL.get(i).ballBody.getPosition().x)+" sent");
-                Gdx.app.debug(TAG, "ball "+Integer.toString(sendFrequents.balls[i].ballNumber)+" velocity "+Float.toString(sendBallsAL.get(i).ballBody.getLinearVelocity().x)+" sent");
+                Gdx.app.debug(TAG, "ball "+Integer.toString(sendFrequents.balls[i].ballNumber)+" position "+Float.toString(sendFrequents.balls[i].ballPositionX)+" sent");
+                Gdx.app.debug(TAG, "ball "+Integer.toString(sendFrequents.balls[i].ballNumber)+" velocity "+Float.toString(sendFrequents.balls[i].ballVelocityX)+" sent");
             }
             Gdx.app.debug(TAG, "ball "+Integer.toString(sendFrequents.balls[i].ballNumber)+" displaystate "+Integer.toString(sendFrequents.balls[i].ballDisplayState)+" sent");
         }
 
-        sendFrequents.bat.batPosition=bat.batBody.getPosition();
-        sendFrequents.bat.batVelocity=bat.batBody.getLinearVelocity();
+        sendFrequents.bat.batPositionX=bat.batBody.getPosition().x;
+        sendFrequents.bat.batPositionY=bat.batBody.getPosition().y;
+        sendFrequents.bat.batVelocityX=bat.batBody.getLinearVelocity().x;
+        sendFrequents.bat.batVelocityY=bat.batBody.getLinearVelocity().y;
         sendFrequents.bat.batAngle =bat.batBody.getAngle();
         sendFrequents.bat.batAngularVelocity =bat.batBody.getAngularVelocity();
 
-        sendFrequents.scores = scores;
-
-        frequentSendClass.sendObjects = new Object[]{sendFrequents};
-        globalVariables.getSettingsVariables().sendToAllClients(frequentSendClass,"udp");
+        globalVariables.getSettingsVariables().sendToAllClients(sendFrequents,"udp");
     }
 
     class Touches {

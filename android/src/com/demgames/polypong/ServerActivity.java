@@ -114,19 +114,10 @@ public class ServerActivity extends AppCompatActivity{
                     globalVariables.getSettingsVariables().connectAllClients();
                     Log.d(TAG, "Connected to all clients.");
 
-                    Vector2[] tempPositions = new Vector2[globalVariables.getGameVariables().numberOfBalls];
-                    Vector2[] tempVelocities = new Vector2[globalVariables.getGameVariables().numberOfBalls];
-                    float[] tempAngles = new float[globalVariables.getGameVariables().numberOfBalls];
-                    float[] tempAngularVelocities = new float[globalVariables.getGameVariables().numberOfBalls];
-
                     IGlobals.Ball[] tempBalls = new IGlobals.Ball[globalVariables.getGameVariables().numberOfBalls];
 
                     for (int i = 0; i < globalVariables.getGameVariables().numberOfBalls; i++) {
                         tempBalls[i] = globalVariables.getGameVariables().balls[i];
-                        /*tempPositions[i] = globalVariables.getGameVariables().balls[i].ballPosition;
-                        tempVelocities[i] = globalVariables.getGameVariables().balls[i].ballVelocity;
-                        tempAngles[i] = globalVariables.getGameVariables().balls[i].ballAngle;
-                        tempAngularVelocities[i] = globalVariables.getGameVariables().balls[i].ballAngularVelocity;*/
                     }
 
                     for (int i = 1; i < globalVariables.getSettingsVariables().numberOfPlayers; i++) {

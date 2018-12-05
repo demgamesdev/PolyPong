@@ -126,7 +126,7 @@ public class ClassicGameObjects {
         this.gameField = new GameField();
         this.balls=new Ball[this.numberOfBalls];
         for(int i=0;i<this.balls.length;i++) {
-            this.balls[i]= new Ball(i,balls_[i].ballRadius,balls_[i].ballPosition, balls_[i].ballVelocity,balls_[i].ballAngle,balls_[i].ballAngularVelocity,10);
+            this.balls[i]= new Ball(i,balls_[i].ballRadius,new Vector2(balls_[i].ballPositionX,balls_[i].ballPositionY), new Vector2(balls_[i].ballVelocityX,balls_[i].ballVelocityY),balls_[i].ballAngle,balls_[i].ballAngularVelocity,10);
             //Gdx.app.debug("ClassicGame", "setup ball " + Integer.toString(i) + " on field "+ Integer.toString(globalVariables.getGameVariables().ballPlayerFields[i]));
         }
 
@@ -139,47 +139,49 @@ public class ClassicGameObjects {
 
 
     void updateAndSend(IGlobals globals) {
-        for(int i=0;i<this.balls.length;i++) {
-            if(globals.getGameVariables().ballUpdateStates[i]) {
-                Gdx.app.debug("ClassicGame", "ball "+this.balls[i].ballNumber + " displayState "+ this.balls[i].ballDisplayState + " playerfield " + this.balls[i].playerField);
-                this.balls[i].playerField = globals.getGameVariables().ballPlayerFields[i];
-                this.balls[i].ballDisplayState = globals.getGameVariables().balls[i].ballDisplayState;
-                if(this.balls[i].ballDisplayState ==1) {
-                    this.balls[i].ballBody.setTransform(globals.getGameVariables().balls[i].ballPosition,globals.getGameVariables().balls[i].ballAngle);
-                    this.balls[i].ballBody.setLinearVelocity(globals.getGameVariables().balls[i].ballVelocity);
-                    this.balls[i].ballBody.setAngularVelocity(globals.getGameVariables().balls[i].ballAngularVelocity);
-                }
-                globals.getGameVariables().ballUpdateStates[i]=false;
-            }
-            if(this.balls[i].playerField == this.myPlayerNumber) {
-                if(this.balls[i].ballDisplayState ==1) {
-                    this.balls[i].checkPlayerField(this.balls[i].ballBody.getPosition(),this.balls[i].ballBody.getLinearVelocity());
-                    this.balls[i].checkGoal();
-                    if(this.balls[i].tempGoal==1) {
-                        scores[myPlayerNumber]-=1;
+        synchronized (globals.getSettingsVariables().threadObjectLock) {
+            for (int i = 0; i < this.balls.length; i++) {
+                if (globals.getGameVariables().ballUpdateStates[i]) {
+                    Gdx.app.debug("ClassicGame", "ball " + this.balls[i].ballNumber + " displayState " + this.balls[i].ballDisplayState + " playerfield " + this.balls[i].playerField);
+                    this.balls[i].playerField = globals.getGameVariables().ballPlayerFields[i];
+                    this.balls[i].ballDisplayState = globals.getGameVariables().balls[i].ballDisplayState;
+                    if (this.balls[i].ballDisplayState == 1) {
+                        this.balls[i].ballBody.setTransform(globals.getGameVariables().balls[i].ballPositionX,globals.getGameVariables().balls[i].ballPositionY, globals.getGameVariables().balls[i].ballAngle);
+                        this.balls[i].ballBody.setLinearVelocity(globals.getGameVariables().balls[i].ballVelocityX,globals.getGameVariables().balls[i].ballVelocityY);
+                        this.balls[i].ballBody.setAngularVelocity(globals.getGameVariables().balls[i].ballAngularVelocity);
                     }
-
+                    globals.getGameVariables().ballUpdateStates[i] = false;
                 }
-                if (this.balls[i].tempPlayerField == this.myPlayerNumber) {
-                    sendBallsAL.add(this.balls[i]);
-                } else {
-                    if(this.balls[i].tempPlayerField!=999) {
-                        sendFieldChangeBallsAL.add(this.balls[i]);
+                if (this.balls[i].playerField == this.myPlayerNumber) {
+                    if (this.balls[i].ballDisplayState == 1) {
+                        this.balls[i].checkPlayerField(this.balls[i].ballBody.getPosition(), this.balls[i].ballBody.getLinearVelocity());
+                        this.balls[i].checkGoal();
+                        if (this.balls[i].tempGoal == 1) {
+                            scores[myPlayerNumber] -= 1;
+                        }
+
+                    }
+                    if (this.balls[i].tempPlayerField == this.myPlayerNumber) {
+                        sendBallsAL.add(this.balls[i]);
+                    } else {
+                        if (this.balls[i].tempPlayerField != 999) {
+                            sendFieldChangeBallsAL.add(this.balls[i]);
+                        }
                     }
                 }
+                //Gdx.app.debug("ClassicGame", "setup ball " + Integer.toString(i) + " on field "+ Integer.toString(globalVariables.getGameVariables().ballPlayerFields[i]));
             }
-            //Gdx.app.debug("ClassicGame", "setup ball " + Integer.toString(i) + " on field "+ Integer.toString(globalVariables.getGameVariables().ballPlayerFields[i]));
-        }
 
-        for(int i=0;i<this.numberOfPlayers;i++) {
-            if(i!=myPlayerNumber) {
-                if(globals.getGameVariables().batUpdateStates[i]) {
-                    this.bats[i].batBody.setTransform(globals.getGameVariables().bats[i].batPosition,globals.getGameVariables().bats[i].batAngle);
-                    this.bats[i].batBody.setLinearVelocity(globals.getGameVariables().bats[i].batVelocity);
-                    this.bats[i].batBody.setAngularVelocity(globals.getGameVariables().bats[i].batAngularVelocity);
-                    globals.getGameVariables().batUpdateStates[i]=false;
+            for (int i = 0; i < this.numberOfPlayers; i++) {
+                if (i != myPlayerNumber) {
+                    if (globals.getGameVariables().batUpdateStates[i]) {
+                        this.bats[i].batBody.setTransform(globals.getGameVariables().bats[i].batPositionX,globals.getGameVariables().bats[i].batPositionY, globals.getGameVariables().bats[i].batAngle);
+                        this.bats[i].batBody.setLinearVelocity(globals.getGameVariables().bats[i].batVelocityX,globals.getGameVariables().bats[i].batVelocityY);
+                        this.bats[i].batBody.setAngularVelocity(globals.getGameVariables().bats[i].batAngularVelocity);
+                        globals.getGameVariables().batUpdateStates[i] = false;
+                    }
+                    this.scores[i] = globals.getGameVariables().playerScores[i];
                 }
-                this.scores[i] = globals.getGameVariables().playerScores[i];
             }
         }
     }

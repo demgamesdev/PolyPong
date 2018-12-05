@@ -1,5 +1,6 @@
 package com.demgames.polypong;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryonet.Client;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Random;
 
 public interface IGlobals {
+    static final String TAG = "IGlobals";
 
     class GameVariables {
 
@@ -60,8 +62,10 @@ public interface IGlobals {
                 if (randomPosition) {
                     this.balls[i].ballNumber = i;
                     this.balls[i].ballRadius = (rand.nextFloat()+0.5f)*0.03f * this.factor;
-                    this.balls[i].ballPosition = new Vector2((rand.nextFloat()-0.5f)*0.8f * this.factor, ((rand.nextFloat()-1f)*0.6f-0.2f)*this.factor);
-                    this.balls[i].ballVelocity = new Vector2(0, 0);
+                    this.balls[i].ballPositionX = (rand.nextFloat()-0.5f)*0.8f * this.factor;
+                    this.balls[i].ballPositionY = ((rand.nextFloat()-1f)*0.6f-0.2f)*this.factor;
+                    this.balls[i].ballVelocityX = 0;
+                    this.balls[i].ballVelocityY = 0;
                     this.balls[i].ballAngle = 0f;
                     this.balls[i].ballAngularVelocity = 0f;
 
@@ -106,6 +110,8 @@ public interface IGlobals {
         public int setupConnectionState =0;
         public boolean updateListViewState;
 
+        public Object threadObjectLock;
+
         public int myPlayerNumber;
         public int numberOfPlayers;
 
@@ -121,6 +127,8 @@ public interface IGlobals {
             //TODO adapt number
             this.clientConnectionStates=new int[10];
             this.hasFocus=true;
+
+            this.threadObjectLock = new Object();
         }
 
         public void startServerThread() {
@@ -222,7 +230,6 @@ public interface IGlobals {
             myKryo.register(Bat[].class);
             myKryo.register(com.badlogic.gdx.math.Vector2.class);
             myKryo.register(com.badlogic.gdx.math.Vector2[].class);
-            myKryo.register(SendVariables.SendClass.class);
             myKryo.register(SendVariables.SendSettings.class);
             myKryo.register(SendVariables.SendConnectionState.class);
             myKryo.register(SendVariables.SendConnectionRequest.class);
@@ -308,15 +315,13 @@ public interface IGlobals {
         public class ClientThread extends Thread {
             private Client client;
             private String ipAdress;
-            private int tcpPort, udpPort, udpPendingSize;
+            private int tcpPort, udpPort;
             private boolean isRunnning;
             private boolean tcpPending;
             private boolean udpPending;
             private boolean connectionPending;
             private List<Object> tcpPendingObjects;
             private Object udpPendingObject;
-            private SendVariables.SendClass tcpSendClass;
-            private SendVariables.SendClass udpSendClass;
             private long referenceTime;
             private int udpSendTimer;
             //private ArrayList<Object> udpPendingObjects;
@@ -335,12 +340,9 @@ public interface IGlobals {
                 this.tcpPending=false;
                 this.udpPending=false;
                 this.connectionPending=false;
-                this.udpPendingSize=2;
 
                 this.tcpPendingObjects = new ArrayList<Object>();
                 this.udpPendingObject = new Object();
-                this.tcpSendClass = new SendVariables.SendClass();
-                this.udpSendClass = new SendVariables.SendClass();
 
 
                 this.udpSendTimer = 100;
@@ -363,18 +365,22 @@ public interface IGlobals {
                     try {
                         if (this.tcpPending) {
                             synchronized (this.tcpPendingObjects) {
-                                this.tcpSendClass.sendObjects = this.tcpPendingObjects.toArray(new Object[0]);
-                                this.tcpPendingObjects = new ArrayList();
                                 this.tcpPending = false;
-                                this.client.sendTCP(this.tcpSendClass);
+                                for(int i=0;i<this.tcpPendingObjects.size();i++){
+                                    this.client.sendTCP(this.tcpPendingObjects.get(i));
+                                }
+                                this.tcpPendingObjects = new ArrayList();
                             }
                         }
                         if(System.currentTimeMillis() - this.referenceTime > this.udpSendTimer) {
                             if (this.udpPending) {
                                 synchronized (this.udpPendingObject) {
-                                    this.udpSendClass = (SendVariables.SendClass) this.udpPendingObject;
                                     this.udpPending = false;
-                                    this.client.sendUDP(this.udpSendClass);
+                                    SendVariables.SendFrequents sendFrequents = (SendVariables.SendFrequents)this.udpPendingObject;
+                                    for(int i=0;i<sendFrequents.balls.length;i++){
+                                        Gdx.app.debug(TAG, "sendfrequents ball " + Integer.toString(sendFrequents.balls[i].ballNumber));
+                                    }
+                                    this.client.sendUDP(this.udpPendingObject);
                                 }
 
                                 this.referenceTime = System.currentTimeMillis();
@@ -406,7 +412,7 @@ public interface IGlobals {
 
                     } else if (protocol.equals("udp")) {
                         synchronized (this.udpPendingObject) {
-                            this.udpPendingObject= object;
+                            this.udpPendingObject = object;
                             this.udpPending = true;
                         }
 
@@ -427,10 +433,6 @@ public interface IGlobals {
     }
 
     class SendVariables {
-        static public class SendClass {
-            public Object[] sendObjects;
-        }
-
         static public class SendSettings {
             public int numberOfPlayers;
             public int yourPlayerNumber;
@@ -438,12 +440,6 @@ public interface IGlobals {
             public String[] playerNames;
 
             public Ball[] balls;
-            /*public int[] ballDisplayStates;
-            public float[] ballSizes;
-            public Vector2[] ballPositions;
-            public Vector2[] ballVelocities;
-            public float[] ballAngles;
-            public float[] ballAngularVelocities;*/
 
             public int gameMode;
             public boolean gravityState;
@@ -483,17 +479,29 @@ public interface IGlobals {
 
         public float ballRadius;
         public int ballDisplayState;
-        public Vector2 ballPosition;
-        public Vector2 ballVelocity;
+        public float ballPositionX;
+        public float ballPositionY;
+        public float ballVelocityX;
+        public float ballVelocityY;
         public float ballAngle;
         public float ballAngularVelocity;
+
+        Ball() {
+
+        }
     }
 
     class Bat{
-        public Vector2 batPosition;
-        public Vector2 batVelocity;
+        public float batPositionX;
+        public float batPositionY;
+        public float batVelocityX;
+        public float batVelocityY;
         public float batAngle;
         public float batAngularVelocity;
+
+        Bat() {
+
+        }
     }
 
     GameVariables getGameVariables();
