@@ -8,16 +8,15 @@ import com.badlogic.gdx.math.Vector2;
 import java.util.ArrayList;
 
 public class MiscObjects {
+    private static final String TAG = "MiscObjects";
+
     private IGlobals globalVariables;
 
     //global sendclasses
     private IGlobals.SendVariables.SendClass frequentSendClass=new IGlobals.SendVariables.SendClass();
 
-    private IGlobals.SendVariables.SendBallKinetics sendBallKinetics=new IGlobals.SendVariables.SendBallKinetics();
-    private IGlobals.SendVariables.SendBallScreenChange sendBallScreenChange=new IGlobals.SendVariables.SendBallScreenChange();
-    private IGlobals.SendVariables.SendBallGoal sendBallGoal=new IGlobals.SendVariables.SendBallGoal();
-    private IGlobals.SendVariables.SendBat sendBat=new IGlobals.SendVariables.SendBat();
-    private IGlobals.SendVariables.SendScore sendScore=new IGlobals.SendVariables.SendScore();
+    private IGlobals.SendVariables.SendFrequents sendFrequents=new IGlobals.SendVariables.SendFrequents();
+    private IGlobals.SendVariables.SendFieldChange sendFieldChange =new IGlobals.SendVariables.SendFieldChange();
     private IGlobals.SendVariables.SendConnectionState sendConnectionState=new IGlobals.SendVariables.SendConnectionState();
 
     private int myPlayerNumber;
@@ -72,66 +71,62 @@ public class MiscObjects {
 
     void sendFieldChangeFunction(ArrayList<ClassicGameObjects.Ball> sendFieldChangeBallsAL) {
         if (sendFieldChangeBallsAL.size()>0) {
-            sendBallScreenChange.myPlayerNumber=myPlayerNumber;
-            sendBallScreenChange.ballNumbers = new Integer[sendFieldChangeBallsAL.size()];
-            sendBallScreenChange.ballPlayerFields = new Integer[sendFieldChangeBallsAL.size()];
-            sendBallScreenChange.ballPositions = new Vector2[sendFieldChangeBallsAL.size()];
-            sendBallScreenChange.ballVelocities = new Vector2[sendFieldChangeBallsAL.size()];
+            sendFieldChange.myPlayerNumber=myPlayerNumber;
+            sendFieldChange.balls = new IGlobals.Ball[sendFieldChangeBallsAL.size()];
 
 
             for (int i = 0; i < sendFieldChangeBallsAL.size(); i++) {
-                sendBallScreenChange.ballNumbers[i] = sendFieldChangeBallsAL.get(i).ballNumber;
-                sendBallScreenChange.ballPlayerFields[i] = sendFieldChangeBallsAL.get(i).tempPlayerField;
-                sendBallScreenChange.ballPositions[i] = sendFieldChangeBallsAL.get(i).ballBody.getPosition();
-                sendBallScreenChange.ballVelocities[i] = sendFieldChangeBallsAL.get(i).ballBody.getLinearVelocity();
-                Gdx.app.debug("ClassicGame", "fieldchange of ball "+sendBallScreenChange.ballNumbers[i] +" sent");
+                sendFieldChange.balls[i]= new IGlobals.Ball();
+                sendFieldChange.balls[i].ballNumber = sendFieldChangeBallsAL.get(i).ballNumber;
+                sendFieldChange.balls[i].ballPlayerField = sendFieldChangeBallsAL.get(i).tempPlayerField;
+                sendFieldChange.balls[i].ballDisplayState = sendFieldChangeBallsAL.get(i).ballDisplayState;
+                sendFieldChange.balls[i].ballPosition = sendFieldChangeBallsAL.get(i).ballBody.getPosition();
+                sendFieldChange.balls[i].ballVelocity = sendFieldChangeBallsAL.get(i).ballBody.getLinearVelocity();
+                sendFieldChange.balls[i].ballAngle = sendFieldChangeBallsAL.get(i).ballBody.getAngle();
+                sendFieldChange.balls[i].ballAngularVelocity = sendFieldChangeBallsAL.get(i).ballBody.getAngularVelocity();
+                Gdx.app.debug(TAG, "fieldchange of ball "+ sendFieldChange.balls[i].ballNumber +" sent");
             }
-            globalVariables.getSettingsVariables().sendToAllClients(sendBallScreenChange,"tcp");
+            globalVariables.getSettingsVariables().sendToAllClients(sendFieldChange,"tcp");
         }
     }
-
-    void sendGoalFunction(ArrayList<Integer> sendGoalBallNumbersAL, int[] scores) {
-        if (sendGoalBallNumbersAL.size()>0) {
-            sendBallGoal.myPlayerNumber=myPlayerNumber;
-            sendBallGoal.ballNumbers = sendGoalBallNumbersAL.toArray(new Integer[0]);
-            sendBallGoal.playerScores=scores;
-            //Gdx.app.debug("ClassicGame", "send ballgoal");
-            globalVariables.getSettingsVariables().sendToAllClients(sendBallGoal,"tcp");
-        }
-    }
-
     void sendConnectionStateFunction() {
         sendConnectionState.myPlayerNumber=globalVariables.getSettingsVariables().myPlayerNumber;
         sendConnectionState.connectionState=globalVariables.getSettingsVariables().clientConnectionStates[globalVariables.getSettingsVariables().myPlayerNumber];
         globalVariables.getSettingsVariables().sendToAllClients(sendConnectionState,"tcp");
     }
 
-    void sendFrequentFunction(ArrayList<ClassicGameObjects.Ball> sendBallsAL, ClassicGameObjects.Bat bat) {
-        sendBat.myPlayerNumber=myPlayerNumber;
-        sendBat.batPlayerField =myPlayerNumber;
-        sendBat.batPosition=bat.batBody.getPosition();
-        sendBat.batOrientation=bat.batBody.getAngle();
+    void sendFrequentsFunction(ArrayList<ClassicGameObjects.Ball> sendBallsAL, ClassicGameObjects.Bat bat, int[] scores) {
 
-        if (sendBallsAL.size()>0) {
-            sendBallKinetics.myPlayerNumber=myPlayerNumber;
-            sendBallKinetics.ballNumbers = new Integer[sendBallsAL.size()];
-            sendBallKinetics.ballPlayerFields = new Integer[sendBallsAL.size()];
-            sendBallKinetics.ballPositions = new Vector2[sendBallsAL.size()];
-            sendBallKinetics.ballVelocities = new Vector2[sendBallsAL.size()];
+        sendFrequents.myPlayerNumber=myPlayerNumber;
+        sendFrequents.balls = new IGlobals.Ball[sendBallsAL.size()];
+        sendFrequents.bat = new IGlobals.Bat();
+        sendFrequents.scores = scores;
 
+        for (int i = 0; i < sendBallsAL.size(); i++) {
+            sendFrequents.balls[i] = new IGlobals.Ball();
+            sendFrequents.balls[i].ballNumber = sendBallsAL.get(i).ballNumber;
+            sendFrequents.balls[i].ballPlayerField = myPlayerNumber;
+            sendFrequents.balls[i].ballDisplayState = sendBallsAL.get(i).ballDisplayState;
 
-            for (int i = 0; i < sendBallsAL.size(); i++) {
-                sendBallKinetics.ballNumbers[i] = sendBallsAL.get(i).ballNumber;
-                sendBallKinetics.ballPlayerFields[i] = myPlayerNumber;
-                sendBallKinetics.ballPositions[i] = sendBallsAL.get(i).ballBody.getPosition();
-                sendBallKinetics.ballVelocities[i] = sendBallsAL.get(i).ballBody.getLinearVelocity();
+            if(sendFrequents.balls[i].ballDisplayState ==1) {
+                sendFrequents.balls[i].ballPosition = sendBallsAL.get(i).ballBody.getPosition();
+                sendFrequents.balls[i].ballVelocity = sendBallsAL.get(i).ballBody.getLinearVelocity();
+                sendFrequents.balls[i].ballAngle = sendBallsAL.get(i).ballBody.getAngle();
+                sendFrequents.balls[i].ballAngularVelocity = sendBallsAL.get(i).ballBody.getAngularVelocity();
+                Gdx.app.debug(TAG, "ball "+Integer.toString(sendFrequents.balls[i].ballNumber)+" position "+Float.toString(sendBallsAL.get(i).ballBody.getPosition().x)+" sent");
+                Gdx.app.debug(TAG, "ball "+Integer.toString(sendFrequents.balls[i].ballNumber)+" velocity "+Float.toString(sendBallsAL.get(i).ballBody.getLinearVelocity().x)+" sent");
             }
-            //Gdx.app.debug("ClassicGame", "ball "+Integer.toString(theBall.ballNumber)+" sent");
-            frequentSendClass.sendObjects = new Object[]{sendBat,sendBallKinetics};
-        } else {
-            frequentSendClass.sendObjects = new Object[]{sendBat};
+            Gdx.app.debug(TAG, "ball "+Integer.toString(sendFrequents.balls[i].ballNumber)+" displaystate "+Integer.toString(sendFrequents.balls[i].ballDisplayState)+" sent");
         }
 
+        sendFrequents.bat.batPosition=bat.batBody.getPosition();
+        sendFrequents.bat.batVelocity=bat.batBody.getLinearVelocity();
+        sendFrequents.bat.batAngle =bat.batBody.getAngle();
+        sendFrequents.bat.batAngularVelocity =bat.batBody.getAngularVelocity();
+
+        sendFrequents.scores = scores;
+
+        frequentSendClass.sendObjects = new Object[]{sendFrequents};
         globalVariables.getSettingsVariables().sendToAllClients(frequentSendClass,"udp");
     }
 

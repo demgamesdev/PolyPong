@@ -55,17 +55,21 @@ public class GDXGameLauncher extends AndroidApplication {
                                 | View.SYSTEM_UI_FLAG_FULLSCREEN
                                 | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
             }
-            globalVariables.getSettingsVariables().clientConnectionStates[globalVariables.getSettingsVariables().myPlayerNumber] =4;
-            IGlobals.SendVariables.SendConnectionState sendConnectionState = new IGlobals.SendVariables.SendConnectionState();
-            sendConnectionState.myPlayerNumber = globalVariables.getSettingsVariables().myPlayerNumber;
-            sendConnectionState.connectionState = 4;
-            globalVariables.getSettingsVariables().sendToAllClients(sendConnectionState, "tcp");
+            if(globalVariables.getGameVariables().gameState ==1) {
+                globalVariables.getSettingsVariables().clientConnectionStates[globalVariables.getSettingsVariables().myPlayerNumber] =4;
+                IGlobals.SendVariables.SendConnectionState sendConnectionState = new IGlobals.SendVariables.SendConnectionState();
+                sendConnectionState.myPlayerNumber = globalVariables.getSettingsVariables().myPlayerNumber;
+                sendConnectionState.connectionState = 4;
+                globalVariables.getSettingsVariables().sendToAllClients(sendConnectionState, "tcp");
+            }
         } else {
-            globalVariables.getSettingsVariables().clientConnectionStates[globalVariables.getSettingsVariables().myPlayerNumber]=5;
-            IGlobals.SendVariables.SendConnectionState sendConnectionState = new IGlobals.SendVariables.SendConnectionState();
-            sendConnectionState.myPlayerNumber = globalVariables.getSettingsVariables().myPlayerNumber;
-            sendConnectionState.connectionState = 5;
-            globalVariables.getSettingsVariables().sendToAllClients(sendConnectionState, "tcp");
+            if(globalVariables.getGameVariables().gameState ==1) {
+                globalVariables.getSettingsVariables().clientConnectionStates[globalVariables.getSettingsVariables().myPlayerNumber]=5;
+                IGlobals.SendVariables.SendConnectionState sendConnectionState = new IGlobals.SendVariables.SendConnectionState();
+                sendConnectionState.myPlayerNumber = globalVariables.getSettingsVariables().myPlayerNumber;
+                sendConnectionState.connectionState = 5;
+                globalVariables.getSettingsVariables().sendToAllClients(sendConnectionState, "tcp");
+            }
         }
     }
 }

@@ -3,10 +3,8 @@ package com.demgames.polypong;
 import com.badlogic.gdx.Application;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.PolygonSpriteBatch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -18,6 +16,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class ClassicGame extends ApplicationAdapter{
+    private static final String TAG = "ClassicGame";
     //use of private etc is not consistently done
     private IGlobals globalVariables;
 
@@ -84,13 +83,20 @@ public class ClassicGame extends ApplicationAdapter{
         this.miscObjects = new MiscObjects(globalVariables,this.myPlayerNumber,this.width,this.height);
 
         this.gameObjects = new ClassicGameObjects(this.myPlayerNumber,this.numberOfPlayers,
-                globalVariables.getSettingsVariables().playerNames.toArray(new String[0]),globalVariables.getGameVariables().numberOfBalls,globalVariables.getGameVariables().ballsPositions,
-                globalVariables.getGameVariables().ballsVelocities,globalVariables.getGameVariables().ballsSizes,width,height,globalVariables.getGameVariables().width,globalVariables.getGameVariables().height, miscObjects,
+                globalVariables.getSettingsVariables().playerNames.toArray(new String[0]),globalVariables.getGameVariables().numberOfBalls,globalVariables.getGameVariables().balls,width,height,globalVariables.getGameVariables().width,globalVariables.getGameVariables().height, miscObjects,
                 globalVariables.getGameVariables().gravityState,globalVariables.getGameVariables().attractionState);
 
-        for(int i=0; i< globalVariables.getSettingsVariables().numberOfPlayers;i++) {
-            globalVariables.getGameVariables().batPositions[i] = miscObjects.touches.touchPos[0];
-        }
+        /*for(int i=0; i< globalVariables.getSettingsVariables().numberOfPlayers;i++) {
+            globalVariables.getGameVariables().bats[i].batPosition = miscObjects.touches.touchPos[0];
+        }*/
+
+        globalVariables.getSettingsVariables().clientConnectionStates[globalVariables.getSettingsVariables().myPlayerNumber] =4;
+        IGlobals.SendVariables.SendConnectionState sendConnectionState = new IGlobals.SendVariables.SendConnectionState();
+        sendConnectionState.myPlayerNumber = globalVariables.getSettingsVariables().myPlayerNumber;
+        sendConnectionState.connectionState = 4;
+        globalVariables.getSettingsVariables().sendToAllClients(sendConnectionState, "tcp");
+
+        globalVariables.getGameVariables().gameState =1;
 
     }
 
@@ -119,16 +125,15 @@ public class ClassicGame extends ApplicationAdapter{
         this.allPlayersReady = globalVariables.getSettingsVariables().checkAllClientConnectionStates(4);
         //Gdx.app.debug("ClassicGame", " touchPos "+miscObjects.touches.touchPos[0]);
 
-        if(this.allPlayersReady) {
+        if(this.allPlayersReady && globalVariables.getGameVariables().gameState == 1) {
 
             //update from globals and update playerfields
 
             //dophysics
-            gameObjects.updateAndSendBalls(globalVariables);
+            gameObjects.updateAndSend(globalVariables);
 
-            miscObjects.sendFrequentFunction(gameObjects.sendBallsAL, gameObjects.bats[myPlayerNumber]);
+            miscObjects.sendFrequentsFunction(gameObjects.sendBallsAL, gameObjects.bats[myPlayerNumber],gameObjects.scores);
             miscObjects.sendFieldChangeFunction(gameObjects.sendFieldChangeBallsAL);
-            miscObjects.sendGoalFunction(gameObjects.sendGoalAL, gameObjects.scores);
 
             gameObjects.resetArrayLists();
 
@@ -171,7 +176,7 @@ public class ClassicGame extends ApplicationAdapter{
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         //Gdx.gl.glDisable(GL20.GL_BLEND);
         camera.zoom= miscObjects.zoomLevel;
-        camera.position.set(0,-height+height/2*miscObjects.zoomLevel,0);
+        //camera.position.set(0,-height+height/2*miscObjects.zoomLevel,0);
         camera.update();
 
 
@@ -195,7 +200,7 @@ public class ClassicGame extends ApplicationAdapter{
         spriteBatch.end();
 
         //uncomment for box2d bodies to be shown
-        //debugRenderer.render(world,camera.combined.cpy().scale(PIXELS_TO_METERS,PIXELS_TO_METERS,1));
+        //debugRenderer.render(gameObjects.world,camera.combined);
     }
 
 }

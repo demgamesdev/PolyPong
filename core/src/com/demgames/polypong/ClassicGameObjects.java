@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 public class ClassicGameObjects {
+    private static final String TAG = "ClassicGameObjects";
 
     private int myPlayerNumber;
     private String[] playerNames;
@@ -39,7 +40,7 @@ public class ClassicGameObjects {
 
     float width, height,screenWidth, screenHeight, metersToPixels;
 
-    private World world;
+    World world;
     GameField gameField;
     Ball[] balls;
     Bat[] bats;
@@ -58,7 +59,6 @@ public class ClassicGameObjects {
 
     ArrayList<Ball> sendBallsAL;
     ArrayList<Ball> sendFieldChangeBallsAL;
-    ArrayList<Integer> sendGoalAL;
 
     //define category and mask bits to decide which bodies collide with what
     final short CATEGORY_BORDER = 0x0001;
@@ -70,8 +70,7 @@ public class ClassicGameObjects {
     final short MASK_BAT = CATEGORY_BORDER | CATEGORY_BALL | CATEGORY_BAT | CATEGORY_FIELDLINE;
     final short MASK_FIELDLINE  = CATEGORY_BAT;
 
-    ClassicGameObjects (int myPlayerNumber_, int numberOfPlayers_, String[] playerNames_, int numberOfBalls_, Vector2[] ballPositions_,
-                        Vector2[] ballVelocities_, float[] ballRadii_, float width_, float height_, float screenWidth_, float screenHeight_, MiscObjects miscObjects_, Boolean gravityState_, Boolean attractionState_) {
+    ClassicGameObjects (int myPlayerNumber_, int numberOfPlayers_, String[] playerNames_, int numberOfBalls_, IGlobals.Ball[] balls_, float width_, float height_, float screenWidth_, float screenHeight_, MiscObjects miscObjects_, Boolean gravityState_, Boolean attractionState_) {
         this.myPlayerNumber = myPlayerNumber_;
         this.numberOfBalls = numberOfBalls_;
         this.numberOfPlayers= numberOfPlayers_;
@@ -88,7 +87,6 @@ public class ClassicGameObjects {
         this.scores = new int[numberOfPlayers];
         this.sendBallsAL = new ArrayList(Arrays.asList(new Ball[]{}));
         this.sendFieldChangeBallsAL = new ArrayList(Arrays.asList(new Ball[]{}));
-        this.sendGoalAL = new ArrayList(Arrays.asList(new Integer[]{}));
 
         //load textures to map
         for(int i=0;i<10;i++) {
@@ -128,58 +126,59 @@ public class ClassicGameObjects {
         this.gameField = new GameField();
         this.balls=new Ball[this.numberOfBalls];
         for(int i=0;i<this.balls.length;i++) {
-            this.balls[i]= new Ball(ballPositions_[i],ballRadii_[i], i,10);
-            //Gdx.app.debug("ClassicGame", "setup ball " + Integer.toString(i) + " on field "+ Integer.toString(globalVariables.getGameVariables().ballsPlayerScreens[i]));
+            this.balls[i]= new Ball(i,balls_[i].ballRadius,balls_[i].ballPosition, balls_[i].ballVelocity,balls_[i].ballAngle,balls_[i].ballAngularVelocity,10);
+            //Gdx.app.debug("ClassicGame", "setup ball " + Integer.toString(i) + " on field "+ Integer.toString(globalVariables.getGameVariables().ballPlayerFields[i]));
         }
 
         this.bats= new Bat[this.numberOfPlayers];
-        for(int i=0;i<this.bats.length;i++) {
+        for(int i=0;i<this.numberOfPlayers;i++) {
+            this.scores[i] = 0;
             this.bats[i]=new Bat(i);
         }
     }
 
 
-    void updateAndSendBalls(IGlobals globals) {
+    void updateAndSend(IGlobals globals) {
         for(int i=0;i<this.balls.length;i++) {
-            if(this.balls[i].ballDisplayState) {
-                if(globals.getGameVariables().updateBallStates[i]) {
-                    this.balls[i].ballBody.setType(BodyDef.BodyType.KinematicBody);
-                    this.balls[i].playerField = globals.getGameVariables().ballsPlayerScreens[i];
-                    this.balls[i].ballBody.setTransform(globals.getGameVariables().ballsPositions[i],0);
-                    this.balls[i].ballBody.setLinearVelocity(globals.getGameVariables().ballsVelocities[i]);
-                    this.balls[i].ballDisplayState = globals.getGameVariables().ballDisplayStates[i];
-                    globals.getGameVariables().updateBallStates[i]=false;
+            if(globals.getGameVariables().ballUpdateStates[i]) {
+                Gdx.app.debug("ClassicGame", "ball "+this.balls[i].ballNumber + " displayState "+ this.balls[i].ballDisplayState + " playerfield " + this.balls[i].playerField);
+                this.balls[i].playerField = globals.getGameVariables().ballPlayerFields[i];
+                this.balls[i].ballDisplayState = globals.getGameVariables().balls[i].ballDisplayState;
+                if(this.balls[i].ballDisplayState ==1) {
+                    this.balls[i].ballBody.setTransform(globals.getGameVariables().balls[i].ballPosition,globals.getGameVariables().balls[i].ballAngle);
+                    this.balls[i].ballBody.setLinearVelocity(globals.getGameVariables().balls[i].ballVelocity);
+                    this.balls[i].ballBody.setAngularVelocity(globals.getGameVariables().balls[i].ballAngularVelocity);
                 }
-
-                this.balls[i].checkPlayerField();
-
-                if(this.balls[i].playerField == this.myPlayerNumber) {
+                globals.getGameVariables().ballUpdateStates[i]=false;
+            }
+            if(this.balls[i].playerField == this.myPlayerNumber) {
+                if(this.balls[i].ballDisplayState ==1) {
+                    this.balls[i].checkPlayerField(this.balls[i].ballBody.getPosition(),this.balls[i].ballBody.getLinearVelocity());
                     this.balls[i].checkGoal();
                     if(this.balls[i].tempGoal==1) {
-                        scores[myPlayerNumber]--;
-                        sendGoalAL.add(this.balls[i].ballNumber);
-                    } else {
-                        if (this.balls[i].tempPlayerField != 999) {
-                            if (this.balls[i].tempPlayerField == this.myPlayerNumber) {
-                                sendBallsAL.add(this.balls[i]);
-                            } else {
-                                sendFieldChangeBallsAL.add(this.balls[i]);
-                            }
-                        }
+                        scores[myPlayerNumber]-=1;
                     }
 
+                }
+                if (this.balls[i].tempPlayerField == this.myPlayerNumber) {
+                    sendBallsAL.add(this.balls[i]);
                 } else {
-                    if(this.balls[i].tempPlayerField == 999) {
-                        this.balls[i].ballBody.setLinearVelocity(0,0);
+                    if(this.balls[i].tempPlayerField!=999) {
+                        sendFieldChangeBallsAL.add(this.balls[i]);
                     }
                 }
             }
-            //Gdx.app.debug("ClassicGame", "setup ball " + Integer.toString(i) + " on field "+ Integer.toString(globalVariables.getGameVariables().ballsPlayerScreens[i]));
+            //Gdx.app.debug("ClassicGame", "setup ball " + Integer.toString(i) + " on field "+ Integer.toString(globalVariables.getGameVariables().ballPlayerFields[i]));
         }
 
-        for(int i=0;i<this.bats.length;i++) {
+        for(int i=0;i<this.numberOfPlayers;i++) {
             if(i!=myPlayerNumber) {
-                this.bats[i].batBody.setTransform(globals.getGameVariables().batPositions[i],globals.getGameVariables().batOrientations[i]);
+                if(globals.getGameVariables().batUpdateStates[i]) {
+                    this.bats[i].batBody.setTransform(globals.getGameVariables().bats[i].batPosition,globals.getGameVariables().bats[i].batAngle);
+                    this.bats[i].batBody.setLinearVelocity(globals.getGameVariables().bats[i].batVelocity);
+                    this.bats[i].batBody.setAngularVelocity(globals.getGameVariables().bats[i].batAngularVelocity);
+                    globals.getGameVariables().batUpdateStates[i]=false;
+                }
                 this.scores[i] = globals.getGameVariables().playerScores[i];
             }
         }
@@ -188,12 +187,12 @@ public class ClassicGameObjects {
     void doPhysics() {
         //Gdx.app.debug("ClassicGameObjects", " touchPos "+miscObjects.touches.touchPos[0]);
         for(int i=0;i<this.balls.length;i++) {
-            if(this.balls[i].ballDisplayState) {
+            if(this.balls[i].ballDisplayState ==1) {
                 this.balls[i].doPhysics();
             } else {
                 this.balls[i].destroyBall();
             }
-            //Gdx.app.debug("ClassicGame", "setup ball " + Integer.toString(i) + " on field "+ Integer.toString(globalVariables.getGameVariables().ballsPlayerScreens[i]));
+            //Gdx.app.debug("ClassicGame", "setup ball " + Integer.toString(i) + " on field "+ Integer.toString(globalVariables.getGameVariables().ballPlayerFields[i]));
         }
 
         for(int i=0;i<this.bats.length;i++) {
@@ -211,7 +210,7 @@ public class ClassicGameObjects {
 
         for(int i=0;i<this.balls.length;i++) {
             this.balls[i].display(spriteBatch);
-            //Gdx.app.debug("ClassicGame", "setup ball " + Integer.toString(i) + " on field "+ Integer.toString(globalVariables.getGameVariables().ballsPlayerScreens[i]));
+            //Gdx.app.debug("ClassicGame", "setup ball " + Integer.toString(i) + " on field "+ Integer.toString(globalVariables.getGameVariables().ballPlayerFields[i]));
         }
     }
 
@@ -243,7 +242,6 @@ public class ClassicGameObjects {
     void resetArrayLists() {
         this.sendBallsAL = new ArrayList(Arrays.asList(new Ball[]{}));
         this.sendFieldChangeBallsAL = new ArrayList(Arrays.asList(new Ball[]{}));
-        this.sendGoalAL = new ArrayList(Arrays.asList(new Integer[]{}));
     }
 
     void dispose() {
@@ -258,7 +256,6 @@ public class ClassicGameObjects {
 
         private float ballRadius;
 
-        private float[][] ballColor;
         int ballNumber, playerField, tempPlayerField,tempGoal;
 
         //arraylist with max length for balltrace
@@ -275,13 +272,13 @@ public class ClassicGameObjects {
 
         private boolean lostState;
 
-        private boolean ballDisplayState;
+        int ballDisplayState;
 
         //constructor for Ball
-        Ball(Vector2 position_, float radius_,int ballNumber_, int ballPositionArrayListLength_) {
+        Ball(int ballNumber_, float ballRadius_,Vector2 ballPosition_,Vector2 ballVelocity_, float ballAngle_, float ballAngularVelocity_, int ballPositionArrayListLength_) {
 
 
-            this.ballRadius =radius_;
+            this.ballRadius =ballRadius_;
             this.ballNumber=ballNumber_;
             this.lostState =false;
 
@@ -291,7 +288,7 @@ public class ClassicGameObjects {
             BodyDef ballBodyDef= new BodyDef();
             ballBodyDef.type = BodyDef.BodyType.DynamicBody;
             ballBodyDef.bullet=true;
-            ballBodyDef.position.set(position_);
+            ballBodyDef.position.set(ballPosition_);
             this.ballBody = world.createBody(ballBodyDef);
 
             CircleShape ballShape = new CircleShape();
@@ -307,10 +304,14 @@ public class ClassicGameObjects {
             this.ballBody.createFixture(ballFixtureDef);
             ballShape.dispose();
 
+            this.ballBody.setTransform(ballPosition_,ballAngle_);
+            this.ballBody.setLinearVelocity(ballVelocity_);
+            this.ballBody.setAngularVelocity(ballAngularVelocity_);
+
             this.ballForwardPosition = new Vector2(this.ballBody.getPosition());
 
             //Gdx.app.debug("ClassicGame checkPlayerField", "ballforwardposition x " + Float.toString(this.ballForwardPosition.x) + " y "+ Float.toString(this.ballForwardPosition.y));
-            this.checkPlayerField();
+            this.checkPlayerField(this.ballBody.getPosition(),this.ballBody.getLinearVelocity());
             this.playerField = this.tempPlayerField;
 
             this.ballSprite = new Sprite(texturesMap.get("ball_"+this.playerField));
@@ -321,15 +322,14 @@ public class ClassicGameObjects {
             this.traceSprite.setOrigin(this.ballRadius/4f,this.ballRadius/4f);
             this.traceSprite.setSize(2f*this.ballRadius/4f,2f*this.ballRadius/4f);
 
-            this.ballDisplayState = true;
+            this.ballDisplayState = 1;
 
         }
 
         void doPhysics() {
         //if ball on my screen apply forces etc. else update position and velocity by the ones stored globally and received from other player
-            //Gdx.app.debug("ClassicGame", "ball "+ this. ballNumber+ " globals playerfield "+globalVariables.getGameVariables().ballsPlayerScreens[this.ballNumber]);
+            //Gdx.app.debug("ClassicGame", "ball "+ this. ballNumber+ " globals playerfield "+globalVariables.getGameVariables().ballPlayerFields[this.ballNumber]);
             if (this.playerField == myPlayerNumber) {
-                this.ballBody.setType(BodyDef.BodyType.DynamicBody);
 
                 //Gdx.app.debug("ClassicGame", "ball "+Integer.toString(this.ballNumber)+" computed");
                 for (int j = 0; j < miscObjects.touches.maxTouchCount; j++) {
@@ -343,23 +343,17 @@ public class ClassicGameObjects {
                 }
                 if (gameLogicStates.get("gravityState")) {
                     //gravity
-                    this.ballBody.applyForceToCenter(new Vector2(0, -0.002f), true);//-(this.ballBody.getPosition().y+height/PIXELS_TO_METERS)*1f
+                    this.ballBody.applyForceToCenter(new Vector2(0, -1E-6f), true);//-(this.ballBody.getPosition().y+height/PIXELS_TO_METERS)*1f
                 }
-            } else {
-
-                //Gdx.app.debug("ClassicGame", "ball "+Integer.toString(this.ballNumber)+" NOT computed");
             }
-            if (this.ballUpdateCounter % this.ballPositionFrameSkip == 0 && this.ballDisplayState) {
-                //add position for balltrace
-                this.ballPositionArrayList.addLast(this.ballBody.getPosition());
-            }
+            this.ballPositionArrayList.addLast(this.ballBody.getPosition());
             this.ballUpdateCounter++;
         }
 
         void display(SpriteBatch spriteBatch) {
             //color depending on playerfield
-            if(this.ballDisplayState) {
-                if(this.lostState) {
+            if(this.ballDisplayState == 1) {
+                if(false) {//this.lostState
                     this.ballSprite.setTexture(texturesMap.get("ball_off"));//
                 } else {
                     this.ballSprite.setTexture(texturesMap.get("ball_"+this.playerField));//
@@ -368,7 +362,7 @@ public class ClassicGameObjects {
                 this.ballSprite.setRotation(this.ballBody.getAngle()/MathUtils.PI*180f);
                 this.ballSprite.draw(spriteBatch);
                 for (Vector2 pos : this.ballPositionArrayList) {
-                    if(this.lostState) {
+                    if(true) {//this.lostState
                         this.traceSprite.setTexture(texturesMap.get("ball_off"));//
                     } else {
                         this.traceSprite.setTexture(texturesMap.get("ball_"+this.playerField));//
@@ -398,18 +392,18 @@ public class ClassicGameObjects {
             return(false);
         }
 
-        void checkPlayerField() {
-            this.setBallForwardPosition(this.ballBody.getPosition(), this.ballBody.getLinearVelocity());
+        void checkPlayerField(Vector2 position, Vector2 velocity) {
+            this.setBallForwardPosition(position, velocity);
             if (!gameField.gameFieldPolygon.contains(this.ballForwardPosition)) {
                 this.lostState = true;
-                Gdx.app.error("ClassicGame", "ball " + this.ballNumber + " outside gamefield " + this.playerField + " x " + this.ballBody.getPosition().x + " y " + this.ballBody.getPosition().y);
+                Gdx.app.error("ClassicGame", "ball " + this.ballNumber + " outside gamefield " + this.playerField + " x " + position.x + " y " + position.y);
                 this.tempPlayerField = 999;
             } else {
                 if (!gameField.playerFieldPolygons[myPlayerNumber].contains(this.ballForwardPosition)) {
                     for (int i = 0; i < numberOfPlayers; i++) {
                         if (i != myPlayerNumber) {
                             if (gameField.playerFieldPolygons[i].contains(this.ballForwardPosition)) {
-                                if (gameField.playerFieldPolygons[i].contains(this.ballBody.getPosition())) {
+                                if (gameField.playerFieldPolygons[i].contains(position)) {
                                     Gdx.app.debug("ClassicGame", "ball on playerField " + i);
                                     this.tempPlayerField = i;
 
@@ -426,6 +420,7 @@ public class ClassicGameObjects {
         void checkGoal() {
             if (gameField.goalPolygons[myPlayerNumber].contains(this.ballBody.getPosition())) {
                 Gdx.app.debug("ClassicGame", "ball " + Integer.toString(this.ballNumber) + " in my goal");
+                this.ballDisplayState = 0;
                 this.destroyBall();
                 this.tempGoal =1;
             } else {
@@ -435,7 +430,6 @@ public class ClassicGameObjects {
 
         void destroyBall() {
             if(this.ballBody!=null) {
-                this.ballDisplayState = false;
                 this.destroyPosition = new Vector2(this.ballBody.getPosition());
                 this.destroyTime = System.currentTimeMillis();
                 world.destroyBody(this.ballBody);
@@ -464,13 +458,7 @@ public class ClassicGameObjects {
         Bat(int batPlayerField_) {
             this.batPlayerField =batPlayerField_;
             BodyDef bodyDef= new BodyDef();
-            if(batPlayerField_==myPlayerNumber) {
-                bodyDef.type= BodyDef.BodyType.DynamicBody;
-                //bodyDef.position.set(touches.touchPos[0].cpy().scl(1/PIXELS_TO_METERS));
-            } else {
-                bodyDef.type= BodyDef.BodyType.KinematicBody;
-                //bodyDef.position.set();
-            }
+            bodyDef.type= BodyDef.BodyType.DynamicBody;
 
             this.batBody=world.createBody(bodyDef);
             PolygonShape batShape= new PolygonShape();
@@ -486,9 +474,9 @@ public class ClassicGameObjects {
             batFixtureDef.filter.maskBits = MASK_BAT;
             this.batBody.createFixture(batFixtureDef);
             this.batBody.setLinearDamping(100f);
-            this.batBody.setAngularDamping(100f);
-            this.newPos = new Vector2(miscObjects.touches.touchPos[0]);
-            this.batBody.setTransform(this.newPos.rotate(360f/numberOfPlayers*(this.batPlayerField-myPlayerNumber)),2f*MathUtils.PI/numberOfBalls*((this.batPlayerField-myPlayerNumber)));
+            this.batBody.setAngularDamping(1000f);
+            this.newPos = new Vector2(miscObjects.touches.touchPos[0]).rotate(360f/numberOfPlayers*(this.batPlayerField-myPlayerNumber));
+            this.batBody.setTransform(this.newPos,2f*MathUtils.PI/numberOfBalls*((this.batPlayerField-myPlayerNumber)));
 
             this.batSprite = new Sprite(texturesMap.get("bat_0"));
             this.batSprite.setOrigin(this.batWidth/2,this.batHeight/2);
@@ -562,7 +550,7 @@ public class ClassicGameObjects {
             PolygonShape[] borderShapes;
 
             if (numberOfPlayers==2) {
-                this.playerFieldVertices = new Vector2[16];
+                this.playerFieldVertices = new Vector2[18];
                 this.gameFieldVertices= new Vector2[14];
 
                 this.playerFieldVertices[0] = new Vector2(0,0);
@@ -583,11 +571,14 @@ public class ClassicGameObjects {
                 this.playerFieldVertices[14] = new Vector2(-width/2-borderThickness,-height*heightPart);
                 this.playerFieldVertices[15] = new Vector2(-width/2-borderThickness,-height-borderThickness);
 
+                this.playerFieldVertices[16] = new Vector2(this.playerFieldVertices[4]).sub(0,borderThickness);
+                this.playerFieldVertices[17] = new Vector2(this.playerFieldVertices[5]).sub(0,borderThickness);
+
                 borderShapes= new PolygonShape[3*numberOfPlayers];
 
             } else {
                 Vector2 offset = new Vector2(0,-width/2f*(MathUtils.cosDeg(180f/numberOfPlayers)/MathUtils.sinDeg(180f/numberOfPlayers)));
-                this.playerFieldVertices = new Vector2[14];
+                this.playerFieldVertices = new Vector2[16];
 
                 this.playerFieldVertices[0] = new Vector2(0,0);
                 this.playerFieldVertices[1] = new Vector2(-width/2,0).add(offset);
@@ -606,6 +597,9 @@ public class ClassicGameObjects {
                 this.playerFieldVertices[9] = new Vector2(this.playerFieldVertices[2]).add(this.playerFieldVertices[10]).sub(this.playerFieldVertices[1]);
 
                 this.playerFieldVertices[13] = new Vector2(this.playerFieldVertices[9]).scl((height+borderThickness)/this.playerFieldVertices[9].len());
+
+                this.playerFieldVertices[14] = new Vector2(this.playerFieldVertices[4]).sub(0,borderThickness);
+                this.playerFieldVertices[15] = new Vector2(this.playerFieldVertices[5]).sub(0,borderThickness);
 
                 borderShapes = new PolygonShape[5*numberOfPlayers];
 
@@ -647,16 +641,23 @@ public class ClassicGameObjects {
                     borderShapes[0 + i * 3].set(new Vector2[]{this.playerFieldVertices[9], this.playerFieldVertices[10], this.playerFieldVertices[11], this.playerFieldVertices[12],this.playerFieldVertices[13]});
                     borderShapes[1 + i * 3].set(new Vector2[]{this.playerFieldVertices[2], this.playerFieldVertices[1], this.playerFieldVertices[9], this.playerFieldVertices[13], this.playerFieldVertices[14]});
                     borderShapes[2 + i * 3].set(new Vector2[]{this.playerFieldVertices[4], this.playerFieldVertices[3], this.playerFieldVertices[2], this.playerFieldVertices[14], this.playerFieldVertices[15]});
+
+                    goalShapes[i].set(new Vector2[]{this.playerFieldVertices[4],
+                            this.playerFieldVertices[5],this.playerFieldVertices[16],
+                            this.playerFieldVertices[17]});
                 } else {
                     borderShapes[0 + i * 5].set(new Vector2[]{this.playerFieldVertices[2], this.playerFieldVertices[1], this.playerFieldVertices[10], this.playerFieldVertices[9]});
                     borderShapes[1 + i * 5].set(new Vector2[]{this.playerFieldVertices[10], this.playerFieldVertices[11], this.playerFieldVertices[12]});
                     borderShapes[2 + i * 5].set(new Vector2[]{this.playerFieldVertices[4], this.playerFieldVertices[3],this.playerFieldVertices[2]});
                     borderShapes[3 + i * 5].set(new Vector2[]{this.playerFieldVertices[4], this.playerFieldVertices[2],this.playerFieldVertices[9]});
                     borderShapes[4 + i * 5].set(new Vector2[]{this.playerFieldVertices[10], this.playerFieldVertices[12],this.playerFieldVertices[9]});
+
+                    goalShapes[i].set(new Vector2[]{this.playerFieldVertices[4],
+                            this.playerFieldVertices[5],this.playerFieldVertices[14],
+                            this.playerFieldVertices[15]});
                 }
 
-                goalShapes[i].set(new Vector2[]{this.playerFieldVertices[3],this.playerFieldVertices[4],this.playerFieldVertices[5],
-                        this.playerFieldVertices[6]});
+
                 this.playerFieldVertices = MiscObjects.transformVectorArray(this.playerFieldVertices,1,360f/numberOfPlayers);
                 //Gdx.app.debug("ClassicGame", "bordersetup player " + i);
             }
@@ -681,12 +682,12 @@ public class ClassicGameObjects {
                 borderShapes[i].dispose();
             }
 
-            /*for(int i= 0;i<this.goalBodies.length;i++) {
+            for(int i= 0;i<this.goalBodies.length;i++) {
                 this.goalBodies[i] = world.createBody(borderBodyDef);
                 borderFixtureDef.shape = goalShapes[i];
                 this.goalBodies[i].createFixture(borderFixtureDef);
                 goalShapes[i].dispose();
-            }*/
+            }
 
             this.playerFieldSprites = new PolygonSprite[numberOfPlayers];
             this.goalSprites = new PolygonSprite[numberOfPlayers];

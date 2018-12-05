@@ -10,7 +10,6 @@ import com.esotericsoftware.kryonet.Server;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -20,19 +19,15 @@ public interface IGlobals {
 
         public int numberOfBalls;
 
-        public Vector2[] ballsPositions;
-        public Vector2[] ballsVelocities;
-        public int[] ballsPlayerScreens;
-        public float[] ballsSizes;
-        public boolean[] ballDisplayStates;
-        public boolean[] updateBallStates;
-        public boolean[] updateBatStates;
-
         public float width, height;
-        //TODO generalize to more players
-        public Vector2[] batPositions;
-        //public Vector2[] batVelocities = new Vector2[2];
-        public float[] batOrientations;
+        public int gameState;
+
+        public Ball[] balls;
+        public Bat[] bats;
+
+        public int[] ballPlayerFields;
+        public boolean[] ballUpdateStates;
+        public boolean[] batUpdateStates;
 
         public float friction;
 
@@ -43,39 +38,47 @@ public interface IGlobals {
 
         private float factor =1;
 
+        public int myPlayerNumber;
+        public int numberOfPlayers;
+
         GameVariables() {
-            numberOfBalls=1;
+            this.gameState = 0;
             friction=0.1f;
 
             gravityState=false;
-            attractionState=true;
+            attractionState=false;
         }
 
         public void setBalls(boolean randomPosition) {
             Random rand = new Random();
-            this.ballsPositions = new Vector2[this.numberOfBalls];
-            this.ballsVelocities = new Vector2[this.numberOfBalls];
-            this.ballsPlayerScreens = new int[this.numberOfBalls];
-            this.ballsSizes = new float[this.numberOfBalls];
-            this.ballDisplayStates = new boolean[this.numberOfBalls];
-            this.updateBallStates = new boolean[this.numberOfBalls];
+            this.balls = new Ball[this.numberOfBalls];
+            this.ballPlayerFields = new int[this.numberOfBalls];
+            this.ballUpdateStates = new boolean[this.numberOfBalls];
 
+            for (int i = 0; i < this.numberOfBalls; i++) {
+                this.balls[i] = new Ball();
+                if (randomPosition) {
+                    this.balls[i].ballNumber = i;
+                    this.balls[i].ballRadius = (rand.nextFloat()+0.5f)*0.03f * this.factor;
+                    this.balls[i].ballPosition = new Vector2((rand.nextFloat()-0.5f)*0.8f * this.factor, ((rand.nextFloat()-1f)*0.6f-0.2f)*this.factor);
+                    this.balls[i].ballVelocity = new Vector2(0, 0);
+                    this.balls[i].ballAngle = 0f;
+                    this.balls[i].ballAngularVelocity = 0f;
 
-            if (randomPosition) {
-                for (int i = 0; i < this.numberOfBalls; i++) {
-                    this.ballsPositions[i] = new Vector2((rand.nextFloat()-0.5f)*0.8f * this.factor, ((rand.nextFloat()-1f)*0.6f-0.2f)*this.factor);
-                    this.ballsVelocities[i] = new Vector2(0, 0);
-                    this.ballsPlayerScreens[i] = 0;
-                    this.ballsSizes[i] = (rand.nextFloat()+0.5f)*0.03f * this.factor;
-                    this.ballDisplayStates[i]=true;
-                    this.updateBallStates[i]=false;
                 }
+                //this.balls[i].ballDisplayState=1;
+                this.ballUpdateStates[i]=false;
             }
         }
 
-        public void setBats(int numberOfPlayers) {
-            this.batPositions=new Vector2[numberOfPlayers];
-            this.batOrientations= new float[numberOfPlayers];
+        public void setBats() {
+            this.bats = new Bat[this.numberOfPlayers];
+            this.batUpdateStates = new boolean[this.numberOfPlayers];
+
+            for (int i = 0; i < this.numberOfPlayers; i++) {
+                this.bats[i]= new Bat();
+                this.batUpdateStates[i] = false;
+            }
         }
     }
 
@@ -104,7 +107,7 @@ public interface IGlobals {
         public boolean updateListViewState;
 
         public int myPlayerNumber;
-        public int numberOfPlayers=0;
+        public int numberOfPlayers;
 
         SettingsVariables() {
 
@@ -203,8 +206,6 @@ public interface IGlobals {
         public void registerKryoClasses(Kryo myKryo) {
             myKryo.register(float.class);
             myKryo.register(float[].class);
-            myKryo.register(Integer.class);
-            myKryo.register(Integer[].class);
             myKryo.register(int.class);
             myKryo.register(int[].class);
             myKryo.register(String.class);
@@ -215,17 +216,18 @@ public interface IGlobals {
             myKryo.register(Connection[].class);
             myKryo.register(Object.class);
             myKryo.register(Object[].class);
+            myKryo.register(Ball.class);
+            myKryo.register(Ball[].class);
+            myKryo.register(Bat.class);
+            myKryo.register(Bat[].class);
             myKryo.register(com.badlogic.gdx.math.Vector2.class);
             myKryo.register(com.badlogic.gdx.math.Vector2[].class);
             myKryo.register(SendVariables.SendClass.class);
             myKryo.register(SendVariables.SendSettings.class);
             myKryo.register(SendVariables.SendConnectionState.class);
             myKryo.register(SendVariables.SendConnectionRequest.class);
-            myKryo.register(SendVariables.SendBallKinetics.class);
-            myKryo.register(SendVariables.SendBallScreenChange.class);
-            myKryo.register(SendVariables.SendBallGoal.class);
-            myKryo.register(SendVariables.SendBat.class);
-            myKryo.register(SendVariables.SendScore.class);
+            myKryo.register(SendVariables.SendFrequents.class);
+            myKryo.register(SendVariables.SendFieldChange.class);
         }
 
         public boolean addDiscoveryIpToList(String IpAdress){
@@ -316,7 +318,7 @@ public interface IGlobals {
             private SendVariables.SendClass tcpSendClass;
             private SendVariables.SendClass udpSendClass;
             private long referenceTime;
-            private int updateTime;
+            private int udpSendTimer;
             //private ArrayList<Object> udpPendingObjects;
             //private ArrayList<Object> tempUdpPendingObjects;
 
@@ -341,7 +343,7 @@ public interface IGlobals {
                 this.udpSendClass = new SendVariables.SendClass();
 
 
-                this.updateTime = 0;
+                this.udpSendTimer = 100;
                 this.referenceTime = System.currentTimeMillis();
 
                 //this.udpPendingObjects = new ArrayList<Object>(Arrays.asList(new Object[] {}));
@@ -350,38 +352,37 @@ public interface IGlobals {
 
             public void run() {
                 while (this.isRunnning) {
-                    if(System.currentTimeMillis() - this.referenceTime > this.updateTime) {
-                        if (this.connectionPending) {
-                            try {
-                                this.client.connect(5000, this.ipAdress, this.tcpPort, this.udpPort);
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                            this.connectionPending = false;
-                        }
+                    if (this.connectionPending) {
                         try {
-                            if (this.tcpPending) {
-                                synchronized (this.tcpPendingObjects) {
-                                    this.tcpSendClass.sendObjects = this.tcpPendingObjects.toArray(new Object[0]);
-                                    this.tcpPendingObjects = new ArrayList();
-                                    this.tcpPending = false;
-                                }
-                                this.client.sendTCP(this.tcpSendClass);
-                            }
-
-                            if (this.udpPending) {
-                                synchronized (this.tcpPendingObjects) {
-                                    this.udpSendClass = (SendVariables.SendClass) this.udpPendingObject;
-                                    this.udpPending = false;
-                                }
-                                this.client.sendUDP(this.udpSendClass);
-
-                            }
-
-                        }catch (NullPointerException e) {
+                            this.client.connect(5000, this.ipAdress, this.tcpPort, this.udpPort);
+                        } catch (IOException e) {
                             e.printStackTrace();
                         }
-                        this.referenceTime = System.currentTimeMillis();
+                        this.connectionPending = false;
+                    }
+                    try {
+                        if (this.tcpPending) {
+                            synchronized (this.tcpPendingObjects) {
+                                this.tcpSendClass.sendObjects = this.tcpPendingObjects.toArray(new Object[0]);
+                                this.tcpPendingObjects = new ArrayList();
+                                this.tcpPending = false;
+                                this.client.sendTCP(this.tcpSendClass);
+                            }
+                        }
+                        if(System.currentTimeMillis() - this.referenceTime > this.udpSendTimer) {
+                            if (this.udpPending) {
+                                synchronized (this.udpPendingObject) {
+                                    this.udpSendClass = (SendVariables.SendClass) this.udpPendingObject;
+                                    this.udpPending = false;
+                                    this.client.sendUDP(this.udpSendClass);
+                                }
+
+                                this.referenceTime = System.currentTimeMillis();
+                            }
+                        }
+
+                    }catch (NullPointerException e) {
+                        e.printStackTrace();
                     }
 
                 }
@@ -436,10 +437,14 @@ public interface IGlobals {
             public String[] ipAdresses;
             public String[] playerNames;
 
-            public Vector2[] ballsPositions;
-            public Vector2[] ballsVelocities;
-            public float[] ballsSizes;
-            public boolean[] ballsDisplayStates;
+            public Ball[] balls;
+            /*public int[] ballDisplayStates;
+            public float[] ballSizes;
+            public Vector2[] ballPositions;
+            public Vector2[] ballVelocities;
+            public float[] ballAngles;
+            public float[] ballAngularVelocities;*/
+
             public int gameMode;
             public boolean gravityState;
             public boolean attractionState;
@@ -454,41 +459,41 @@ public interface IGlobals {
             public String myPlayerName;
         }
 
-        static public class SendBallKinetics {
+        static public class SendFrequents {
             public int myPlayerNumber;
-            public Integer[] ballNumbers;
-            public Integer[] ballPlayerFields;
+            public Ball[] balls;
+            public Bat bat;
+            public int[] scores;
+        }
+
+        static public class SendFieldChange {
+            public int myPlayerNumber;
+
+            public Ball[] balls;
+            /*public int[] ballNumbers;
+            public int[] ballPlayerFields;
             public Vector2[] ballPositions;
-            public Vector2[] ballVelocities;
+            public Vector2[] ballVelocities;*/
         }
+    }
 
-        static public class SendBat {
-            public int myPlayerNumber;
-            public  int batPlayerField;
-            public Vector2 batPosition;
-            //public Vector2 batVelocity;
-            public float batOrientation;
-        }
+    class Ball{
+        public int ballNumber;
+        public int ballPlayerField;
 
-        static public class SendBallScreenChange {
-            public int myPlayerNumber;
-            public Integer[] ballNumbers;
-            public Integer[] ballPlayerFields;
-            public Vector2[] ballPositions;
-            public Vector2[] ballVelocities;
-        }
+        public float ballRadius;
+        public int ballDisplayState;
+        public Vector2 ballPosition;
+        public Vector2 ballVelocity;
+        public float ballAngle;
+        public float ballAngularVelocity;
+    }
 
-        static public class SendBallGoal {
-            public int myPlayerNumber;
-            public Integer[] ballNumbers;
-            public int[] playerScores;
-        }
-
-
-        static public class SendScore {
-            public int myScore;
-            public int otherScore;
-        }
+    class Bat{
+        public Vector2 batPosition;
+        public Vector2 batVelocity;
+        public float batAngle;
+        public float batAngularVelocity;
     }
 
     GameVariables getGameVariables();
