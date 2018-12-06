@@ -15,7 +15,6 @@ public class MiscObjects {
     //global sendclasses
     private IGlobals.SendVariables.TempFrequentObjects tempFrequentObjects = new IGlobals.SendVariables.TempFrequentObjects();
 
-    private IGlobals.SendVariables.SendFrequentBall sendFrequentBalls =new IGlobals.SendVariables.SendFrequentBall();
     private IGlobals.SendVariables.SendFrequentBat sendFrequentBat=new IGlobals.SendVariables.SendFrequentBat();
     private IGlobals.SendVariables.SendFrequentInfo sendFrequentInfo =new IGlobals.SendVariables.SendFrequentInfo();
     private IGlobals.SendVariables.SendFieldChange sendFieldChange =new IGlobals.SendVariables.SendFieldChange();
@@ -112,39 +111,25 @@ public class MiscObjects {
 
     void sendFrequentsFunction(ArrayList<ClassicGameObjects.Ball> sendBallsAL, ClassicGameObjects.Bat bat, int[] scores) {
 
-        sendFrequentBalls.myPlayerNumber = myPlayerNumber;
         sendFrequentBat.myPlayerNumber=myPlayerNumber;
         sendFrequentInfo.myPlayerNumber=myPlayerNumber;
 
-        sendFrequentBalls.numberOfSendBalls = sendBallsAL.size();
+        tempFrequentObjects.sendFrequentBalls = new IGlobals.SendVariables.SendFrequentBall[sendBallsAL.size()];
 
-
-        if(sendFrequentBalls.numberOfSendBalls >0) {
-
-            sendFrequentBalls.ballNumbers = new int[sendBallsAL.size()];
-            sendFrequentBalls.ballPlayerFields = new int[sendBallsAL.size()];
-            sendFrequentBalls.ballDisplayStates = new int[sendBallsAL.size()];
-            sendFrequentBalls.ballPositionsX = new float[sendBallsAL.size()];
-            sendFrequentBalls.ballPositionsY = new float[sendBallsAL.size()];
-            sendFrequentBalls.ballVelocitiesX = new float[sendBallsAL.size()];
-            sendFrequentBalls.ballVelocitiesY = new float[sendBallsAL.size()];
-            sendFrequentBalls.ballAngles = new float[sendBallsAL.size()];
-            sendFrequentBalls.ballAngularVelocities = new float[sendBallsAL.size()];
-
-            for (int i = 0; i < sendFrequentBalls.numberOfSendBalls; i++) {
-                sendFrequentBalls.ballNumbers[i] = sendBallsAL.get(i).ballNumber;
-                sendFrequentBalls.ballPlayerFields[i]  = sendBallsAL.get(i).tempPlayerField;
-                sendFrequentBalls.ballDisplayStates[i]  = sendBallsAL.get(i).ballDisplayState;
-                if(sendFrequentBalls.ballDisplayStates[i] ==1) {
-                    sendFrequentBalls.ballPositionsX[i] = sendBallsAL.get(i).ballBody.getPosition().x;
-                    sendFrequentBalls.ballPositionsY[i] = sendBallsAL.get(i).ballBody.getPosition().y;
-                    sendFrequentBalls.ballVelocitiesX[i] = sendBallsAL.get(i).ballBody.getLinearVelocity().x;
-                    sendFrequentBalls.ballVelocitiesY[i] = sendBallsAL.get(i).ballBody.getLinearVelocity().y;
-                    sendFrequentBalls.ballAngles[i] = sendBallsAL.get(i).ballBody.getAngle();
-                    sendFrequentBalls.ballAngularVelocities[i] = sendBallsAL.get(i).ballBody.getAngularVelocity();
-                }
+        for (int i = 0; i < sendBallsAL.size() ; i++) {
+            tempFrequentObjects.sendFrequentBalls[i] = new IGlobals.SendVariables.SendFrequentBall();
+            tempFrequentObjects.sendFrequentBalls[i].myPlayerNumber = myPlayerNumber;
+            tempFrequentObjects.sendFrequentBalls[i].ballNumber = sendBallsAL.get(i).ballNumber;
+            tempFrequentObjects.sendFrequentBalls[i].ballPlayerField  = sendBallsAL.get(i).tempPlayerField;
+            tempFrequentObjects.sendFrequentBalls[i].ballDisplayState  = sendBallsAL.get(i).ballDisplayState;
+            if(sendBallsAL.get(i).ballDisplayState==1) {
+                tempFrequentObjects.sendFrequentBalls[i].ballPositionX = sendBallsAL.get(i).ballBody.getPosition().x;
+                tempFrequentObjects.sendFrequentBalls[i].ballPositionY = sendBallsAL.get(i).ballBody.getPosition().y;
+                tempFrequentObjects.sendFrequentBalls[i].ballVelocityX = sendBallsAL.get(i).ballBody.getLinearVelocity().x;
+                tempFrequentObjects.sendFrequentBalls[i].ballVelocityY = sendBallsAL.get(i).ballBody.getLinearVelocity().y;
+                tempFrequentObjects.sendFrequentBalls[i].ballAngle = sendBallsAL.get(i).ballBody.getAngle();
+                tempFrequentObjects.sendFrequentBalls[i].ballAngularVelocity = sendBallsAL.get(i).ballBody.getAngularVelocity();
             }
-
         }
 
         sendFrequentBat.batPositionX=bat.batBody.getPosition().x;
@@ -156,7 +141,6 @@ public class MiscObjects {
 
         sendFrequentInfo.scores = scores;
 
-        tempFrequentObjects.sendFrequentBalls = sendFrequentBalls;
         tempFrequentObjects.sendFrequentBat = sendFrequentBat;
         tempFrequentObjects.sendFrequentInfo = sendFrequentInfo;
 

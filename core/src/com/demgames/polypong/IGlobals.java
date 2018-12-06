@@ -346,7 +346,7 @@ public interface IGlobals {
                 this.udpPendingObject = new Object();
 
 
-                this.udpSendTimer = 100;
+                this.udpSendTimer = 0;
                 this.referenceTime = System.currentTimeMillis();
 
                 //this.udpPendingObjects = new ArrayList<Object>(Arrays.asList(new Object[] {}));
@@ -378,7 +378,9 @@ public interface IGlobals {
                                 synchronized (this.udpPendingObject) {
                                     this.udpPending = false;
                                     this.tempObjects = (SendVariables.TempFrequentObjects)this.udpPendingObject;
-                                    this.client.sendUDP(this.tempObjects.sendFrequentBalls);
+                                    for(int i=0;i<tempObjects.sendFrequentBalls.length;i++) {
+                                        this.client.sendUDP(this.tempObjects.sendFrequentBalls[i]);
+                                    }
                                     this.client.sendUDP(this.tempObjects.sendFrequentBat);
                                     this.client.sendUDP(this.tempObjects.sendFrequentInfo);
                                 }
@@ -387,7 +389,7 @@ public interface IGlobals {
                             }
                         }
 
-                    }catch (NullPointerException e) {
+                    }catch (IllegalArgumentException e) {
                         e.printStackTrace();
                     }
 
@@ -457,19 +459,18 @@ public interface IGlobals {
 
         static public class SendFrequentBall {
             public int myPlayerNumber;
-            public int numberOfSendBalls;
 
-            public int[] ballNumbers;
-            public int[] ballPlayerFields;
+            public int ballNumber;
+            public int ballPlayerField;
 
-            public float[] ballRadii;
-            public int[] ballDisplayStates;
-            public float[] ballPositionsX;
-            public float[] ballPositionsY;
-            public float[] ballVelocitiesX;
-            public float[] ballVelocitiesY;
-            public float[] ballAngles;
-            public float[] ballAngularVelocities;
+            public float ballRadii;
+            public int ballDisplayState;
+            public float ballPositionX;
+            public float ballPositionY;
+            public float ballVelocityX;
+            public float ballVelocityY;
+            public float ballAngle;
+            public float ballAngularVelocity;
 
             //public Ball ball;
 
@@ -528,7 +529,7 @@ public interface IGlobals {
         }
 
         static public class TempFrequentObjects {
-            SendFrequentBall sendFrequentBalls;
+            SendFrequentBall[] sendFrequentBalls;
             SendFrequentBat sendFrequentBat;
             SendFrequentInfo sendFrequentInfo;
 

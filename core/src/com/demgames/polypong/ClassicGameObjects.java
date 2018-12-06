@@ -145,8 +145,8 @@ public class ClassicGameObjects {
             for (int i = 0; i < this.balls.length; i++) {
                 if (globals.getGameVariables().ballUpdateStates[i]) {
                     //Gdx.app.debug("ClassicGame", "ball " + this.balls[i].ballNumber + " displayState " + this.balls[i].ballDisplayState + " playerfield " + this.balls[i].playerField);
-                    this.balls[i].ballDisplayState = globals.getGameVariables().balls[i].ballDisplayState;
                     if (this.balls[i].ballDisplayState == 1) {
+                        this.balls[i].ballDisplayState = globals.getGameVariables().balls[i].ballDisplayState;
                         this.balls[i].playerField = globals.getGameVariables().ballPlayerFields[i];
                         this.balls[i].ballBody.setTransform(globals.getGameVariables().balls[i].ballPositionX,globals.getGameVariables().balls[i].ballPositionY, globals.getGameVariables().balls[i].ballAngle);
                         this.balls[i].ballBody.setLinearVelocity(globals.getGameVariables().balls[i].ballVelocityX,globals.getGameVariables().balls[i].ballVelocityY);
