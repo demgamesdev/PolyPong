@@ -1,7 +1,5 @@
 package com.demgames.polypong;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.math.Vector2;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryonet.Client;
 import com.esotericsoftware.kryonet.Connection;
@@ -233,7 +231,9 @@ public interface IGlobals {
             myKryo.register(SendVariables.SendSettings.class);
             myKryo.register(SendVariables.SendConnectionState.class);
             myKryo.register(SendVariables.SendConnectionRequest.class);
-            myKryo.register(SendVariables.SendFrequents.class);
+            myKryo.register(SendVariables.SendFrequentBall.class);
+            myKryo.register(SendVariables.SendFrequentBat.class);
+            myKryo.register(SendVariables.SendFrequentInfo.class);
             myKryo.register(SendVariables.SendFieldChange.class);
         }
 
@@ -322,6 +322,7 @@ public interface IGlobals {
             private boolean connectionPending;
             private List<Object> tcpPendingObjects;
             private Object udpPendingObject;
+            private SendVariables.TempFrequentObjects tempObjects;
             private long referenceTime;
             private int udpSendTimer;
             //private ArrayList<Object> udpPendingObjects;
@@ -376,11 +377,10 @@ public interface IGlobals {
                             if (this.udpPending) {
                                 synchronized (this.udpPendingObject) {
                                     this.udpPending = false;
-                                    SendVariables.SendFrequents sendFrequents = (SendVariables.SendFrequents)this.udpPendingObject;
-                                    for(int i=0;i<sendFrequents.balls.length;i++){
-                                        Gdx.app.debug(TAG, "sendfrequents ball " + Integer.toString(sendFrequents.balls[i].ballNumber));
-                                    }
-                                    this.client.sendUDP(this.udpPendingObject);
+                                    this.tempObjects = (SendVariables.TempFrequentObjects)this.udpPendingObject;
+                                    this.client.sendUDP(this.tempObjects.sendFrequentBalls);
+                                    this.client.sendUDP(this.tempObjects.sendFrequentBat);
+                                    this.client.sendUDP(this.tempObjects.sendFrequentInfo);
                                 }
 
                                 this.referenceTime = System.currentTimeMillis();
@@ -455,21 +455,83 @@ public interface IGlobals {
             public String myPlayerName;
         }
 
-        static public class SendFrequents {
+        static public class SendFrequentBall {
             public int myPlayerNumber;
-            public Ball[] balls;
-            public Bat bat;
-            public int[] scores;
+            public int numberOfSendBalls;
+
+            public int[] ballNumbers;
+            public int[] ballPlayerFields;
+
+            public float[] ballRadii;
+            public int[] ballDisplayStates;
+            public float[] ballPositionsX;
+            public float[] ballPositionsY;
+            public float[] ballVelocitiesX;
+            public float[] ballVelocitiesY;
+            public float[] ballAngles;
+            public float[] ballAngularVelocities;
+
+            //public Ball ball;
+
+            /*SendFrequentBall() {
+                this.ball = new Ball();
+            }*/
         }
+
+        static public class SendFrequentBat {
+            public int myPlayerNumber;
+
+            public float batPositionX;
+            public float batPositionY;
+            public float batVelocityX;
+            public float batVelocityY;
+            public float batAngle;
+            public float batAngularVelocity;
+
+            /*public Bat bat;
+
+            SendFrequentBat() {
+                this.bat = new Bat();
+            }*/
+        }
+
+        static public class SendFrequentInfo {
+            public int myPlayerNumber;
+            public int[] scores;
+            public int[] ballNumbers;
+            public int[] ballDisplayStates;
+        }
+
+
 
         static public class SendFieldChange {
             public int myPlayerNumber;
+            public int numberOfSendBalls;
 
-            public Ball[] balls;
+            public int[] ballNumbers;
+            public int[] ballPlayerFields;
+
+            public float[] ballRadii;
+            public int[] ballDisplayStates;
+            public float[] ballPositionsX;
+            public float[] ballPositionsY;
+            public float[] ballVelocitiesX;
+            public float[] ballVelocitiesY;
+            public float[] ballAngles;
+            public float[] ballAngularVelocities;
+
+            //public Ball[] balls;
             /*public int[] ballNumbers;
             public int[] ballPlayerFields;
             public Vector2[] ballPositions;
             public Vector2[] ballVelocities;*/
+        }
+
+        static public class TempFrequentObjects {
+            SendFrequentBall sendFrequentBalls;
+            SendFrequentBat sendFrequentBat;
+            SendFrequentInfo sendFrequentInfo;
+
         }
     }
 
@@ -485,10 +547,6 @@ public interface IGlobals {
         public float ballVelocityY;
         public float ballAngle;
         public float ballAngularVelocity;
-
-        Ball() {
-
-        }
     }
 
     class Bat{
@@ -498,10 +556,6 @@ public interface IGlobals {
         public float batVelocityY;
         public float batAngle;
         public float batAngularVelocity;
-
-        Bat() {
-
-        }
     }
 
     GameVariables getGameVariables();

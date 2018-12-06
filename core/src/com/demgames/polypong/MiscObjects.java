@@ -13,13 +13,17 @@ public class MiscObjects {
     private IGlobals globalVariables;
 
     //global sendclasses
+    private IGlobals.SendVariables.TempFrequentObjects tempFrequentObjects = new IGlobals.SendVariables.TempFrequentObjects();
 
-    private IGlobals.SendVariables.SendFrequents sendFrequents=new IGlobals.SendVariables.SendFrequents();
+    private IGlobals.SendVariables.SendFrequentBall sendFrequentBalls =new IGlobals.SendVariables.SendFrequentBall();
+    private IGlobals.SendVariables.SendFrequentBat sendFrequentBat=new IGlobals.SendVariables.SendFrequentBat();
+    private IGlobals.SendVariables.SendFrequentInfo sendFrequentInfo =new IGlobals.SendVariables.SendFrequentInfo();
     private IGlobals.SendVariables.SendFieldChange sendFieldChange =new IGlobals.SendVariables.SendFieldChange();
     private IGlobals.SendVariables.SendConnectionState sendConnectionState=new IGlobals.SendVariables.SendConnectionState();
 
     private int myPlayerNumber;
     private float screenWidth, screenHeight,width, height;
+    Vector2 zoomPoint;
     float zoomLevel;
 
     //class for touch input and gestures
@@ -37,6 +41,7 @@ public class MiscObjects {
         this.screenHeight = globalVariables.getGameVariables().height;
 
         this.zoomLevel = 1f;
+        this.zoomPoint = new Vector2(0,-this.height/2);
     }
 
     /********* OTHER FUNCTIONS *********/
@@ -45,7 +50,6 @@ public class MiscObjects {
 
     //transform touch input for variable zoomlevel
     Vector2 transformZoom(Vector2 vec) {
-        Vector2 camPos = new Vector2(0,-height+height/2*zoomLevel);
         vec.x*=zoomLevel;
         vec.y = - height + (vec.y + height) * zoomLevel;
         return(vec);
@@ -69,27 +73,37 @@ public class MiscObjects {
     /********* SEND FUNCTIONS *********/
 
     void sendFieldChangeFunction(ArrayList<ClassicGameObjects.Ball> sendFieldChangeBallsAL) {
-        if (sendFieldChangeBallsAL.size()>0) {
-            sendFieldChange.myPlayerNumber=myPlayerNumber;
-            sendFieldChange.balls = new IGlobals.Ball[sendFieldChangeBallsAL.size()];
+        sendFieldChange.myPlayerNumber=myPlayerNumber;
+        sendFieldChange.numberOfSendBalls = sendFieldChangeBallsAL.size();
+
+        if (sendFieldChange.numberOfSendBalls>0) {
+            sendFieldChange.ballNumbers = new int[sendFieldChangeBallsAL.size()];
+            sendFieldChange.ballPlayerFields = new int[sendFieldChangeBallsAL.size()];
+            sendFieldChange.ballDisplayStates = new int[sendFieldChangeBallsAL.size()];
+            sendFieldChange.ballPositionsX = new float[sendFieldChangeBallsAL.size()];
+            sendFieldChange.ballPositionsY = new float[sendFieldChangeBallsAL.size()];
+            sendFieldChange.ballVelocitiesX = new float[sendFieldChangeBallsAL.size()];
+            sendFieldChange.ballVelocitiesY = new float[sendFieldChangeBallsAL.size()];
+            sendFieldChange.ballAngles = new float[sendFieldChangeBallsAL.size()];
+            sendFieldChange.ballAngularVelocities = new float[sendFieldChangeBallsAL.size()];
 
 
-            for (int i = 0; i < sendFieldChangeBallsAL.size(); i++) {
-                sendFieldChange.balls[i]= new IGlobals.Ball();
-                sendFieldChange.balls[i].ballNumber = sendFieldChangeBallsAL.get(i).ballNumber;
-                sendFieldChange.balls[i].ballPlayerField = sendFieldChangeBallsAL.get(i).tempPlayerField;
-                sendFieldChange.balls[i].ballDisplayState = sendFieldChangeBallsAL.get(i).ballDisplayState;
-                sendFieldChange.balls[i].ballPositionX = sendFieldChangeBallsAL.get(i).ballBody.getPosition().x;
-                sendFieldChange.balls[i].ballPositionY = sendFieldChangeBallsAL.get(i).ballBody.getPosition().y;
-                sendFieldChange.balls[i].ballVelocityX = sendFieldChangeBallsAL.get(i).ballBody.getLinearVelocity().x;
-                sendFieldChange.balls[i].ballVelocityY = sendFieldChangeBallsAL.get(i).ballBody.getLinearVelocity().y;
-                sendFieldChange.balls[i].ballAngle = sendFieldChangeBallsAL.get(i).ballBody.getAngle();
-                sendFieldChange.balls[i].ballAngularVelocity = sendFieldChangeBallsAL.get(i).ballBody.getAngularVelocity();
-                Gdx.app.debug(TAG, "fieldchange of ball "+ sendFieldChange.balls[i].ballNumber +" sent");
+            for (int i = 0; i < sendFieldChange.numberOfSendBalls; i++) {
+                sendFieldChange.ballNumbers[i] = sendFieldChangeBallsAL.get(i).ballNumber;
+                sendFieldChange.ballPlayerFields[i]  = sendFieldChangeBallsAL.get(i).tempPlayerField;
+                sendFieldChange.ballDisplayStates[i]  = sendFieldChangeBallsAL.get(i).ballDisplayState;
+                sendFieldChange.ballPositionsX[i] = sendFieldChangeBallsAL.get(i).ballBody.getPosition().x;
+                sendFieldChange.ballPositionsY[i] = sendFieldChangeBallsAL.get(i).ballBody.getPosition().y;
+                sendFieldChange.ballVelocitiesX[i] = sendFieldChangeBallsAL.get(i).ballBody.getLinearVelocity().x;
+                sendFieldChange.ballVelocitiesY[i] = sendFieldChangeBallsAL.get(i).ballBody.getLinearVelocity().y;
+                sendFieldChange.ballAngles[i]= sendFieldChangeBallsAL.get(i).ballBody.getAngle();
+                sendFieldChange.ballAngularVelocities[i] = sendFieldChangeBallsAL.get(i).ballBody.getAngularVelocity();
+                //Gdx.app.debug(TAG, "fieldchange of ball "+ sendFieldChange.ballNumbers[i] +" sent");
             }
             globalVariables.getSettingsVariables().sendToAllClients(sendFieldChange,"tcp");
         }
     }
+
     void sendConnectionStateFunction() {
         sendConnectionState.myPlayerNumber=globalVariables.getSettingsVariables().myPlayerNumber;
         sendConnectionState.connectionState=globalVariables.getSettingsVariables().clientConnectionStates[globalVariables.getSettingsVariables().myPlayerNumber];
@@ -98,38 +112,56 @@ public class MiscObjects {
 
     void sendFrequentsFunction(ArrayList<ClassicGameObjects.Ball> sendBallsAL, ClassicGameObjects.Bat bat, int[] scores) {
 
-        sendFrequents.myPlayerNumber=myPlayerNumber;
-        sendFrequents.balls = new IGlobals.Ball[sendBallsAL.size()];
-        sendFrequents.bat = new IGlobals.Bat();
-        sendFrequents.scores = scores;
+        sendFrequentBalls.myPlayerNumber = myPlayerNumber;
+        sendFrequentBat.myPlayerNumber=myPlayerNumber;
+        sendFrequentInfo.myPlayerNumber=myPlayerNumber;
 
-        for (int i = 0; i < sendBallsAL.size(); i++) {
-            sendFrequents.balls[i] = new IGlobals.Ball();
-            sendFrequents.balls[i].ballNumber = sendBallsAL.get(i).ballNumber;
-            sendFrequents.balls[i].ballPlayerField = myPlayerNumber;
-            sendFrequents.balls[i].ballDisplayState = sendBallsAL.get(i).ballDisplayState;
+        sendFrequentBalls.numberOfSendBalls = sendBallsAL.size();
 
-            if(sendFrequents.balls[i].ballDisplayState ==1) {
-                sendFrequents.balls[i].ballPositionX = sendBallsAL.get(i).ballBody.getPosition().x;
-                sendFrequents.balls[i].ballPositionY = sendBallsAL.get(i).ballBody.getPosition().y;
-                sendFrequents.balls[i].ballVelocityX = sendBallsAL.get(i).ballBody.getLinearVelocity().x;
-                sendFrequents.balls[i].ballVelocityY = sendBallsAL.get(i).ballBody.getLinearVelocity().y;
-                sendFrequents.balls[i].ballAngle = sendBallsAL.get(i).ballBody.getAngle();
-                sendFrequents.balls[i].ballAngularVelocity = sendBallsAL.get(i).ballBody.getAngularVelocity();
-                Gdx.app.debug(TAG, "ball "+Integer.toString(sendFrequents.balls[i].ballNumber)+" position "+Float.toString(sendFrequents.balls[i].ballPositionX)+" sent");
-                Gdx.app.debug(TAG, "ball "+Integer.toString(sendFrequents.balls[i].ballNumber)+" velocity "+Float.toString(sendFrequents.balls[i].ballVelocityX)+" sent");
+
+        if(sendFrequentBalls.numberOfSendBalls >0) {
+
+            sendFrequentBalls.ballNumbers = new int[sendBallsAL.size()];
+            sendFrequentBalls.ballPlayerFields = new int[sendBallsAL.size()];
+            sendFrequentBalls.ballDisplayStates = new int[sendBallsAL.size()];
+            sendFrequentBalls.ballPositionsX = new float[sendBallsAL.size()];
+            sendFrequentBalls.ballPositionsY = new float[sendBallsAL.size()];
+            sendFrequentBalls.ballVelocitiesX = new float[sendBallsAL.size()];
+            sendFrequentBalls.ballVelocitiesY = new float[sendBallsAL.size()];
+            sendFrequentBalls.ballAngles = new float[sendBallsAL.size()];
+            sendFrequentBalls.ballAngularVelocities = new float[sendBallsAL.size()];
+
+            for (int i = 0; i < sendFrequentBalls.numberOfSendBalls; i++) {
+                sendFrequentBalls.ballNumbers[i] = sendBallsAL.get(i).ballNumber;
+                sendFrequentBalls.ballPlayerFields[i]  = sendBallsAL.get(i).tempPlayerField;
+                sendFrequentBalls.ballDisplayStates[i]  = sendBallsAL.get(i).ballDisplayState;
+                if(sendFrequentBalls.ballDisplayStates[i] ==1) {
+                    sendFrequentBalls.ballPositionsX[i] = sendBallsAL.get(i).ballBody.getPosition().x;
+                    sendFrequentBalls.ballPositionsY[i] = sendBallsAL.get(i).ballBody.getPosition().y;
+                    sendFrequentBalls.ballVelocitiesX[i] = sendBallsAL.get(i).ballBody.getLinearVelocity().x;
+                    sendFrequentBalls.ballVelocitiesY[i] = sendBallsAL.get(i).ballBody.getLinearVelocity().y;
+                    sendFrequentBalls.ballAngles[i] = sendBallsAL.get(i).ballBody.getAngle();
+                    sendFrequentBalls.ballAngularVelocities[i] = sendBallsAL.get(i).ballBody.getAngularVelocity();
+                }
             }
-            Gdx.app.debug(TAG, "ball "+Integer.toString(sendFrequents.balls[i].ballNumber)+" displaystate "+Integer.toString(sendFrequents.balls[i].ballDisplayState)+" sent");
+
         }
 
-        sendFrequents.bat.batPositionX=bat.batBody.getPosition().x;
-        sendFrequents.bat.batPositionY=bat.batBody.getPosition().y;
-        sendFrequents.bat.batVelocityX=bat.batBody.getLinearVelocity().x;
-        sendFrequents.bat.batVelocityY=bat.batBody.getLinearVelocity().y;
-        sendFrequents.bat.batAngle =bat.batBody.getAngle();
-        sendFrequents.bat.batAngularVelocity =bat.batBody.getAngularVelocity();
+        sendFrequentBat.batPositionX=bat.batBody.getPosition().x;
+        sendFrequentBat.batPositionY=bat.batBody.getPosition().y;
+        sendFrequentBat.batVelocityX=bat.batBody.getLinearVelocity().x;
+        sendFrequentBat.batVelocityY=bat.batBody.getLinearVelocity().y;
+        sendFrequentBat.batAngle =bat.batBody.getAngle();
+        sendFrequentBat.batAngularVelocity =bat.batBody.getAngularVelocity();
 
-        globalVariables.getSettingsVariables().sendToAllClients(sendFrequents,"udp");
+        sendFrequentInfo.scores = scores;
+
+        tempFrequentObjects.sendFrequentBalls = sendFrequentBalls;
+        tempFrequentObjects.sendFrequentBat = sendFrequentBat;
+        tempFrequentObjects.sendFrequentInfo = sendFrequentInfo;
+
+
+        globalVariables.getSettingsVariables().sendToAllClients(tempFrequentObjects,"udp");
     }
 
     class Touches {
@@ -182,6 +214,7 @@ public class MiscObjects {
             } else if(newZoomLevel<1.0f) {
                 zoomLevel=1.0f;
             }
+            zoomPoint.set(0,-height+height/2*zoomLevel);
         }
 
         //check for zoom gesture

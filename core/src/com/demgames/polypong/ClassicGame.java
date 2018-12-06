@@ -125,7 +125,7 @@ public class ClassicGame extends ApplicationAdapter{
         this.allPlayersReady = globalVariables.getSettingsVariables().checkAllClientConnectionStates(4);
         //Gdx.app.debug("ClassicGame", " touchPos "+miscObjects.touches.touchPos[0]);
 
-        if(this.allPlayersReady && globalVariables.getGameVariables().gameState == 1) {
+        if(this.allPlayersReady && globalVariables.getGameVariables().gameState == 1 && !gameObjects.allBallsDestroyedState) {
 
             //update from globals and update playerfields
 
@@ -141,18 +141,13 @@ public class ClassicGame extends ApplicationAdapter{
 
 
 
-        } else {
+        } else if(!gameObjects.allBallsDestroyedState){
             this.notReadyPlayerList = new ArrayList(Arrays.asList(new String[]{}));
             for(int i=0; i<this.numberOfPlayers;i++) {
                 if(globalVariables.getSettingsVariables().clientConnectionStates[i]!=4) {
                     this.notReadyPlayerList.add(globalVariables.getSettingsVariables().playerNames.get(i));
                 }
             }
-
-            spriteBatch.begin();
-
-
-            spriteBatch.end();
 
             Gdx.app.debug("ClassicGame", " not all players ready");
             for(int i=0; i<this.numberOfPlayers;i++){
@@ -176,7 +171,8 @@ public class ClassicGame extends ApplicationAdapter{
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         //Gdx.gl.glDisable(GL20.GL_BLEND);
         camera.zoom= miscObjects.zoomLevel;
-        //camera.position.set(0,-height+height/2*miscObjects.zoomLevel,0);
+        camera.position.set(0,-height+height/2*miscObjects.zoomLevel,0);
+        //-height+height/2*miscObjects.zoomLevel
         camera.update();
 
 
