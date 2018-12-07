@@ -108,7 +108,8 @@ public interface IGlobals {
         public int setupConnectionState =0;
         public boolean updateListViewState;
 
-        public Object threadObjectLock;
+        public Object receiveThreadLock;
+        public Object sendThreadLock;
 
         public int myPlayerNumber;
         public int numberOfPlayers;
@@ -126,7 +127,8 @@ public interface IGlobals {
             this.clientConnectionStates=new int[10];
             this.hasFocus=true;
 
-            this.threadObjectLock = new Object();
+            this.receiveThreadLock = new Object();
+            this.sendThreadLock = new Object();
         }
 
         public void startServerThread() {
@@ -346,7 +348,7 @@ public interface IGlobals {
                 this.udpPendingObject = new Object();
 
 
-                this.udpSendTimer = 0;
+                this.udpSendTimer = 100;
                 this.referenceTime = System.currentTimeMillis();
 
                 //this.udpPendingObjects = new ArrayList<Object>(Arrays.asList(new Object[] {}));
@@ -365,7 +367,7 @@ public interface IGlobals {
                     }
                     try {
                         if (this.tcpPending) {
-                            synchronized (this.tcpPendingObjects) {
+                            synchronized (sendThreadLock) {
                                 this.tcpPending = false;
                                 for(int i=0;i<this.tcpPendingObjects.size();i++){
                                     this.client.sendTCP(this.tcpPendingObjects.get(i));
@@ -375,7 +377,7 @@ public interface IGlobals {
                         }
                         if(System.currentTimeMillis() - this.referenceTime > this.udpSendTimer) {
                             if (this.udpPending) {
-                                synchronized (this.udpPendingObject) {
+                                synchronized (sendThreadLock) {
                                     this.udpPending = false;
                                     this.tempObjects = (SendVariables.TempFrequentObjects)this.udpPendingObject;
                                     for(int i=0;i<tempObjects.sendFrequentBalls.length;i++) {

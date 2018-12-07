@@ -141,10 +141,9 @@ public class ClassicGameObjects {
 
 
     void updateAndSend(IGlobals globals) {
-        synchronized (globals.getSettingsVariables().threadObjectLock) {
+        synchronized (globals.getSettingsVariables().receiveThreadLock) {
             for (int i = 0; i < this.balls.length; i++) {
                 if (globals.getGameVariables().ballUpdateStates[i]) {
-                    //Gdx.app.debug("ClassicGame", "ball " + this.balls[i].ballNumber + " displayState " + this.balls[i].ballDisplayState + " playerfield " + this.balls[i].playerField);
                     if (this.balls[i].ballDisplayState == 1) {
                         this.balls[i].ballDisplayState = globals.getGameVariables().balls[i].ballDisplayState;
                         this.balls[i].playerField = globals.getGameVariables().ballPlayerFields[i];
@@ -154,6 +153,7 @@ public class ClassicGameObjects {
                     }
                     globals.getGameVariables().ballUpdateStates[i] = false;
                 }
+
                 if (this.balls[i].playerField == this.myPlayerNumber) {
                     if (this.balls[i].ballDisplayState == 1) {
                         this.balls[i].checkPlayerField(this.balls[i].ballBody.getPosition(), this.balls[i].ballBody.getLinearVelocity());
@@ -161,17 +161,17 @@ public class ClassicGameObjects {
                         if (this.balls[i].tempGoal == 1) {
                             scores[myPlayerNumber] -= 1;
                         }
+                    }
 
-                        if (this.balls[i].tempPlayerField == this.myPlayerNumber) {
-                            sendBallsAL.add(this.balls[i]);
-                        } else {
-                            if (this.balls[i].tempPlayerField != 999) {
-                                sendFieldChangeBallsAL.add(this.balls[i]);
-                            }
+                    if (this.balls[i].tempPlayerField == this.myPlayerNumber) {
+                        sendBallsAL.add(this.balls[i]);
+                    } else {
+                        if (this.balls[i].tempPlayerField != 999) {
+                            sendFieldChangeBallsAL.add(this.balls[i]);
                         }
-
                     }
                 }
+                Gdx.app.debug(TAG, "ball " + this.balls[i].ballNumber + " displayState " + this.balls[i].ballDisplayState + " playerfield " + this.balls[i].playerField + " tempplayerfield " + this.balls[i].tempPlayerField);
                 //Gdx.app.debug("ClassicGame", "setup ball " + Integer.toString(i) + " on field "+ Integer.toString(globalVariables.getGameVariables().ballPlayerFields[i]));
             }
 

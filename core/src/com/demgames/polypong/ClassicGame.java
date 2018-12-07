@@ -184,9 +184,9 @@ public class ClassicGame extends ApplicationAdapter{
         gameObjects.gameField.display(polygonSpriteBatch);
         polygonSpriteBatch.end();
 
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        /*shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         miscObjects.touches.drawTouchPoints(shapeRenderer);
-        shapeRenderer.end();
+        shapeRenderer.end();*/
 
         spriteBatch.begin();
         gameObjects.displayGame(spriteBatch);

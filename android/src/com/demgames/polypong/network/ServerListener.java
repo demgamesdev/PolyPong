@@ -36,15 +36,15 @@ public class ServerListener extends Listener{
 
     @Override
     public void received(Connection connection,Object object) {
-        synchronized (globals.getSettingsVariables().threadObjectLock){
+        synchronized (globals.getSettingsVariables().receiveThreadLock){
             if(object instanceof Globals.SendVariables.SendFrequentBall) {
                 Globals.SendVariables.SendFrequentBall sendFrequentBall =(Globals.SendVariables.SendFrequentBall)object;
 
                 float rotateRad = (2f * MathUtils.PI / globals.getSettingsVariables().numberOfPlayers * (sendFrequentBall.myPlayerNumber - globals.getSettingsVariables().myPlayerNumber));
-                /*Log.d(TAG, "rotateRad "+Float.toString(rotateRad));
+                Log.d(TAG, "rotateRad "+Float.toString(rotateRad));
 
                 Log.d(TAG, "ball " + Integer.toString(sendFrequentBall.ballNumber) + " displayState " + Integer.toString(sendFrequentBall.ballDisplayState) +
-                        " playerfield " + Integer.toString(sendFrequentBall.myPlayerNumber));*/
+                        " playerfield " + Integer.toString(sendFrequentBall.myPlayerNumber));
 
                 globals.getGameVariables().ballPlayerFields[sendFrequentBall.ballNumber] = sendFrequentBall.ballPlayerField;
                 globals.getGameVariables().balls[sendFrequentBall.ballNumber].ballDisplayState = sendFrequentBall.ballDisplayState;
