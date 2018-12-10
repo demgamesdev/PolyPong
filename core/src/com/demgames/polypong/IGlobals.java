@@ -1,5 +1,6 @@
 package com.demgames.polypong;
 
+import com.badlogic.gdx.math.Vector2;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryonet.Client;
 import com.esotericsoftware.kryonet.Connection;
@@ -9,7 +10,9 @@ import com.esotericsoftware.kryonet.Server;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 public interface IGlobals {
@@ -60,10 +63,8 @@ public interface IGlobals {
                 if (randomPosition) {
                     this.balls[i].ballNumber = i;
                     this.balls[i].ballRadius = (rand.nextFloat()+0.5f)*0.03f * this.factor;
-                    this.balls[i].ballPositionX = (rand.nextFloat()-0.5f)*0.8f * this.factor;
-                    this.balls[i].ballPositionY = ((rand.nextFloat()-1f)*0.6f-0.2f)*this.factor;
-                    this.balls[i].ballVelocityX = 0;
-                    this.balls[i].ballVelocityY = 0;
+                    this.balls[i].ballPosition = new Vector2((rand.nextFloat()-0.5f)*0.8f * this.factor,((rand.nextFloat()-1f)*0.6f-0.2f)*this.factor);
+                    this.balls[i].ballVelocity = new Vector2(0,0);
                     this.balls[i].ballAngle = 0f;
                     this.balls[i].ballAngularVelocity = 0f;
 
@@ -179,11 +180,35 @@ public interface IGlobals {
             }
         }
 
-        public void sendToAllClients(Object object, String protocol) {
+        public void sendObjectToAllClients(Object object, String protocol) {
             for(int i=0;i<this.numberOfPlayers;i++) {
 
                 if(i!=this.myPlayerNumber) {
-                    this.clientThreads[i].sendObject(object, protocol);
+                    this.clientThreads[i].addObjectToProtocolSendList(object, protocol);
+                }
+            }
+        }
+
+        public void sendFrequentBallToAllClient(ClassicGameObjects.Ball ball) {
+            for(int i=0;i<this.numberOfPlayers;i++) {
+                if(i!=this.myPlayerNumber) {
+                    this.clientThreads[i].addToFrequentBallsMap(ball);
+                }
+            }
+        }
+
+        public void sendFieldChangeBallToAllClients(ClassicGameObjects.Ball ball) {
+            for(int i=0;i<this.numberOfPlayers;i++) {
+                if(i!=this.myPlayerNumber) {
+                    this.clientThreads[i].addToFieldChangeBallsMap(ball);
+                }
+            }
+        }
+
+        public void sendFrequentInfoToAllClients(ClassicGameObjects.Bat bat, int[] scores) {
+            for(int i=0;i<this.numberOfPlayers;i++) {
+                if(i!=this.myPlayerNumber) {
+                    this.clientThreads[i].sendFrequentInfo(bat, scores);
                 }
             }
         }
@@ -230,13 +255,13 @@ public interface IGlobals {
             myKryo.register(Bat[].class);
             myKryo.register(com.badlogic.gdx.math.Vector2.class);
             myKryo.register(com.badlogic.gdx.math.Vector2[].class);
+            myKryo.register(HashMap.class);
             myKryo.register(SendVariables.SendSettings.class);
             myKryo.register(SendVariables.SendConnectionState.class);
             myKryo.register(SendVariables.SendConnectionRequest.class);
-            myKryo.register(SendVariables.SendFrequentBall.class);
-            myKryo.register(SendVariables.SendFrequentBat.class);
+            myKryo.register(SendVariables.SendFrequentBalls.class);
             myKryo.register(SendVariables.SendFrequentInfo.class);
-            myKryo.register(SendVariables.SendFieldChange.class);
+            myKryo.register(SendVariables.SendFieldChangeBalls.class);
         }
 
         public boolean addDiscoveryIpToList(String IpAdress){
@@ -319,16 +344,25 @@ public interface IGlobals {
             private String ipAdress;
             private int tcpPort, udpPort;
             private boolean isRunnning;
-            private boolean tcpPending;
-            private boolean udpPending;
             private boolean connectionPending;
-            private List<Object> tcpPendingObjects;
-            private Object udpPendingObject;
-            private SendVariables.TempFrequentObjects tempObjects;
             private long referenceTime;
             private int udpSendTimer;
-            //private ArrayList<Object> udpPendingObjects;
-            //private ArrayList<Object> tempUdpPendingObjects;
+
+            private List<Object> tcpPendingObjects;
+            private List<Object> udpPendingObjects;
+            private boolean tcpPending;
+            private boolean udpPending;
+
+            private SendVariables.SendFrequentBalls sendFrequentBalls;
+            private SendVariables.SendFieldChangeBalls sendFieldChangeBalls;
+            private SendVariables.SendFrequentInfo sendFrequentInfo;
+
+            private Map<Integer, Ball> frequentBallsMap;
+            private Map<Integer, Ball> fieldChangeBallsMap;
+
+            private boolean frequentBallsPending;
+            private boolean fieldChangeBallsPending;
+            private boolean frequentInfoPending;
 
             private String threadName;
 
@@ -340,16 +374,29 @@ public interface IGlobals {
                 this.tcpPort = tcpPort_;
                 this.udpPort = udpPort_;
                 this.isRunnning=true;
-                this.tcpPending=false;
-                this.udpPending=false;
                 this.connectionPending=false;
-
-                this.tcpPendingObjects = new ArrayList<Object>();
-                this.udpPendingObject = new Object();
-
 
                 this.udpSendTimer = 100;
                 this.referenceTime = System.currentTimeMillis();
+
+                this.tcpPendingObjects = new ArrayList<Object>();
+                this.udpPendingObjects = new ArrayList<Object>();
+                this.tcpPending = false;
+                this.udpPending = false;
+
+                this.sendFrequentBalls = new SendVariables.SendFrequentBalls();
+                this.sendFieldChangeBalls = new SendVariables.SendFieldChangeBalls();
+                this.sendFrequentInfo = new SendVariables.SendFrequentInfo();
+
+
+                this.frequentBallsMap = new HashMap();
+                this.fieldChangeBallsMap = new HashMap();
+
+                this.frequentBallsPending = false;
+                this.fieldChangeBallsPending = false;
+                this.frequentInfoPending = false;
+
+
 
                 //this.udpPendingObjects = new ArrayList<Object>(Arrays.asList(new Object[] {}));
 
@@ -368,26 +415,51 @@ public interface IGlobals {
                     try {
                         if (this.tcpPending) {
                             synchronized (sendThreadLock) {
-                                this.tcpPending = false;
                                 for(int i=0;i<this.tcpPendingObjects.size();i++){
                                     this.client.sendTCP(this.tcpPendingObjects.get(i));
                                 }
                                 this.tcpPendingObjects = new ArrayList();
+                                this.tcpPending = false;
                             }
                         }
-                        if(System.currentTimeMillis() - this.referenceTime > this.udpSendTimer) {
-                            if (this.udpPending) {
-                                synchronized (sendThreadLock) {
-                                    this.udpPending = false;
-                                    this.tempObjects = (SendVariables.TempFrequentObjects)this.udpPendingObject;
-                                    for(int i=0;i<tempObjects.sendFrequentBalls.length;i++) {
-                                        this.client.sendUDP(this.tempObjects.sendFrequentBalls[i]);
-                                    }
-                                    this.client.sendUDP(this.tempObjects.sendFrequentBat);
-                                    this.client.sendUDP(this.tempObjects.sendFrequentInfo);
-                                }
 
-                                this.referenceTime = System.currentTimeMillis();
+                        if (this.udpPending) {
+                            synchronized (sendThreadLock) {
+                                for(int i=0;i<this.udpPendingObjects.size();i++){
+                                    this.client.sendUDP(this.udpPendingObjects.get(i));
+                                }
+                                this.tcpPendingObjects = new ArrayList();
+                                this.udpPending = false;
+                            }
+                        }
+
+                        if(this.fieldChangeBallsPending){
+                            synchronized(sendThreadLock) {
+                                this.sendFieldChangeBalls.myPlayerNumber = myPlayerNumber;
+                                this.sendFieldChangeBalls.fieldChangeBallsMap = this.fieldChangeBallsMap;
+
+                                this.client.sendTCP(this.sendFieldChangeBalls);
+                                this.fieldChangeBallsMap.clear();
+                                this.fieldChangeBallsPending = false;
+                            }
+                        }
+
+                        if(this.frequentBallsPending){
+                            synchronized(sendThreadLock) {
+                                this.sendFrequentBalls.myPlayerNumber = myPlayerNumber;
+                                this.sendFrequentBalls.frequentBallsMap = this.frequentBallsMap;
+
+                                this.client.sendUDP(this.sendFrequentBalls);
+                                this.frequentBallsMap.clear();
+                                this.frequentBallsPending = false;
+                            }
+                        }
+
+                        if(this.frequentInfoPending) {
+                            synchronized(sendThreadLock) {
+
+                                this.client.sendUDP(this.sendFrequentInfo);
+                                this.frequentInfoPending = false;
                             }
                         }
 
@@ -406,17 +478,17 @@ public interface IGlobals {
 
             }
 
-            public void sendObject(Object object, String protocol) {
+            public void addObjectToProtocolSendList(Object object, String protocol) {
                 try {
                     if (protocol.equals("tcp")) {
-                        synchronized (this.tcpPendingObjects) {
+                        synchronized (sendThreadLock) {
                             this.tcpPendingObjects.add(object);
                             this.tcpPending = true;
                         }
 
                     } else if (protocol.equals("udp")) {
-                        synchronized (this.udpPendingObject) {
-                            this.udpPendingObject = object;
+                        synchronized (sendThreadLock) {
+                            this.udpPendingObjects.add(object);
                             this.udpPending = true;
                         }
 
@@ -424,6 +496,60 @@ public interface IGlobals {
                 }catch (NullPointerException e) {
                     e.printStackTrace();
                 }
+            }
+
+            public void addToFrequentBallsMap(ClassicGameObjects.Ball ball){
+                synchronized(sendThreadLock) {
+                    Ball tempBall = new Ball();
+                    tempBall.ballNumber = ball.ballNumber;
+                    tempBall.ballPlayerField = myPlayerNumber;
+                    tempBall.ballDisplayState = ball.ballDisplayState;
+
+                    if(tempBall.ballDisplayState == 1) {
+                        tempBall.ballPosition = ball.ballBody.getPosition();
+                        tempBall.ballVelocity = ball.ballBody.getLinearVelocity();
+                        tempBall.ballAngle = ball.ballBody.getAngle();
+                        tempBall.ballAngularVelocity = ball.ballBody.getAngularVelocity();
+                    }
+
+                    this.frequentBallsMap.put(tempBall.ballNumber,tempBall);
+                    this.frequentBallsPending = true;
+                }
+
+            }
+
+            public void addToFieldChangeBallsMap(ClassicGameObjects.Ball ball){
+                synchronized(sendThreadLock) {
+                    Ball tempBall = new Ball();
+                    tempBall.ballNumber = ball.ballNumber;
+                    tempBall.ballPlayerField = ball.tempPlayerField;
+                    tempBall.ballDisplayState = ball.ballDisplayState;
+
+                    tempBall.ballPosition = ball.ballBody.getPosition();
+                    tempBall.ballVelocity = ball.ballBody.getLinearVelocity();
+                    tempBall.ballAngle = ball.ballBody.getAngle();
+                    tempBall.ballAngularVelocity = ball.ballBody.getAngularVelocity();
+
+                    this.fieldChangeBallsMap.put(tempBall.ballNumber,tempBall);
+                    this.fieldChangeBallsPending = true;
+                }
+
+            }
+
+            public void sendFrequentInfo(ClassicGameObjects.Bat bat, int[] scores){
+                synchronized(sendThreadLock) {
+                    this.sendFrequentInfo.myPlayerNumber = myPlayerNumber;
+
+                    this.sendFrequentInfo.bat = new Bat();
+                    this.sendFrequentInfo.bat.batPosition = bat.batBody.getPosition();
+                    this.sendFrequentInfo.bat.batVelocity = bat.batBody.getLinearVelocity();
+                    this.sendFrequentInfo.bat.batAngle = bat.batBody.getAngle();
+                    this.sendFrequentInfo.bat.batAngularVelocity = bat.batBody.getAngularVelocity();
+
+                    this.sendFrequentInfo.scores = scores;
+                    this.frequentInfoPending = true;
+                }
+
             }
 
             public void shutdownClient() {
@@ -459,82 +585,24 @@ public interface IGlobals {
             public String myPlayerName;
         }
 
-        static public class SendFrequentBall {
+        static public class SendFrequentBalls {
             public int myPlayerNumber;
 
-            public int ballNumber;
-            public int ballPlayerField;
-
-            public float ballRadii;
-            public int ballDisplayState;
-            public float ballPositionX;
-            public float ballPositionY;
-            public float ballVelocityX;
-            public float ballVelocityY;
-            public float ballAngle;
-            public float ballAngularVelocity;
-
-            //public Ball ball;
-
-            /*SendFrequentBall() {
-                this.ball = new Ball();
-            }*/
-        }
-
-        static public class SendFrequentBat {
-            public int myPlayerNumber;
-
-            public float batPositionX;
-            public float batPositionY;
-            public float batVelocityX;
-            public float batVelocityY;
-            public float batAngle;
-            public float batAngularVelocity;
-
-            /*public Bat bat;
-
-            SendFrequentBat() {
-                this.bat = new Bat();
-            }*/
+            public Map<Integer, Ball> frequentBallsMap;
         }
 
         static public class SendFrequentInfo {
             public int myPlayerNumber;
+            public Bat bat;
             public int[] scores;
-            public int[] ballNumbers;
-            public int[] ballDisplayStates;
         }
 
 
 
-        static public class SendFieldChange {
+        static public class SendFieldChangeBalls {
             public int myPlayerNumber;
-            public int numberOfSendBalls;
 
-            public int[] ballNumbers;
-            public int[] ballPlayerFields;
-
-            public float[] ballRadii;
-            public int[] ballDisplayStates;
-            public float[] ballPositionsX;
-            public float[] ballPositionsY;
-            public float[] ballVelocitiesX;
-            public float[] ballVelocitiesY;
-            public float[] ballAngles;
-            public float[] ballAngularVelocities;
-
-            //public Ball[] balls;
-            /*public int[] ballNumbers;
-            public int[] ballPlayerFields;
-            public Vector2[] ballPositions;
-            public Vector2[] ballVelocities;*/
-        }
-
-        static public class TempFrequentObjects {
-            SendFrequentBall[] sendFrequentBalls;
-            SendFrequentBat sendFrequentBat;
-            SendFrequentInfo sendFrequentInfo;
-
+            public Map<Integer, Ball> fieldChangeBallsMap;
         }
     }
 
@@ -544,19 +612,15 @@ public interface IGlobals {
 
         public float ballRadius;
         public int ballDisplayState;
-        public float ballPositionX;
-        public float ballPositionY;
-        public float ballVelocityX;
-        public float ballVelocityY;
+        public Vector2 ballPosition;
+        public Vector2 ballVelocity;
         public float ballAngle;
         public float ballAngularVelocity;
     }
 
     class Bat{
-        public float batPositionX;
-        public float batPositionY;
-        public float batVelocityX;
-        public float batVelocityY;
+        public Vector2 batPosition;
+        public Vector2 batVelocity;
         public float batAngle;
         public float batAngularVelocity;
     }

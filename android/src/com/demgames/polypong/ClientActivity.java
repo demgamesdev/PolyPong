@@ -217,7 +217,7 @@ public class ClientActivity extends AppCompatActivity{
             IGlobals.SendVariables.SendConnectionState sendConnectionState=new IGlobals.SendVariables.SendConnectionState();
             sendConnectionState.myPlayerNumber=globalVariables.getSettingsVariables().myPlayerNumber;
             sendConnectionState.connectionState=3;
-            globalVariables.getSettingsVariables().sendToAllClients(sendConnectionState,"tcp");
+            globalVariables.getSettingsVariables().sendObjectToAllClients(sendConnectionState,"tcp");
 
             globalVariables.getSettingsVariables().clientConnectionStates[globalVariables.getSettingsVariables().myPlayerNumber] =3;
 
@@ -263,7 +263,7 @@ public class ClientActivity extends AppCompatActivity{
                         Globals.SendVariables.SendConnectionRequest sendConnectionRequest = new IGlobals.SendVariables.SendConnectionRequest();
                         sendConnectionRequest.myPlayerName=globalVariables.getSettingsVariables().myPlayerName;
 
-                        globalVariables.getSettingsVariables().discoveryClientThread.sendObject(sendConnectionRequest,"tcp");
+                        globalVariables.getSettingsVariables().discoveryClientThread.addObjectToProtocolSendList(sendConnectionRequest,"tcp");
 
                         globalVariables.getSettingsVariables().setupConnectionState =1;
 
@@ -285,7 +285,7 @@ public class ClientActivity extends AppCompatActivity{
                             Globals.SendVariables.SendConnectionRequest sendConnectionRequest = new IGlobals.SendVariables.SendConnectionRequest();
                             sendConnectionRequest.myPlayerName=globalVariables.getSettingsVariables().myPlayerName;
 
-                            globalVariables.getSettingsVariables().discoveryClientThread.sendObject(sendConnectionRequest,"tcp");
+                            globalVariables.getSettingsVariables().discoveryClientThread.addObjectToProtocolSendList(sendConnectionRequest,"tcp");
 
                             globalVariables.getSettingsVariables().setupConnectionState = 1;
                         } else {

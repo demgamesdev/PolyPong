@@ -21,8 +21,6 @@ import android.view.KeyEvent;
 import android.widget.Toast;
 import android.os.Vibrator;
 
-import com.badlogic.gdx.math.Vector2;
-
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -128,18 +126,12 @@ public class ServerActivity extends AppCompatActivity{
                         settings.playerNames = globalVariables.getSettingsVariables().playerNames.toArray(new String[0]);
 
                         settings.balls = tempBalls;
-                        /*settings.ballDisplayStates = globalVariables.getGameVariables().ballDisplayStates;
-                        settings.ballSizes = globalVariables.getGameVariables().ballsSizes;
-                        settings.ballPositions = tempPositions;
-                        settings.ballVelocities = tempVelocities;
-                        settings.ballAngles = tempAngles;
-                        settings.ballAngularVelocities = tempAngularVelocities;*/
 
                         settings.gameMode = globalVariables.getSettingsVariables().gameMode;
                         settings.gravityState = globalVariables.getGameVariables().gravityState;
                         settings.attractionState = globalVariables.getGameVariables().attractionState;
 
-                        globalVariables.getSettingsVariables().clientThreads[i].sendObject(settings, "tcp");
+                        globalVariables.getSettingsVariables().clientThreads[i].addObjectToProtocolSendList(settings, "tcp");
                     }
 
                     globalVariables.getSettingsVariables().setupConnectionState = 2;
@@ -260,7 +252,7 @@ public class ServerActivity extends AppCompatActivity{
             IGlobals.SendVariables.SendConnectionState sendConnectionState=new IGlobals.SendVariables.SendConnectionState();
             sendConnectionState.myPlayerNumber=globalVariables.getSettingsVariables().myPlayerNumber;
             sendConnectionState.connectionState=3;
-            globalVariables.getSettingsVariables().sendToAllClients(sendConnectionState,"tcp");
+            globalVariables.getSettingsVariables().sendObjectToAllClients(sendConnectionState,"tcp");
 
             globalVariables.getSettingsVariables().clientConnectionStates[globalVariables.getSettingsVariables().myPlayerNumber] =3;
 

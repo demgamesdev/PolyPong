@@ -60,7 +60,7 @@ public class GDXGameLauncher extends AndroidApplication {
                 IGlobals.SendVariables.SendConnectionState sendConnectionState = new IGlobals.SendVariables.SendConnectionState();
                 sendConnectionState.myPlayerNumber = globalVariables.getSettingsVariables().myPlayerNumber;
                 sendConnectionState.connectionState = 4;
-                globalVariables.getSettingsVariables().sendToAllClients(sendConnectionState, "tcp");
+                globalVariables.getSettingsVariables().sendObjectToAllClients(sendConnectionState, "tcp");
             }
         } else {
             if(globalVariables.getGameVariables().gameState ==1) {
@@ -68,7 +68,7 @@ public class GDXGameLauncher extends AndroidApplication {
                 IGlobals.SendVariables.SendConnectionState sendConnectionState = new IGlobals.SendVariables.SendConnectionState();
                 sendConnectionState.myPlayerNumber = globalVariables.getSettingsVariables().myPlayerNumber;
                 sendConnectionState.connectionState = 5;
-                globalVariables.getSettingsVariables().sendToAllClients(sendConnectionState, "tcp");
+                globalVariables.getSettingsVariables().sendObjectToAllClients(sendConnectionState, "tcp");
             }
         }
     }

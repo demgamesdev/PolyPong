@@ -94,7 +94,7 @@ public class ClassicGame extends ApplicationAdapter{
         IGlobals.SendVariables.SendConnectionState sendConnectionState = new IGlobals.SendVariables.SendConnectionState();
         sendConnectionState.myPlayerNumber = globalVariables.getSettingsVariables().myPlayerNumber;
         sendConnectionState.connectionState = 4;
-        globalVariables.getSettingsVariables().sendToAllClients(sendConnectionState, "tcp");
+        globalVariables.getSettingsVariables().sendObjectToAllClients(sendConnectionState, "tcp");
 
         globalVariables.getGameVariables().gameState =1;
 
@@ -131,11 +131,6 @@ public class ClassicGame extends ApplicationAdapter{
 
             //dophysics
             gameObjects.updateAndSend(globalVariables);
-
-            miscObjects.sendFrequentsFunction(gameObjects.sendBallsAL, gameObjects.bats[myPlayerNumber],gameObjects.scores);
-            miscObjects.sendFieldChangeFunction(gameObjects.sendFieldChangeBallsAL);
-
-            gameObjects.resetArrayLists();
 
             gameObjects.doPhysics();
 

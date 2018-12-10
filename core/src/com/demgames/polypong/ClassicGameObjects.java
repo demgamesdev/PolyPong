@@ -57,10 +57,6 @@ public class ClassicGameObjects {
 
     private Matrix4 originalMatrix;
 
-
-    ArrayList<Ball> sendBallsAL;
-    ArrayList<Ball> sendFieldChangeBallsAL;
-
     //define category and mask bits to decide which bodies collide with what
     final short CATEGORY_BORDER = 0x0001;
     final short CATEGORY_BALL = 0x0002;
@@ -87,8 +83,6 @@ public class ClassicGameObjects {
 
         this.world=new World(new Vector2(0f,0f),true);
         this.scores = new int[numberOfPlayers];
-        this.sendBallsAL = new ArrayList(Arrays.asList(new Ball[]{}));
-        this.sendFieldChangeBallsAL = new ArrayList(Arrays.asList(new Ball[]{}));
 
         //load textures to map
         for(int i=0;i<10;i++) {
@@ -128,7 +122,7 @@ public class ClassicGameObjects {
         this.gameField = new GameField();
         this.balls=new Ball[this.numberOfBalls];
         for(int i=0;i<this.balls.length;i++) {
-            this.balls[i]= new Ball(i,balls_[i].ballRadius,new Vector2(balls_[i].ballPositionX,balls_[i].ballPositionY), new Vector2(balls_[i].ballVelocityX,balls_[i].ballVelocityY),balls_[i].ballAngle,balls_[i].ballAngularVelocity,10);
+            this.balls[i]= new Ball(i,balls_[i].ballRadius,balls_[i].ballPosition, balls_[i].ballVelocity,balls_[i].ballAngle,balls_[i].ballAngularVelocity,10);
             //Gdx.app.debug("ClassicGame", "setup ball " + Integer.toString(i) + " on field "+ Integer.toString(globalVariables.getGameVariables().ballPlayerFields[i]));
         }
 
@@ -147,8 +141,8 @@ public class ClassicGameObjects {
                     if (this.balls[i].ballDisplayState == 1) {
                         this.balls[i].ballDisplayState = globals.getGameVariables().balls[i].ballDisplayState;
                         this.balls[i].playerField = globals.getGameVariables().ballPlayerFields[i];
-                        this.balls[i].ballBody.setTransform(globals.getGameVariables().balls[i].ballPositionX,globals.getGameVariables().balls[i].ballPositionY, globals.getGameVariables().balls[i].ballAngle);
-                        this.balls[i].ballBody.setLinearVelocity(globals.getGameVariables().balls[i].ballVelocityX,globals.getGameVariables().balls[i].ballVelocityY);
+                        this.balls[i].ballBody.setTransform(globals.getGameVariables().balls[i].ballPosition, globals.getGameVariables().balls[i].ballAngle);
+                        this.balls[i].ballBody.setLinearVelocity(globals.getGameVariables().balls[i].ballVelocity);
                         this.balls[i].ballBody.setAngularVelocity(globals.getGameVariables().balls[i].ballAngularVelocity);
                     }
                     globals.getGameVariables().ballUpdateStates[i] = false;
@@ -164,10 +158,10 @@ public class ClassicGameObjects {
                     }
 
                     if (this.balls[i].tempPlayerField == this.myPlayerNumber) {
-                        sendBallsAL.add(this.balls[i]);
+                        globals.getSettingsVariables().sendFrequentBallToAllClient(this.balls[i]);
                     } else {
                         if (this.balls[i].tempPlayerField != 999) {
-                            sendFieldChangeBallsAL.add(this.balls[i]);
+                            globals.getSettingsVariables().sendFieldChangeBallToAllClients(this.balls[i]);
                         }
                     }
                 }
@@ -178,14 +172,15 @@ public class ClassicGameObjects {
             for (int i = 0; i < this.numberOfPlayers; i++) {
                 if (i != myPlayerNumber) {
                     if (globals.getGameVariables().batUpdateStates[i]) {
-                        this.bats[i].batBody.setTransform(globals.getGameVariables().bats[i].batPositionX,globals.getGameVariables().bats[i].batPositionY, globals.getGameVariables().bats[i].batAngle);
-                        this.bats[i].batBody.setLinearVelocity(globals.getGameVariables().bats[i].batVelocityX,globals.getGameVariables().bats[i].batVelocityY);
+                        this.bats[i].batBody.setTransform(globals.getGameVariables().bats[i].batPosition, globals.getGameVariables().bats[i].batAngle);
+                        this.bats[i].batBody.setLinearVelocity(globals.getGameVariables().bats[i].batVelocity);
                         this.bats[i].batBody.setAngularVelocity(globals.getGameVariables().bats[i].batAngularVelocity);
                         globals.getGameVariables().batUpdateStates[i] = false;
                     }
                     this.scores[i] = globals.getGameVariables().playerScores[i];
                 }
             }
+            globals.getSettingsVariables().sendFrequentInfoToAllClients(this.bats[myPlayerNumber],scores);
         }
     }
 
@@ -246,13 +241,6 @@ public class ClassicGameObjects {
         }
 
         spriteBatch.setProjectionMatrix(originalMatrix);
-    }
-
-
-
-    void resetArrayLists() {
-        this.sendBallsAL = new ArrayList(Arrays.asList(new Ball[]{}));
-        this.sendFieldChangeBallsAL = new ArrayList(Arrays.asList(new Ball[]{}));
     }
 
     void dispose() {
