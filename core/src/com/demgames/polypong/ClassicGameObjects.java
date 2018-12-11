@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ClassicGameObjects {
     private static final String TAG = "ClassicGameObjects";
@@ -45,14 +46,15 @@ public class ClassicGameObjects {
     Ball[] balls;
     Bat[] bats;
     int[] scores;
+    private ConcurrentHashMap<Integer, Integer> ballDisplayStatesMap;
     boolean allBallsDestroyedState;
 
     private MiscObjects miscObjects;
 
-    private Map<String, Texture> texturesMap = new HashMap();
-    private Map<String, Sprite> spritesMap = new HashMap();
-    private Map<String, Boolean> gameLogicStates = new HashMap();
-    private Map<Integer, BitmapFont> fontsMap = new HashMap();
+    private Map<String, Texture> texturesMap;
+    private Map<String, Sprite> spritesMap;
+    private Map<String, Boolean> gameLogicStates;
+    private Map<Integer, BitmapFont> fontsMap;
     private GlyphLayout glyphLayout;
 
     private Matrix4 originalMatrix;
@@ -75,11 +77,19 @@ public class ClassicGameObjects {
         this.width = width_;
         this.height = height_;
         this.miscObjects = miscObjects_;
-        this.gameLogicStates.put("gravityState",gravityState_);
-        this.gameLogicStates.put("attractionState",attractionState_);
 
         this.metersToPixels = 1f/1080f;
         this.allBallsDestroyedState = false;
+        this.ballDisplayStatesMap = new ConcurrentHashMap<Integer, Integer>();
+        this.fontsMap = new HashMap<Integer, BitmapFont>();
+
+        this.texturesMap = new HashMap<String, Texture>();
+        this.spritesMap = new HashMap<String, Sprite>();
+        this.gameLogicStates = new HashMap<String, Boolean>();
+
+        this.gameLogicStates.put("gravityState",gravityState_);
+        this.gameLogicStates.put("attractionState",attractionState_);
+
 
         this.world=new World(new Vector2(0f,0f),true);
         this.scores = new int[numberOfPlayers];
@@ -137,37 +147,23 @@ public class ClassicGameObjects {
     void updateAndSend(IGlobals globals) {
         synchronized (globals.getSettingsVariables().receiveThreadLock) {
             for (int i = 0; i < this.balls.length; i++) {
-                if (globals.getGameVariables().ballUpdateStates[i]) {
-                    if (this.balls[i].ballDisplayState == 1) {
-                        this.balls[i].ballDisplayState = globals.getGameVariables().balls[i].ballDisplayState;
-                        this.balls[i].playerField = globals.getGameVariables().ballPlayerFields[i];
-                        this.balls[i].ballBody.setTransform(globals.getGameVariables().balls[i].ballPosition, globals.getGameVariables().balls[i].ballAngle);
-                        this.balls[i].ballBody.setLinearVelocity(globals.getGameVariables().balls[i].ballVelocity);
-                        this.balls[i].ballBody.setAngularVelocity(globals.getGameVariables().balls[i].ballAngularVelocity);
-                    }
-                    globals.getGameVariables().ballUpdateStates[i] = false;
-                }
-
-                if (this.balls[i].playerField == this.myPlayerNumber) {
-                    if (this.balls[i].ballDisplayState == 1) {
-                        this.balls[i].checkPlayerField(this.balls[i].ballBody.getPosition(), this.balls[i].ballBody.getLinearVelocity());
-                        this.balls[i].checkGoal();
-                        if (this.balls[i].tempGoal == 1) {
-                            scores[myPlayerNumber] -= 1;
+                if (this.balls[i].ballDisplayState == 1) {
+                    if (globals.getGameVariables().ballUpdateStates[i]) {                        this.balls[i].ballDisplayState = globals.getGameVariables().balls[i].ballDisplayState;
+                        if (this.balls[i].ballDisplayState == 1 && this.balls[i].tempPlayerField != myPlayerNumber) {
+                            this.balls[i].playerField = globals.getGameVariables().ballPlayerFields[i];
+                            this.balls[i].tempPlayerField = this.balls[i].playerField;
+                            this.balls[i].ballBody.setTransform(globals.getGameVariables().balls[i].ballPosition, globals.getGameVariables().balls[i].ballAngle);
+                            this.balls[i].ballBody.setLinearVelocity(globals.getGameVariables().balls[i].ballVelocity);
+                            this.balls[i].ballBody.setAngularVelocity(globals.getGameVariables().balls[i].ballAngularVelocity);
                         }
+                        globals.getGameVariables().ballUpdateStates[i] = false;
                     }
-
-                    if (this.balls[i].tempPlayerField == this.myPlayerNumber) {
-                        globals.getSettingsVariables().sendFrequentBallToAllClient(this.balls[i]);
-                    } else {
-                        if (this.balls[i].tempPlayerField != 999) {
-                            globals.getSettingsVariables().sendFieldChangeBallToAllClients(this.balls[i]);
-                        }
-                    }
+                    Gdx.app.debug(TAG, "ball " + this.balls[i].ballNumber + " displayState " + globals.getGameVariables().balls[i].ballDisplayState + " playerfield " + globals.getGameVariables().ballPlayerFields[i] + " globals ");
+                    Gdx.app.debug(TAG, "ball " + this.balls[i].ballNumber + " displayState " + this.balls[i].ballDisplayState + " playerfield " + this.balls[i].playerField + " tempplayerfield " + this.balls[i].tempPlayerField);
                 }
-                Gdx.app.debug(TAG, "ball " + this.balls[i].ballNumber + " displayState " + this.balls[i].ballDisplayState + " playerfield " + this.balls[i].playerField + " tempplayerfield " + this.balls[i].tempPlayerField);
-                //Gdx.app.debug("ClassicGame", "setup ball " + Integer.toString(i) + " on field "+ Integer.toString(globalVariables.getGameVariables().ballPlayerFields[i]));
             }
+
+            //Gdx.app.debug("ClassicGame", "setup ball " + Integer.toString(i) + " on field "+ Integer.toString(globalVariables.getGameVariables().ballPlayerFields[i]));
 
             for (int i = 0; i < this.numberOfPlayers; i++) {
                 if (i != myPlayerNumber) {
@@ -180,8 +176,36 @@ public class ClassicGameObjects {
                     this.scores[i] = globals.getGameVariables().playerScores[i];
                 }
             }
-            globals.getSettingsVariables().sendFrequentInfoToAllClients(this.bats[myPlayerNumber],scores);
         }
+
+        for(int i=0;i<this.balls.length;i++) {
+            if (this.balls[i].ballDisplayState == 1) {
+                this.balls[i].checkWrongPlayerField();
+            }
+            if (this.balls[i].playerField == this.myPlayerNumber) {
+                if (this.balls[i].ballDisplayState == 1) {
+                    this.balls[i].checkGoal();
+                    if (this.balls[i].tempGoal == 1) {
+                        scores[myPlayerNumber] -= 1;
+                    } else {
+                        this.balls[i].checkPlayerField(this.balls[i].ballBody.getPosition(), this.balls[i].ballBody.getLinearVelocity());
+                        if (this.balls[i].tempPlayerField == this.myPlayerNumber) {
+                            Gdx.app.debug(TAG, "ball " + Integer.toString(this.balls[i].ballNumber) + " on field "+ Integer.toString(this.balls[i].tempPlayerField) + " sendfrequentball");
+                            globals.getSettingsVariables().sendFrequentBallToAllClient(this.balls[i]);
+                        } else {
+                            if (this.balls[i].tempPlayerField != 999) {
+                                Gdx.app.debug(TAG, "ball " + Integer.toString(this.balls[i].ballNumber) + " on field "+ Integer.toString(this.balls[i].tempPlayerField) + " sendfieldchangeball");
+                                globals.getSettingsVariables().sendFieldChangeBallToAllClients(this.balls[i]);
+                            }
+                        }
+                    }
+                }else {
+                    this.ballDisplayStatesMap.put(i,this.balls[i].ballDisplayState);
+                }
+            }
+        }
+        globals.getSettingsVariables().sendFrequentInfoToAllClients(this.bats[myPlayerNumber],this.ballDisplayStatesMap,scores);
+        this.ballDisplayStatesMap.clear();
     }
 
     void doPhysics() {
@@ -228,9 +252,9 @@ public class ClassicGameObjects {
         this.drawText(spriteBatch,this.fontsMap.get(60),tempScore,0,-height/7f/metersToPixels,true,true);
 
         if(!allPlayersReady) {
-            String message = " Waiting for:\n";
+            String message = "Waiting for:\n";
             for(String name : notReadyPlayerList) {
-                message+=name;
+                message+=name + "\n";
             }
 
             this.drawText(spriteBatch,this.fontsMap.get(48),message, 0, -height/2f/metersToPixels,true,false);
@@ -386,9 +410,9 @@ public class ClassicGameObjects {
             }
         }
 
-        boolean checkAbnormalPlayerField() {
+        boolean checkWrongPlayerField() {
             if(this.playerField!= myPlayerNumber && gameField.playerFieldPolygons[myPlayerNumber].contains(this.ballBody.getPosition())) {
-                Gdx.app.error("ClassicGame", "ball " + this.ballNumber + " in my field with wrong playernumber");
+                Gdx.app.error(TAG, "ball " + this.ballNumber + " in my field with wrong playernumber");
                 return(true);
             }
             return(false);
@@ -396,13 +420,13 @@ public class ClassicGameObjects {
 
         void checkPlayerField(Vector2 position, Vector2 velocity) {
             this.setBallForwardPosition(position, velocity);
-            if (!gameField.gameFieldPolygon.contains(this.ballForwardPosition)) {
+            if (!gameField.gameFieldPolygon.contains(position)) {
                 this.lostState = true;
                 Gdx.app.error("ClassicGame", "ball " + this.ballNumber + " outside gamefield " + this.playerField + " x " + position.x + " y " + position.y);
                 this.tempPlayerField = 999;
             } else {
                 this.tempPlayerField = myPlayerNumber;
-                if (!gameField.playerFieldPolygons[myPlayerNumber].contains(this.ballForwardPosition)) {
+                if (!gameField.playerFieldPolygons[myPlayerNumber].contains(position)) {
                     for (int i = 0; i < numberOfPlayers; i++) {
                         if (i != myPlayerNumber) {
                             if (gameField.playerFieldPolygons[i].contains(this.ballForwardPosition)) {

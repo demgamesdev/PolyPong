@@ -1,5 +1,6 @@
 package com.demgames.polypong;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryonet.Client;
@@ -14,9 +15,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 
 public interface IGlobals {
-    static final String TAG = "IGlobals";
+    String TAG = "IGlobals";
 
     class GameVariables {
 
@@ -103,14 +105,17 @@ public interface IGlobals {
         public ClientThread[] clientThreads;
         public ClientThread discoveryClientThread;
 
+        public List<Player> playerList;
+
         public int gameMode;
         public boolean hasFocus;
 
         public int setupConnectionState =0;
         public boolean updateListViewState;
 
-        public Object receiveThreadLock;
-        public Object sendThreadLock;
+        public static final Object receiveThreadLock = new Object();
+        public static final Object sendThreadLock = new Object();
+        public static final Object connectionThreadLock = new Object();
 
         public int myPlayerNumber;
         public int numberOfPlayers;
@@ -127,9 +132,6 @@ public interface IGlobals {
             //TODO adapt number
             this.clientConnectionStates=new int[10];
             this.hasFocus=true;
-
-            this.receiveThreadLock = new Object();
-            this.sendThreadLock = new Object();
         }
 
         public void startServerThread() {
@@ -205,10 +207,10 @@ public interface IGlobals {
             }
         }
 
-        public void sendFrequentInfoToAllClients(ClassicGameObjects.Bat bat, int[] scores) {
+        public void sendFrequentInfoToAllClients(ClassicGameObjects.Bat bat, ConcurrentHashMap<Integer,Integer> ballDisplayStatesMap, int[] scores) {
             for(int i=0;i<this.numberOfPlayers;i++) {
                 if(i!=this.myPlayerNumber) {
-                    this.clientThreads[i].sendFrequentInfo(bat, scores);
+                    this.clientThreads[i].sendFrequentInfo(bat,ballDisplayStatesMap, scores);
                 }
             }
         }
@@ -255,10 +257,12 @@ public interface IGlobals {
             myKryo.register(Bat[].class);
             myKryo.register(com.badlogic.gdx.math.Vector2.class);
             myKryo.register(com.badlogic.gdx.math.Vector2[].class);
-            myKryo.register(HashMap.class);
+            myKryo.register(ConcurrentHashMap.class);
             myKryo.register(SendVariables.SendSettings.class);
             myKryo.register(SendVariables.SendConnectionState.class);
             myKryo.register(SendVariables.SendConnectionRequest.class);
+            myKryo.register(SendVariables.SendDiscoveryRequest.class);
+            myKryo.register(SendVariables.SendDiscoveryResponse.class);
             myKryo.register(SendVariables.SendFrequentBalls.class);
             myKryo.register(SendVariables.SendFrequentInfo.class);
             myKryo.register(SendVariables.SendFieldChangeBalls.class);
@@ -268,11 +272,21 @@ public interface IGlobals {
             if(!this.discoveryIpAdresses.contains(IpAdress)){
                 this.discoveryIpAdresses.add(IpAdress);
                 this.discoveryIsChecked.add(false);
-                this.updateListViewState=true;
                 //Log.d("addiptolist",IpAdress +" added");
                 return(true);
             }
             return(false);
+        }
+
+        public boolean addPlayerToList(Player player){
+            for(int i=0;i<this.playerList.size();i++) {
+                //Gdx.app.debug(TAG,player.ipAdress + " vs " + this.playerList.get(i).ipAdress);
+                if(player.ipAdress.equals(this.playerList.get(i).ipAdress)) {
+                    return(false);
+                }
+            }
+            this.playerList.add(player);
+            return(true);
         }
 
         public boolean addDiscoveryPlayerNameToList(String playerName){
@@ -286,6 +300,7 @@ public interface IGlobals {
             this.playerNames =new ArrayList<String>(Arrays.asList(new String[] {}));
             this.discoveryPlayerNames =new ArrayList<String>(Arrays.asList(new String[] {}));
             this.discoveryIsChecked =new ArrayList<Boolean>(Arrays.asList(new Boolean[]{}));
+            this.playerList = new ArrayList<Player>();
         }
 
         public class ServerThread extends Thread {
@@ -345,8 +360,8 @@ public interface IGlobals {
             private int tcpPort, udpPort;
             private boolean isRunnning;
             private boolean connectionPending;
-            private long referenceTime;
-            private int udpSendTimer;
+            private long sendFrequentBallsReferenceTime,sendFieldChangeBallsReferenceTime,sendFrequentInfoReferenceTime;
+            private int sendFrequentBallsTimer,sendFieldChangeBallsTimer,sendFrequentInfoTimer;
 
             private List<Object> tcpPendingObjects;
             private List<Object> udpPendingObjects;
@@ -357,8 +372,13 @@ public interface IGlobals {
             private SendVariables.SendFieldChangeBalls sendFieldChangeBalls;
             private SendVariables.SendFrequentInfo sendFrequentInfo;
 
-            private Map<Integer, Ball> frequentBallsMap;
-            private Map<Integer, Ball> fieldChangeBallsMap;
+            private ConcurrentHashMap<Integer, Ball> frequentBallsMap;
+            private ConcurrentHashMap<Integer, Ball> fieldChangeBallsMap;
+
+            private final Object sendFrequentBallsThreadLock = new Object();
+            private final Object sendFieldChangeBallsThreadLock = new Object();
+            private final Object sendFrequentInfoThreadLock = new Object();
+
 
             private boolean frequentBallsPending;
             private boolean fieldChangeBallsPending;
@@ -376,8 +396,13 @@ public interface IGlobals {
                 this.isRunnning=true;
                 this.connectionPending=false;
 
-                this.udpSendTimer = 100;
-                this.referenceTime = System.currentTimeMillis();
+                this.sendFrequentBallsReferenceTime = System.currentTimeMillis();
+                this.sendFieldChangeBallsReferenceTime = System.currentTimeMillis();
+                this.sendFrequentInfoReferenceTime = System.currentTimeMillis();
+
+                this.sendFrequentBallsTimer = 50;
+                this.sendFieldChangeBallsTimer = 50;
+                this.sendFrequentInfoTimer = 50;
 
                 this.tcpPendingObjects = new ArrayList<Object>();
                 this.udpPendingObjects = new ArrayList<Object>();
@@ -389,8 +414,8 @@ public interface IGlobals {
                 this.sendFrequentInfo = new SendVariables.SendFrequentInfo();
 
 
-                this.frequentBallsMap = new HashMap();
-                this.fieldChangeBallsMap = new HashMap();
+                this.frequentBallsMap = new ConcurrentHashMap();
+                this.fieldChangeBallsMap = new ConcurrentHashMap();
 
                 this.frequentBallsPending = false;
                 this.fieldChangeBallsPending = false;
@@ -434,32 +459,41 @@ public interface IGlobals {
                         }
 
                         if(this.fieldChangeBallsPending){
-                            synchronized(sendThreadLock) {
-                                this.sendFieldChangeBalls.myPlayerNumber = myPlayerNumber;
-                                this.sendFieldChangeBalls.fieldChangeBallsMap = this.fieldChangeBallsMap;
+                            if(System.currentTimeMillis() - this.sendFieldChangeBallsReferenceTime > this.sendFieldChangeBallsTimer) {
+                                synchronized (this.sendFieldChangeBallsThreadLock) {
+                                    this.sendFieldChangeBalls.myPlayerNumber = myPlayerNumber;
+                                    this.sendFieldChangeBalls.fieldChangeBallsMap = this.fieldChangeBallsMap;
 
-                                this.client.sendTCP(this.sendFieldChangeBalls);
-                                this.fieldChangeBallsMap.clear();
-                                this.fieldChangeBallsPending = false;
+                                    this.client.sendTCP(this.sendFieldChangeBalls);
+                                    this.fieldChangeBallsMap.clear();
+                                    this.fieldChangeBallsPending = false;
+                                }
+                                this.sendFieldChangeBallsReferenceTime = System.currentTimeMillis();
                             }
                         }
 
                         if(this.frequentBallsPending){
-                            synchronized(sendThreadLock) {
-                                this.sendFrequentBalls.myPlayerNumber = myPlayerNumber;
-                                this.sendFrequentBalls.frequentBallsMap = this.frequentBallsMap;
+                            if(System.currentTimeMillis() - this.sendFrequentBallsReferenceTime > this.sendFrequentBallsTimer) {
+                                synchronized(this.sendFrequentBallsThreadLock) {
+                                    this.sendFrequentBalls.myPlayerNumber = myPlayerNumber;
+                                    this.sendFrequentBalls.frequentBallsMap = this.frequentBallsMap;
 
-                                this.client.sendUDP(this.sendFrequentBalls);
-                                this.frequentBallsMap.clear();
-                                this.frequentBallsPending = false;
+                                    this.client.sendUDP(this.sendFrequentBalls);
+                                    this.frequentBallsMap.clear();
+                                    this.frequentBallsPending = false;
+                                }
+                                this.sendFrequentBallsReferenceTime = System.currentTimeMillis();
                             }
                         }
 
                         if(this.frequentInfoPending) {
-                            synchronized(sendThreadLock) {
+                            if(System.currentTimeMillis() - this.sendFrequentInfoReferenceTime > this.sendFrequentInfoTimer) {
+                                synchronized(this.sendFrequentInfoThreadLock) {
 
-                                this.client.sendUDP(this.sendFrequentInfo);
-                                this.frequentInfoPending = false;
+                                    this.client.sendUDP(this.sendFrequentInfo);
+                                    this.frequentInfoPending = false;
+                                }
+                                this.sendFrequentInfoReferenceTime = System.currentTimeMillis();
                             }
                         }
 
@@ -499,57 +533,70 @@ public interface IGlobals {
             }
 
             public void addToFrequentBallsMap(ClassicGameObjects.Ball ball){
-                synchronized(sendThreadLock) {
+                synchronized (this.sendFrequentBallsThreadLock) {
                     Ball tempBall = new Ball();
-                    tempBall.ballNumber = ball.ballNumber;
-                    tempBall.ballPlayerField = myPlayerNumber;
-                    tempBall.ballDisplayState = ball.ballDisplayState;
+                    tempBall.ballNumber = new Integer(ball.ballNumber);
+                    tempBall.ballPlayerField = new Integer(myPlayerNumber);
+                    tempBall.ballDisplayState = new Integer(ball.ballDisplayState);
 
-                    if(tempBall.ballDisplayState == 1) {
-                        tempBall.ballPosition = ball.ballBody.getPosition();
-                        tempBall.ballVelocity = ball.ballBody.getLinearVelocity();
-                        tempBall.ballAngle = ball.ballBody.getAngle();
-                        tempBall.ballAngularVelocity = ball.ballBody.getAngularVelocity();
+                    if (tempBall.ballDisplayState == 1) {
+                        tempBall.ballPosition = new Vector2(ball.ballBody.getPosition());
+                        tempBall.ballVelocity = new Vector2(ball.ballBody.getLinearVelocity());
+                        tempBall.ballAngle = new Float(ball.ballBody.getAngle());
+                        tempBall.ballAngularVelocity = new Float(ball.ballBody.getAngularVelocity());
                     }
 
-                    this.frequentBallsMap.put(tempBall.ballNumber,tempBall);
+                    this.frequentBallsMap.put(tempBall.ballNumber, tempBall);
                     this.frequentBallsPending = true;
                 }
-
             }
 
             public void addToFieldChangeBallsMap(ClassicGameObjects.Ball ball){
-                synchronized(sendThreadLock) {
+                synchronized (this.sendFieldChangeBallsThreadLock) {
                     Ball tempBall = new Ball();
-                    tempBall.ballNumber = ball.ballNumber;
-                    tempBall.ballPlayerField = ball.tempPlayerField;
-                    tempBall.ballDisplayState = ball.ballDisplayState;
+                    tempBall.ballNumber = new Integer(ball.ballNumber);
+                    tempBall.ballPlayerField = new Integer(ball.tempPlayerField);
+                    tempBall.ballDisplayState = new Integer(ball.ballDisplayState);
 
-                    tempBall.ballPosition = ball.ballBody.getPosition();
-                    tempBall.ballVelocity = ball.ballBody.getLinearVelocity();
-                    tempBall.ballAngle = ball.ballBody.getAngle();
-                    tempBall.ballAngularVelocity = ball.ballBody.getAngularVelocity();
+                    tempBall.ballPosition = new Vector2(ball.ballBody.getPosition());
+                    tempBall.ballVelocity = new Vector2(ball.ballBody.getLinearVelocity());
+                    tempBall.ballAngle = new Float(ball.ballBody.getAngle());
+                    tempBall.ballAngularVelocity = new Float(ball.ballBody.getAngularVelocity());
 
-                    this.fieldChangeBallsMap.put(tempBall.ballNumber,tempBall);
+                    this.fieldChangeBallsMap.put(tempBall.ballNumber, tempBall);
                     this.fieldChangeBallsPending = true;
                 }
 
             }
 
-            public void sendFrequentInfo(ClassicGameObjects.Bat bat, int[] scores){
-                synchronized(sendThreadLock) {
-                    this.sendFrequentInfo.myPlayerNumber = myPlayerNumber;
+            public void sendFrequentInfo(ClassicGameObjects.Bat bat, ConcurrentHashMap<Integer,Integer> ballDisplayStatesMap, int[] scores){
+                synchronized (this.sendFrequentInfoThreadLock) {
+                    this.sendFrequentInfo.myPlayerNumber = new Integer(myPlayerNumber);
 
                     this.sendFrequentInfo.bat = new Bat();
-                    this.sendFrequentInfo.bat.batPosition = bat.batBody.getPosition();
-                    this.sendFrequentInfo.bat.batVelocity = bat.batBody.getLinearVelocity();
-                    this.sendFrequentInfo.bat.batAngle = bat.batBody.getAngle();
-                    this.sendFrequentInfo.bat.batAngularVelocity = bat.batBody.getAngularVelocity();
+                    this.sendFrequentInfo.bat.batPosition = new Vector2(bat.batBody.getPosition());
+                    this.sendFrequentInfo.bat.batVelocity = new Vector2(bat.batBody.getLinearVelocity());
+                    this.sendFrequentInfo.bat.batAngle = new Float(bat.batBody.getAngle());
+                    this.sendFrequentInfo.bat.batAngularVelocity = new Float(bat.batBody.getAngularVelocity());
 
-                    this.sendFrequentInfo.scores = scores;
+                    this.sendFrequentInfo.ballDisplayStatesMap = new ConcurrentHashMap<Integer, Integer>(ballDisplayStatesMap);
+
+                    this.sendFrequentInfo.scores = new int[scores.length];
+                    for (int i = 0; i < scores.length; i++) {
+                        this.sendFrequentInfo.scores[i] = scores[i];
+                    }
                     this.frequentInfoPending = true;
                 }
 
+            }
+
+            public void sendDicoveryRequest(String ipAdress_, SendVariables.SendDiscoveryRequest discoveryRequest) {
+                try {
+                    this.client.connect(5000, ipAdress_, this.tcpPort, this.udpPort);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                this.client.sendUDP(discoveryRequest);
             }
 
             public void shutdownClient() {
@@ -581,6 +628,14 @@ public interface IGlobals {
             public int connectionState;
         }
 
+        static public class SendDiscoveryRequest {
+            public String myPlayerName;
+        }
+
+        static public class SendDiscoveryResponse {
+            public String myPlayerName;
+        }
+
         static public class SendConnectionRequest {
             public String myPlayerName;
         }
@@ -588,12 +643,13 @@ public interface IGlobals {
         static public class SendFrequentBalls {
             public int myPlayerNumber;
 
-            public Map<Integer, Ball> frequentBallsMap;
+            public ConcurrentHashMap<Integer, Ball> frequentBallsMap;
         }
 
         static public class SendFrequentInfo {
             public int myPlayerNumber;
             public Bat bat;
+            public ConcurrentHashMap<Integer,Integer> ballDisplayStatesMap;
             public int[] scores;
         }
 
@@ -602,7 +658,7 @@ public interface IGlobals {
         static public class SendFieldChangeBalls {
             public int myPlayerNumber;
 
-            public Map<Integer, Ball> fieldChangeBallsMap;
+            public ConcurrentHashMap<Integer, Ball> fieldChangeBallsMap;
         }
     }
 
@@ -623,6 +679,11 @@ public interface IGlobals {
         public Vector2 batVelocity;
         public float batAngle;
         public float batAngularVelocity;
+    }
+
+    class Player {
+        public String name;
+        public String ipAdress;
     }
 
     GameVariables getGameVariables();

@@ -22,10 +22,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import android.widget.Toast;
 
 
@@ -44,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
 
     String myPlayerName;
     String file_name = "name_file";
-    EditText YourName;
+    EditText myPlayerNameEditText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,8 +76,8 @@ public class MainActivity extends AppCompatActivity {
         startHostButton.setTypeface(typeface);
         startClientButton.setTypeface(typeface);
 
-        YourName = (EditText) findViewById(R.id.nameEditText);
-        YourName.setTypeface(typeface);
+        myPlayerNameEditText = (EditText) findViewById(R.id.nameEditText);
+        myPlayerNameEditText.setTypeface(typeface);
 
         readName();
 
@@ -114,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
 
     boolean getMyPlayerName(){
         Globals globalVariables = (Globals) getApplicationContext();
-        myPlayerName = YourName.getText().toString();
+        myPlayerName = myPlayerNameEditText.getText().toString();
         if (myPlayerName.matches("")){
             Context context = getApplicationContext();
             CharSequence text = "myPlayerName ist ungültig!";
@@ -163,7 +159,8 @@ public class MainActivity extends AppCompatActivity {
             BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
             StringBuffer stringBuffer = new StringBuffer();
             while ((Message = bufferedReader.readLine())!=null){
-                stringBuffer.append(Message + "\n");
+                //removed newline
+                stringBuffer.append(Message);
             }
 
             YourName.setText(stringBuffer.toString());

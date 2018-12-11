@@ -12,7 +12,6 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckedTextView;
 import android.widget.ListView;
@@ -204,7 +203,8 @@ public class ServerActivity extends AppCompatActivity{
     class UpdateTask extends AsyncTask<Void,Void,Void>{
 
         Globals globalVariables = (Globals) getApplicationContext();
-        ArrayAdapter<String> serverListViewAdapter;
+        //ArrayAdapter<String> serverListViewAdapter;
+        MiscClasses.PlayerArrayAdapter serverListViewAdapter;
         final TextView myIpTextView = (TextView) findViewById(R.id.IPtextView);
 
 
@@ -273,8 +273,8 @@ public class ServerActivity extends AppCompatActivity{
         protected void onPreExecute() {
             ListView serverListView = (ListView) findViewById(R.id.serverListView);
             serverListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
-            serverListViewAdapter = new ArrayAdapter<String>
-                    (ServerActivity.this, R.layout.serverlistview_row, R.id.connectionCheckedTextView,globalVariables.getSettingsVariables().discoveryIpAdresses);
+            serverListViewAdapter = new MiscClasses.PlayerArrayAdapter(ServerActivity.this,R.layout.serverlistview_row,R.id.connectionCheckedTextView,globalVariables.getSettingsVariables().playerList);
+            //serverListViewAdapter = new ClientPlayerArrayAdapter(ServerActivity.this, R.layout.serverlistview_row, R.id.connectionCheckedTextView,globalVariables.getSettingsVariables().discoveryIpAdresses);
             serverListView.setAdapter(serverListViewAdapter);
 
 

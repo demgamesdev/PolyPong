@@ -125,15 +125,17 @@ public class ClassicGame extends ApplicationAdapter{
         this.allPlayersReady = globalVariables.getSettingsVariables().checkAllClientConnectionStates(4);
         //Gdx.app.debug("ClassicGame", " touchPos "+miscObjects.touches.touchPos[0]);
 
-        if(this.allPlayersReady && globalVariables.getGameVariables().gameState == 1 && !gameObjects.allBallsDestroyedState) {
+        if(this.allPlayersReady && globalVariables.getGameVariables().gameState == 1) {
 
             //update from globals and update playerfields
 
             //dophysics
             gameObjects.updateAndSend(globalVariables);
 
-            gameObjects.doPhysics();
+            if(!gameObjects.allBallsDestroyedState) {
+                gameObjects.doPhysics();
 
+            }
 
 
         } else if(!gameObjects.allBallsDestroyedState){

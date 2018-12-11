@@ -10,7 +10,6 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.Button;
@@ -69,6 +68,8 @@ public class ClientActivity extends AppCompatActivity{
 
         //networkstuff
         globalVariables.getSettingsVariables().setupConnectionState =0;
+        //set temporarily to 1 != 0
+        globalVariables.getSettingsVariables().myPlayerNumber = 1;
 
         globalVariables.getSettingsVariables().resetArrayLists();
 
@@ -78,7 +79,7 @@ public class ClientActivity extends AppCompatActivity{
 
         globalVariables.setListeners(getApplicationContext());
         globalVariables.getSettingsVariables().serverThread.getServer().addListener(globalVariables.getServerListener());
-        //globalVariables.getSettingsVariables().discoveryClientThread.getServer().addListener(globalVariables.getClientListener());
+        globalVariables.getSettingsVariables().discoveryClientThread.getClient().addListener(globalVariables.getClientListener());
 
         //--------------------------------------------------
 
@@ -155,8 +156,11 @@ public class ClientActivity extends AppCompatActivity{
     class ClientTask extends AsyncTask<Void,Void,Void> {
 
         Globals globalVariables = (Globals) getApplicationContext();
-        ArrayAdapter<String> ClientListViewAdapter = new ArrayAdapter<String>
-                (ClientActivity.this, R.layout.clientlistview_row, globalVariables.getSettingsVariables().discoveryIpAdresses);
+        /*ArrayAdapter<String> clientListViewAdapter = new ArrayAdapter<String>
+                (ClientActivity.this, R.layout.clientlistview_row, globalVariables.getSettingsVariables().discoveryIpAdresses);*/
+
+       MiscClasses.PlayerArrayAdapter clientListViewAdapter = new  MiscClasses.PlayerArrayAdapter(ClientActivity.this,R.layout.clientlistview_row,R.id.connectionTextView, globalVariables.getSettingsVariables().playerList);
+
         TextView myIpTextView = (TextView) findViewById(R.id.IpAdressTextView);
         EditText manualIpEditText = (EditText) findViewById(R.id.manualIpEditText);
         Button manualIpButton = (Button) findViewById(R.id.manualIpButton);
@@ -170,6 +174,9 @@ public class ClientActivity extends AppCompatActivity{
             Log.d(TAG, "doInBackground: Anfang Suche");
 
             List<InetAddress> discoveryHosts;
+            IGlobals.SendVariables.SendDiscoveryRequest discoveryRequest = new IGlobals.SendVariables.SendDiscoveryRequest();
+            discoveryRequest.myPlayerName = globalVariables.getSettingsVariables().myPlayerName;
+
             while (globalVariables.getSettingsVariables().setupConnectionState == 0 && !isCancelled()) {
                 //sendClientConnect();
                 try {
@@ -183,6 +190,9 @@ public class ClientActivity extends AppCompatActivity{
                     tempIpAdress = tempIpAdress.substring(1, tempIpAdress.length());
                     Log.d("discovery", tempIpAdress);
                     globalVariables.getSettingsVariables().addDiscoveryIpToList(tempIpAdress);
+                }
+                for(String ipAdress : globalVariables.getSettingsVariables().discoveryIpAdresses) {
+                    globalVariables.getSettingsVariables().discoveryClientThread.sendDicoveryRequest(ipAdress,discoveryRequest);
                 }
                 globalVariables.getSettingsVariables().myIpAdress=wifiIpAddress(getApplicationContext());
 
@@ -243,7 +253,7 @@ public class ClientActivity extends AppCompatActivity{
 
                 //Vor dem Thread Initialisierung
                 ListView ClientListView = (ListView) findViewById(R.id.ClientListView);
-                ClientListView.setAdapter(ClientListViewAdapter);
+                ClientListView.setAdapter(clientListViewAdapter);
                 //globalVariables.setSearchConnecState(true);
                 final Vibrator vib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                 ClientListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -252,12 +262,12 @@ public class ClientActivity extends AppCompatActivity{
                         //Toast.makeText(Client.this, globalVariables.getMyIpList().get(i), Toast.LENGTH_SHORT).show();
                         vib.vibrate(50);
                         Log.d(TAG, "onItemClick: " + Integer.toString(i));
-                        Log.d(TAG, "onItemClick: " + globalVariables.getSettingsVariables().discoveryIpAdresses.get(i));
-                        Toast.makeText(ClientActivity.this, "Zu \"" + globalVariables.getSettingsVariables().discoveryIpAdresses.get(i) + "\" wird verbunden", Toast.LENGTH_SHORT).show();
+                        Log.d(TAG, "onItemClick: " + globalVariables.getSettingsVariables().playerList.get(i).name);
+                        Toast.makeText(ClientActivity.this, "Zu \"" + globalVariables.getSettingsVariables().playerList.get(i).name + "\" wird verbunden", Toast.LENGTH_SHORT).show();
 
                         //storeIP = globalVariables.getSettingsVariables().remoteIpAdress;
                         //storeIPAdress();
-                        globalVariables.getSettingsVariables().connectDiscoveryClient(globalVariables.getSettingsVariables().discoveryIpAdresses.get(i));
+                        globalVariables.getSettingsVariables().connectDiscoveryClient(globalVariables.getSettingsVariables().playerList.get(i).ipAdress);
                         //globalVariables.getSettingsVariables().discoveryClient.connect(5000,globalVariables.getSettingsVariables().discoveryIpAdresses.get(i),globalVariables.getSettingsVariables().tcpPort,globalVariables.getSettingsVariables().udpPort);
 
                         Globals.SendVariables.SendConnectionRequest sendConnectionRequest = new IGlobals.SendVariables.SendConnectionRequest();
@@ -308,7 +318,7 @@ public class ClientActivity extends AppCompatActivity{
             //Neue IP Adresse wird in die Listview geschrieben
 
             if(globalVariables.getSettingsVariables().updateListViewState) {
-                ClientListViewAdapter.notifyDataSetChanged();
+                clientListViewAdapter.notifyDataSetChanged();
                 globalVariables.getSettingsVariables().updateListViewState=false;
                 //
             }
