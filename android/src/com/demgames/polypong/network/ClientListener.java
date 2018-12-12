@@ -31,8 +31,10 @@ public class ClientListener extends Listener{
     @Override
     public void disconnected(Connection connection) {
         Log.e(TAG, " disconnected.");
-        if(GDXGameLauncher.GDXGAME!=null) {
-            GDXGameLauncher.GDXGAME.finish();
+        synchronized (globals.getSettingsVariables().connectionThreadLock) {
+            if(GDXGameLauncher.GDXGAME!=null) {
+                GDXGameLauncher.GDXGAME.finish();
+            }
         }
     }
 
@@ -41,19 +43,21 @@ public class ClientListener extends Listener{
         Log.d(TAG, "Package received.");
         if(object instanceof Globals.SendVariables.SendDiscoveryResponse) {
             synchronized (globals.getSettingsVariables().receiveThreadLock) {
-                Globals.SendVariables.SendDiscoveryResponse discoveryResponse = (Globals.SendVariables.SendDiscoveryResponse) object;
+                synchronized (globals.getSettingsVariables().connectionThreadLock) {
+                    Globals.SendVariables.SendDiscoveryResponse discoveryResponse = (Globals.SendVariables.SendDiscoveryResponse) object;
 
-                String tempIpAdress = connection.getRemoteAddressTCP().toString();
-                tempIpAdress = tempIpAdress.substring(1, tempIpAdress.length()).split(":")[0];
-                Log.e(TAG, tempIpAdress + " discoveryresponse of " + discoveryResponse.myPlayerName);
-                IGlobals.Player tempPlayer = new IGlobals.Player();
-                tempPlayer.ipAdress = tempIpAdress;
-                tempPlayer.name = discoveryResponse.myPlayerName;
+                    String tempIpAdress = connection.getRemoteAddressTCP().toString();
+                    tempIpAdress = tempIpAdress.substring(1, tempIpAdress.length()).split(":")[0];
+                    Log.e(TAG, tempIpAdress + " discoveryresponse of " + discoveryResponse.myPlayerName);
+                    IGlobals.Player tempPlayer = new IGlobals.Player();
+                    tempPlayer.ipAdress = tempIpAdress;
+                    tempPlayer.name = discoveryResponse.myPlayerName;
 
-                if(globals.getSettingsVariables().addPlayerToList(tempPlayer)) {
-                    globals.getSettingsVariables().updateListViewState = true;
-                } else {
-                    Log.e(TAG, tempIpAdress + " already in playerlist");
+                    if(globals.getSettingsVariables().addPlayerToList(tempPlayer)) {
+                        globals.getSettingsVariables().updateListViewState = true;
+                    } else {
+                        Log.e(TAG, tempIpAdress + " already in playerlist");
+                    }
                 }
             }
         }

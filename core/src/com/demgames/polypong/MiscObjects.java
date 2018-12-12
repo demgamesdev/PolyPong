@@ -64,6 +64,23 @@ public class MiscObjects {
         return(vectorArray);
     }
 
+    static float[] transformFloatVertices(float[] floatArray, float scale, float translateX, float translateY) {
+        float[] tempfloat= new float[floatArray.length];
+
+
+        for(int i =0; i<floatArray.length/2;i++) {
+            tempfloat[2*i] = floatArray[2*i];
+            tempfloat[2*i+1] = floatArray[2*i+1];
+
+            tempfloat[2*i]*=scale;
+            tempfloat[2*i+1]*=scale;
+
+            tempfloat[2*i]+=translateX;
+            tempfloat[2*i+1]+=translateY;
+        }
+        return(floatArray);
+    }
+
     //touchclass
 
     class Touches {
