@@ -100,6 +100,7 @@ public interface IGlobals {
         public List<String> playerNames;
         public List<String> discoveryPlayerNames;
         public int[] clientConnectionStates;
+        private SendVariables.SendDiscoveryRequest discoveryRequest;
 
         public ServerThread serverThread;
         public ClientThread[] clientThreads;
@@ -132,6 +133,13 @@ public interface IGlobals {
             //TODO adapt number
             this.clientConnectionStates=new int[10];
             this.hasFocus=true;
+
+            this.discoveryRequest = new SendVariables.SendDiscoveryRequest();
+        }
+
+        public void setMyPlayerName(String myPlayerName_){
+            this.myPlayerName = myPlayerName_;
+            this.discoveryRequest.myPlayerName = myPlayerName_;
         }
 
         public void startServerThread() {
@@ -305,11 +313,8 @@ public interface IGlobals {
 
         public class ServerThread extends Thread {
             private Server server;
-            private String ipAdress;
-            private int tcpPort, udpPort, udpPendingSize;
+            private int tcpPort, udpPort;
             private boolean isRunnning;
-            private boolean tcpPending;
-            private boolean udpPending;
             private boolean bindPending;
 
             private String threadName;
@@ -360,11 +365,13 @@ public interface IGlobals {
             private int tcpPort, udpPort;
             private boolean isRunnning;
             private boolean connectionPending;
-            private long sendFrequentBallsReferenceTime,sendFieldChangeBallsReferenceTime,sendFrequentInfoReferenceTime;
-            private int sendFrequentBallsTimer,sendFieldChangeBallsTimer,sendFrequentInfoTimer;
+            private long connectionReferenceTime,sendFrequentBallsReferenceTime,sendFieldChangeBallsReferenceTime,sendFrequentInfoReferenceTime;
+            private int connectionTimer,sendFrequentBallsTimer,sendFieldChangeBallsTimer,sendFrequentInfoTimer;
 
             private List<Object> tcpPendingObjects;
             private List<Object> udpPendingObjects;
+            private List<Object> discoveryPendingObjects;
+            private List<String> connectionPendingIpAdresses;
             private boolean tcpPending;
             private boolean udpPending;
 
@@ -396,16 +403,20 @@ public interface IGlobals {
                 this.isRunnning=true;
                 this.connectionPending=false;
 
+                this.connectionReferenceTime = System.currentTimeMillis();
                 this.sendFrequentBallsReferenceTime = System.currentTimeMillis();
                 this.sendFieldChangeBallsReferenceTime = System.currentTimeMillis();
                 this.sendFrequentInfoReferenceTime = System.currentTimeMillis();
 
+                this.connectionTimer = 0;
                 this.sendFrequentBallsTimer = 50;
                 this.sendFieldChangeBallsTimer = 50;
                 this.sendFrequentInfoTimer = 50;
 
                 this.tcpPendingObjects = new ArrayList<Object>();
                 this.udpPendingObjects = new ArrayList<Object>();
+                this.discoveryPendingObjects = new ArrayList<Object>();
+                this.connectionPendingIpAdresses = new ArrayList<String>();
                 this.tcpPending = false;
                 this.udpPending = false;
 
@@ -429,13 +440,28 @@ public interface IGlobals {
 
             public void run() {
                 while (this.isRunnning) {
-                    if (this.connectionPending) {
-                        try {
-                            this.client.connect(5000, this.ipAdress, this.tcpPort, this.udpPort);
-                        } catch (IOException e) {
-                            e.printStackTrace();
+                    if(System.currentTimeMillis() - this.connectionReferenceTime > this.connectionTimer) {
+                        if (this.connectionPending) {
+                            synchronized (connectionThreadLock) {
+                                /*for (int i = 0; i < this.connectionPendingIpAdresses.size(); i++) {
+                                    try {
+                                        this.client.connect(5000, this.connectionPendingIpAdresses.get(i), this.tcpPort, this.udpPort);
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
+                                    this.client.sendUDP(discoveryRequest);
+                                }
+                                this.connectionPendingIpAdresses = new ArrayList();*/
+                                try {
+                                    this.client.connect(5000, this.ipAdress, this.tcpPort, this.udpPort);
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+
+                                this.connectionPending = false;
+                            }
+                            this.connectionReferenceTime=System.currentTimeMillis();
                         }
-                        this.connectionPending = false;
                     }
                     try {
                         if (this.tcpPending) {
@@ -507,9 +533,13 @@ public interface IGlobals {
             }
 
             void connect(String ipAdress_) {
-                this.ipAdress=ipAdress_;
-                this.connectionPending=true;
-
+                if(!ipAdress_.equals("127.0.0.1") && !ipAdress_.equals(myIpAdress)) {
+                    synchronized (connectionThreadLock) {
+                        this.connectionPendingIpAdresses.add(ipAdress_);
+                        this.ipAdress = ipAdress_;
+                        this.connectionPending = true;
+                    }
+                }
             }
 
             public void addObjectToProtocolSendList(Object object, String protocol) {
@@ -535,15 +565,15 @@ public interface IGlobals {
             public void addToFrequentBallsMap(ClassicGameObjects.Ball ball){
                 synchronized (this.sendFrequentBallsThreadLock) {
                     Ball tempBall = new Ball();
-                    tempBall.ballNumber = new Integer(ball.ballNumber);
-                    tempBall.ballPlayerField = new Integer(myPlayerNumber);
-                    tempBall.ballDisplayState = new Integer(ball.ballDisplayState);
+                    tempBall.ballNumber = ball.ballNumber;
+                    tempBall.ballPlayerField = myPlayerNumber;
+                    tempBall.ballDisplayState = ball.ballDisplayState;
 
                     if (tempBall.ballDisplayState == 1) {
-                        tempBall.ballPosition = new Vector2(ball.ballBody.getPosition());
-                        tempBall.ballVelocity = new Vector2(ball.ballBody.getLinearVelocity());
-                        tempBall.ballAngle = new Float(ball.ballBody.getAngle());
-                        tempBall.ballAngularVelocity = new Float(ball.ballBody.getAngularVelocity());
+                        tempBall.ballPosition = ball.ballBody.getPosition();
+                        tempBall.ballVelocity = ball.ballBody.getLinearVelocity();
+                        tempBall.ballAngle = ball.ballBody.getAngle();
+                        tempBall.ballAngularVelocity = ball.ballBody.getAngularVelocity();
                     }
 
                     this.frequentBallsMap.put(tempBall.ballNumber, tempBall);
@@ -554,14 +584,14 @@ public interface IGlobals {
             public void addToFieldChangeBallsMap(ClassicGameObjects.Ball ball){
                 synchronized (this.sendFieldChangeBallsThreadLock) {
                     Ball tempBall = new Ball();
-                    tempBall.ballNumber = new Integer(ball.ballNumber);
-                    tempBall.ballPlayerField = new Integer(ball.tempPlayerField);
-                    tempBall.ballDisplayState = new Integer(ball.ballDisplayState);
+                    tempBall.ballNumber = ball.ballNumber;
+                    tempBall.ballPlayerField = ball.tempPlayerField;
+                    tempBall.ballDisplayState = ball.ballDisplayState;
 
-                    tempBall.ballPosition = new Vector2(ball.ballBody.getPosition());
-                    tempBall.ballVelocity = new Vector2(ball.ballBody.getLinearVelocity());
-                    tempBall.ballAngle = new Float(ball.ballBody.getAngle());
-                    tempBall.ballAngularVelocity = new Float(ball.ballBody.getAngularVelocity());
+                    tempBall.ballPosition = ball.ballBody.getPosition();
+                    tempBall.ballVelocity = ball.ballBody.getLinearVelocity();
+                    tempBall.ballAngle = ball.ballBody.getAngle();
+                    tempBall.ballAngularVelocity = ball.ballBody.getAngularVelocity();
 
                     this.fieldChangeBallsMap.put(tempBall.ballNumber, tempBall);
                     this.fieldChangeBallsPending = true;
@@ -571,13 +601,13 @@ public interface IGlobals {
 
             public void sendFrequentInfo(ClassicGameObjects.Bat bat, ConcurrentHashMap<Integer,Integer> ballDisplayStatesMap, int[] scores){
                 synchronized (this.sendFrequentInfoThreadLock) {
-                    this.sendFrequentInfo.myPlayerNumber = new Integer(myPlayerNumber);
+                    this.sendFrequentInfo.myPlayerNumber = myPlayerNumber;
 
                     this.sendFrequentInfo.bat = new Bat();
-                    this.sendFrequentInfo.bat.batPosition = new Vector2(bat.batBody.getPosition());
-                    this.sendFrequentInfo.bat.batVelocity = new Vector2(bat.batBody.getLinearVelocity());
-                    this.sendFrequentInfo.bat.batAngle = new Float(bat.batBody.getAngle());
-                    this.sendFrequentInfo.bat.batAngularVelocity = new Float(bat.batBody.getAngularVelocity());
+                    this.sendFrequentInfo.bat.batPosition = bat.batBody.getPosition();
+                    this.sendFrequentInfo.bat.batVelocity = bat.batBody.getLinearVelocity();
+                    this.sendFrequentInfo.bat.batAngle = bat.batBody.getAngle();
+                    this.sendFrequentInfo.bat.batAngularVelocity = bat.batBody.getAngularVelocity();
 
                     this.sendFrequentInfo.ballDisplayStatesMap = new ConcurrentHashMap<Integer, Integer>(ballDisplayStatesMap);
 
@@ -590,13 +620,15 @@ public interface IGlobals {
 
             }
 
-            public void sendDicoveryRequest(String ipAdress_, SendVariables.SendDiscoveryRequest discoveryRequest) {
-                try {
-                    this.client.connect(5000, ipAdress_, this.tcpPort, this.udpPort);
-                } catch (IOException e) {
-                    e.printStackTrace();
+            public void sendDicoveryRequest(String ipAdress_) {
+                if(!ipAdress_.equals("127.0.0.1") && !ipAdress_.equals(myIpAdress)) {
+                    try {
+                        this.client.connect(5000, ipAdress_, this.tcpPort, this.udpPort);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    this.client.sendUDP(discoveryRequest);
                 }
-                this.client.sendUDP(discoveryRequest);
             }
 
             public void shutdownClient() {

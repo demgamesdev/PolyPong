@@ -122,7 +122,7 @@ public class MainActivity extends AppCompatActivity {
             return false;
         }
         else{
-            globalVariables.getSettingsVariables().myPlayerName= myPlayerName;
+            globalVariables.getSettingsVariables().setMyPlayerName(myPlayerName);
 
             writeName();
 

@@ -174,8 +174,6 @@ public class ClientActivity extends AppCompatActivity{
             Log.d(TAG, "doInBackground: Anfang Suche");
 
             List<InetAddress> discoveryHosts;
-            IGlobals.SendVariables.SendDiscoveryRequest discoveryRequest = new IGlobals.SendVariables.SendDiscoveryRequest();
-            discoveryRequest.myPlayerName = globalVariables.getSettingsVariables().myPlayerName;
 
             while (globalVariables.getSettingsVariables().setupConnectionState == 0 && !isCancelled()) {
                 //sendClientConnect();
@@ -192,7 +190,7 @@ public class ClientActivity extends AppCompatActivity{
                     globalVariables.getSettingsVariables().addDiscoveryIpToList(tempIpAdress);
                 }
                 for(String ipAdress : globalVariables.getSettingsVariables().discoveryIpAdresses) {
-                    globalVariables.getSettingsVariables().discoveryClientThread.sendDicoveryRequest(ipAdress,discoveryRequest);
+                    globalVariables.getSettingsVariables().discoveryClientThread.sendDicoveryRequest(ipAdress);
                 }
                 globalVariables.getSettingsVariables().myIpAdress=wifiIpAddress(getApplicationContext());
 

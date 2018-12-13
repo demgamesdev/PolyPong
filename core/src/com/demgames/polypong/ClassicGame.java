@@ -59,22 +59,6 @@ public class ClassicGame extends ApplicationAdapter{
 
         //Gdx.app.debug("ClassicGame", " has focus " + globalVariables.getSettingsVariables().hasFocus);
 
-        //set fov of camera to displayGame
-        this.camera = new OrthographicCamera(this.width, this.height);
-
-        //set position to middle of normal screen
-        this.camera.position.set(0, -this.height/2, 0);
-        this.camera.update();
-
-        //copy camera to debugmatrix for synchronous displaying of elements
-        this.debugMatrix=new Matrix4(camera.combined);
-        this.debugRenderer=new Box2DDebugRenderer();
-        //shaperenderer for rendering shapes duuh
-        this.shapeRenderer = new ShapeRenderer();
-        //set font and spriteBatch for drawing fonts and textures
-        this.spriteBatch = new SpriteBatch();
-        this.polygonSpriteBatch = new PolygonSpriteBatch();
-
         this.myPlayerNumber = globalVariables.getSettingsVariables().myPlayerNumber;
         this.numberOfPlayers = globalVariables.getSettingsVariables().numberOfPlayers;
         this.allPlayersReady = false;
@@ -85,6 +69,22 @@ public class ClassicGame extends ApplicationAdapter{
         this.gameObjects = new ClassicGameObjects(this.myPlayerNumber,this.numberOfPlayers,
                 globalVariables.getSettingsVariables().playerNames.toArray(new String[0]),globalVariables.getGameVariables().numberOfBalls,globalVariables.getGameVariables().balls,width,height,globalVariables.getGameVariables().width,globalVariables.getGameVariables().height, miscObjects,
                 globalVariables.getGameVariables().gravityState,globalVariables.getGameVariables().attractionState);
+
+        //set fov of camera to displayGame
+        this.camera = new OrthographicCamera(this.width, this.height);
+
+        //set position to middle of normal screen
+        this.camera.position.set(0, -this.height/2+gameObjects.gameField.offset.y, 0);
+        this.camera.update();
+
+        //copy camera to debugmatrix for synchronous displaying of elements
+        this.debugMatrix=new Matrix4(camera.combined);
+        this.debugRenderer=new Box2DDebugRenderer();
+        //shaperenderer for rendering shapes duuh
+        this.shapeRenderer = new ShapeRenderer();
+        //set font and spriteBatch for drawing fonts and textures
+        this.spriteBatch = new SpriteBatch();
+        this.polygonSpriteBatch = new PolygonSpriteBatch();
 
         /*for(int i=0; i< globalVariables.getSettingsVariables().numberOfPlayers;i++) {
             globalVariables.getGameVariables().bats[i].batPosition = miscObjects.touches.touchPos[0];
@@ -119,7 +119,7 @@ public class ClassicGame extends ApplicationAdapter{
 
             }
         });
-        this.miscObjects.touches.checkTouches();
+        this.miscObjects.touches.checkTouches(gameObjects.gameField.offset);
         this.miscObjects.touches.checkZoomGesture();
 
         this.allPlayersReady = globalVariables.getSettingsVariables().checkAllClientConnectionStates(4);
@@ -168,7 +168,7 @@ public class ClassicGame extends ApplicationAdapter{
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         //Gdx.gl.glDisable(GL20.GL_BLEND);
         camera.zoom= miscObjects.zoomLevel;
-        camera.position.set(0,-height+height/2*miscObjects.zoomLevel,0);
+        camera.position.set(0,-height+height/2*miscObjects.zoomLevel+gameObjects.gameField.offset.y,0);
         //-height+height/2*miscObjects.zoomLevel
         camera.update();
 

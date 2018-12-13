@@ -7,6 +7,8 @@ import com.badlogic.gdx.math.Vector2;
 
 import java.util.ArrayList;
 
+import javax.xml.bind.util.ValidationEventCollector;
+
 public class MiscObjects {
     private static final String TAG = "MiscObjects";
 
@@ -42,9 +44,9 @@ public class MiscObjects {
 
 
     //transform touch input for variable zoomlevel
-    Vector2 transformZoom(Vector2 vec) {
-        vec.x*=zoomLevel;
-        vec.y = - height + (vec.y + height) * zoomLevel;
+    Vector2 transformZoom(Vector2 vec, Vector2 offset) {
+        vec.x=vec.x *zoomLevel + offset.x;
+        vec.y = - height + (vec.y + height) * zoomLevel + offset.y;
         return(vec);
     }
 
@@ -109,11 +111,11 @@ public class MiscObjects {
         }
 
         //check for touches
-        void checkTouches() {
+        void checkTouches(Vector2 offset) {
             for(int i=0;i<this.maxTouchCount;i++) {
                 if (Gdx.input.isTouched(i)) {
                     this.isTouched[i] = true;
-                    this.touchPos[i]=transformZoom(new Vector2((Gdx.input.getX(i)/screenWidth-0.5f) *width,-Gdx.input.getY(i)/screenHeight*height));
+                    this.touchPos[i]=transformZoom(new Vector2((Gdx.input.getX(i)/screenWidth-0.5f) *width,-Gdx.input.getY(i)/screenHeight*height),offset);
                 } else {
                     this.isTouched[i] = false;
                 }
