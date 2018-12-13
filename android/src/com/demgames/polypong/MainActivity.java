@@ -4,6 +4,13 @@ import android.content.Context;
 import android.os.Bundle;
 import android.content.Intent;
 import android.os.PowerManager;
+import android.support.design.widget.TextInputLayout;
+import android.text.Editable;
+import android.text.Layout;
+import android.text.SpannableString;
+import android.text.TextWatcher;
+import android.text.style.UnderlineSpan;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -23,7 +30,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
+
+import org.w3c.dom.Text;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -40,9 +51,11 @@ public class MainActivity extends AppCompatActivity {
     String Name;
     String file_name = "name_file";
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
 
         //Vollbildmodus
         requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -62,13 +75,42 @@ public class MainActivity extends AppCompatActivity {
 
         final Button startHostButton = (Button) findViewById(R.id.startHostButton);
         final Button startClientButton = (Button) findViewById(R.id.startClientButton);
+        final TextView WelcomeScreen = (TextView) findViewById(R.id.Welcome_Text);
+        final EditText YourName = (EditText) findViewById(R.id.nameEditText);
+
+        WelcomeScreen.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                YourName.setVisibility(View.VISIBLE);
+                WelcomeScreen.setVisibility(View.INVISIBLE);
+            }
+        });
+
+        //Erkennt wenn enter bei der Nameneingabe gedrückt wird
+        //Wenn der
+        YourName.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+
+                if (YourName.getText().toString().matches("")){
+
+                }
+                else{
+                    NameEditToTextView();
+                }
+                return false;
+            }
+        });
 
         readName();
+
+        welcomescreen();
 
         startHostButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if (getName()) {
+                    NameEditToTextView();
                     Intent startHost = new Intent(getApplicationContext(), OptionsActivity.class);
                     startActivity(startHost);
                 }
@@ -80,14 +122,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 if (getName()) {
+                    NameEditToTextView();
                     Intent startClient = new Intent(getApplicationContext(), ClientActivity.class);
                     startActivity(startClient);
                     //myThread.stop();
                 }
-
-
-
-
             }
         });
     }
@@ -110,7 +149,7 @@ public class MainActivity extends AppCompatActivity {
 
             writeName();
 
-            //Name in Globals Speichern
+            //Name in Globals gespeichert
             String[] name = new String[2];
             name[0]=YourName.getText().toString();
             globalVariables.getSettingsVariables().playerNamesList=new ArrayList<String>(Arrays.asList(name));
@@ -119,8 +158,6 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "MainActivity getName: "+ supplierNames1.get(0));
             return true;
         }
-
-
     }
 
 
@@ -149,9 +186,8 @@ public class MainActivity extends AppCompatActivity {
             BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
             StringBuffer stringBuffer = new StringBuffer();
             while ((Message = bufferedReader.readLine())!=null){
-                stringBuffer.append(Message + "\n");
+                stringBuffer.append(Message);
             }
-
             YourName.setText(stringBuffer.toString());
 
         } catch (FileNotFoundException e) {
@@ -159,7 +195,43 @@ public class MainActivity extends AppCompatActivity {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 
+    public void NameEditToTextView(){
+
+        final TextView WelcomeScreen = (TextView) findViewById(R.id.Welcome_Text);
+        final EditText YourName = (EditText) findViewById(R.id.nameEditText);
+
+        YourName.setVisibility(View.INVISIBLE);
+        WelcomeScreen.setVisibility(View.VISIBLE);
+        welcomescreen();
+        Name = YourName.getText().toString();
+        writeName();
+    }
+
+
+    //Überprüft ob ein name schon gespeichert ist und wählt Wilkommenscreen aus
+    public void welcomescreen(){
+        EditText YourName = (EditText) findViewById(R.id.nameEditText);
+        TextView Welcome = (TextView) findViewById(R.id.Welcome_Text);
+        View Test = (View) findViewById(R.id.username_text_input_layout);
+        //ImageButton EditNameBtn = (ImageButton) findViewById(R.id.editNameBtn);
+
+        //Edittext wird unsichtbar
+        if (!YourName.getText().toString().matches("")){
+            YourName.setVisibility(View.INVISIBLE);
+            Test.setVisibility(View.INVISIBLE);
+            Welcome.setVisibility(View.VISIBLE);
+
+            //Unterstreicht den Text
+            SpannableString content = new SpannableString(getString(R.string.welcomeScreen) + " " + YourName.getText().toString() + "!");
+            content.setSpan(new UnderlineSpan(), 0, content.length(), 0);
+            Welcome.setText(content);
+        }
+        //Willkommenscreen wird unsichtbar
+        else{
+            Welcome.setVisibility(View.INVISIBLE);
+            //EditNameBtn.setVisibility(View.INVISIBLE);
+        }
+    }
 }

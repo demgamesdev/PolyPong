@@ -20,9 +20,19 @@ public class GDXGameLauncher extends AndroidApplication {
         final Globals globalVariables = (Globals) getApplicationContext();
 
 		AndroidApplicationConfiguration config = new AndroidApplicationConfiguration();
+        switch (globalVariables.getSettingsVariables().gameMode) {
+            case 1:
+                ClassicGame classicGame = new ClassicGame(globalVariables);
+                initialize(classicGame, config);
 
-        ClassicGame classicGame = new ClassicGame(globalVariables);
-		initialize(classicGame, config);
+                break;
+            case 2:
+
+                Pong pong = new Pong(globalVariables);
+                initialize(pong, config);
+                Log.d(TAG, "onItemSelected: Pong Spielmodus gestartet");
+                break;
+        }
 	}
 
     @Override

@@ -12,4 +12,6 @@
     <string name="confirm">confirm</string>
     <string name="numballs">"Number of balls: "</string>
     <string name="options">Game options</string>
+    <string name="welcomeScreen">Hello</string>
+    <string name="enterName">Enter name</string>
 </resources>

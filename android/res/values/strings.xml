@@ -13,4 +13,6 @@
     <string name="options">Spieleinstellungen</string>
     <string name="numballs">"Anzahl der Bälle: "</string>
     <string name="confirm">Bestätigen</string>
+    <string name="welcomeScreen">Hallo</string>
+    <string name="enterName">Name eingeben</string>
 </resources>
