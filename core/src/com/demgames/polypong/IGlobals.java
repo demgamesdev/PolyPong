@@ -64,7 +64,7 @@ public interface IGlobals {
                 this.balls[i] = new Ball();
                 if (randomPosition) {
                     this.balls[i].ballNumber = i;
-                    this.balls[i].ballRadius = (rand.nextFloat()+0.5f)*0.03f * this.factor;
+                    this.balls[i].ballRadius = (rand.nextFloat()*0.2f+0.8f)*0.05f * this.factor;
                     this.balls[i].ballPosition = new Vector2((rand.nextFloat()-0.5f)*0.8f * this.factor,((rand.nextFloat()-1f)*0.6f-0.2f)*this.factor);
                     this.balls[i].ballVelocity = new Vector2(0,0);
                     this.balls[i].ballAngle = 0f;

@@ -131,7 +131,7 @@ public class ClassicGameObjects {
         this.gameField = new GameField();
         this.balls=new Ball[this.numberOfBalls];
         for(int i=0;i<this.balls.length;i++) {
-            this.balls[i]= new Ball(i,balls_[i].ballRadius,balls_[i].ballPosition.scl(this.width,this.height), balls_[i].ballVelocity,balls_[i].ballAngle,balls_[i].ballAngularVelocity,10);
+            this.balls[i]= new Ball(i,balls_[i].ballRadius,balls_[i].ballPosition, balls_[i].ballVelocity,balls_[i].ballAngle,balls_[i].ballAngularVelocity,10);
             //Gdx.app.debug("ClassicGame", "setup ball " + Integer.toString(i) + " on field "+ Integer.toString(globalVariables.getGameVariables().ballPlayerFields[i]));
         }
 
