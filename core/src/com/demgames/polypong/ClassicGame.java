@@ -55,7 +55,7 @@ public class ClassicGame extends ApplicationAdapter{
 
         //get width and height of displayGame
         this.width = 1f;
-        this.height = globalVariables.getGameVariables().height/globalVariables.getGameVariables().width*width;
+        this.height = 2f;
 
         //Gdx.app.debug("ClassicGame", " has focus " + globalVariables.getSettingsVariables().hasFocus);
 
@@ -71,7 +71,7 @@ public class ClassicGame extends ApplicationAdapter{
                 globalVariables.getGameVariables().gravityState,globalVariables.getGameVariables().attractionState);
 
         //set fov of camera to displayGame
-        this.camera = new OrthographicCamera(this.width, this.height);
+        this.camera = new OrthographicCamera(this.width, globalVariables.getGameVariables().height/globalVariables.getGameVariables().width*width);
 
         //set position to middle of normal screen
         this.camera.position.set(0, -this.height/2+gameObjects.gameField.offset.y, 0);
@@ -119,7 +119,7 @@ public class ClassicGame extends ApplicationAdapter{
 
             }
         });
-        this.miscObjects.touches.checkTouches(gameObjects.gameField.offset);
+        this.miscObjects.touches.checkTouches(gameObjects.gameField.offset,camera,gameObjects.fixedPoint);
         this.miscObjects.touches.checkZoomGesture();
 
         this.allPlayersReady = globalVariables.getSettingsVariables().checkAllClientConnectionStates(4);
@@ -168,7 +168,10 @@ public class ClassicGame extends ApplicationAdapter{
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         //Gdx.gl.glDisable(GL20.GL_BLEND);
         camera.zoom= miscObjects.zoomLevel;
-        camera.position.set(0,-height+height/2*miscObjects.zoomLevel+gameObjects.gameField.offset.y,0);
+        //camera.position.set(0,-height+height/2*miscObjects.zoomLevel+gameObjects.gameField.offset.y,0);
+        camera.position.set(0,gameObjects.fixedPoint.y+miscObjects.zoomLevel*camera.viewportHeight/2,0);
+        Gdx.app.debug(TAG,Float.toString(gameObjects.fixedPoint.y));
+        Gdx.app.debug(TAG,Float.toString(camera.viewportHeight));
         //-height+height/2*miscObjects.zoomLevel
         camera.update();
 

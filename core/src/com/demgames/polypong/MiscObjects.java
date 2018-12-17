@@ -1,6 +1,7 @@
 package com.demgames.polypong;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
@@ -44,10 +45,8 @@ public class MiscObjects {
 
 
     //transform touch input for variable zoomlevel
-    Vector2 transformZoom(Vector2 vec, Vector2 offset) {
-        vec.x=vec.x *zoomLevel + offset.x;
-        vec.y = - height + (vec.y + height) * zoomLevel + offset.y;
-        return(vec);
+    Vector2 transformZoom(float touchX,float touchY, Camera camera, Vector2 fixedPoint) {
+        return(new Vector2(touchX*zoomLevel, zoomLevel*(touchY + camera.viewportHeight/2)+fixedPoint.y));
     }
 
     static float[] vecToFloatArray(Vector2[] vectorArray) {
@@ -111,11 +110,11 @@ public class MiscObjects {
         }
 
         //check for touches
-        void checkTouches(Vector2 offset) {
+        void checkTouches(Vector2 offset, Camera camera, Vector2 fixedPoint) {
             for(int i=0;i<this.maxTouchCount;i++) {
                 if (Gdx.input.isTouched(i)) {
                     this.isTouched[i] = true;
-                    this.touchPos[i]=transformZoom(new Vector2((Gdx.input.getX(i)/screenWidth-0.5f) *width,-Gdx.input.getY(i)/screenHeight*height),offset);
+                    this.touchPos[i]=transformZoom((Gdx.input.getX(i)/screenWidth-0.5f) *camera.viewportWidth,(-Gdx.input.getY(i)/screenHeight+0.5f) *camera.viewportHeight,camera, fixedPoint);
                 } else {
                     this.isTouched[i] = false;
                 }

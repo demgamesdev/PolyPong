@@ -41,6 +41,7 @@ public class ClassicGameObjects {
 
     World world;
     GameField gameField;
+    Vector2 fixedPoint;
     Ball[] balls;
     Bat[] bats;
     int[] scores;
@@ -129,6 +130,9 @@ public class ClassicGameObjects {
 
         //create game objects
         this.gameField = new GameField();
+
+        this.fixedPoint = new Vector2(0,-this.height).add(gameField.offset);
+
         this.balls=new Ball[this.numberOfBalls];
         for(int i=0;i<this.balls.length;i++) {
             this.balls[i]= new Ball(i,balls_[i].ballRadius,balls_[i].ballPosition, balls_[i].ballVelocity,balls_[i].ballAngle,balls_[i].ballAngularVelocity,10);
