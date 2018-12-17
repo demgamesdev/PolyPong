@@ -71,15 +71,14 @@ public class ClientActivity extends AppCompatActivity{
         //set temporarily to 1 != 0
         globalVariables.getSettingsVariables().myPlayerNumber = 1;
 
-        globalVariables.getSettingsVariables().resetArrayLists();
+        globalVariables.getSettingsVariables().resetObjects();
 
         globalVariables.getSettingsVariables().startServerThread();
         globalVariables.getSettingsVariables().startDiscoveryClientThread();
 
-
         globalVariables.setListeners(getApplicationContext());
-        globalVariables.getSettingsVariables().serverThread.getServer().addListener(globalVariables.getServerListener());
-        globalVariables.getSettingsVariables().discoveryClientThread.getClient().addListener(globalVariables.getClientListener());
+        globalVariables.getSettingsVariables().serverRunnable.getServer().addListener(globalVariables.getServerListener());
+        globalVariables.getSettingsVariables().discoveryClientRunnable.getClient().addListener(globalVariables.getClientListener());
 
         //--------------------------------------------------
 
@@ -143,9 +142,10 @@ public class ClientActivity extends AppCompatActivity{
         if ((keyCode == KeyEvent.KEYCODE_BACK)) {
             Log.d(this.getClass().getName(), "back button pressed");
             Globals globalVariables = (Globals) getApplicationContext();
-            globalVariables.getSettingsVariables().serverThread.shutdownServer();
-            globalVariables.getSettingsVariables().discoveryClientThread.shutdownClient();
+            globalVariables.getSettingsVariables().serverRunnable.getServer().stop();
+            globalVariables.getSettingsVariables().discoveryClientRunnable.getClient().stop();
             globalVariables.getSettingsVariables().shutdownAllClients();
+            globalVariables.getSettingsVariables().networkThreadPool.shutdownNow();
         }
         return super.onKeyDown(keyCode, event);
     }
@@ -155,11 +155,11 @@ public class ClientActivity extends AppCompatActivity{
     /********* Thread Function - Searching IP and displaying *********/
     class ClientTask extends AsyncTask<Void,Void,Void> {
 
-        Globals globalVariables = (Globals) getApplicationContext();
+        Globals globals = (Globals) getApplicationContext();
         /*ArrayAdapter<String> clientListViewAdapter = new ArrayAdapter<String>
-                (ClientActivity.this, R.layout.clientlistview_row, globalVariables.getSettingsVariables().discoveryIpAdresses);*/
+                (ClientActivity.this, R.layout.clientlistview_row, globals.getSettingsVariables().discoveryIpAdresses);*/
 
-       MiscClasses.PlayerArrayAdapter clientListViewAdapter = new  MiscClasses.PlayerArrayAdapter(ClientActivity.this,R.layout.clientlistview_row,R.id.connectionTextView, globalVariables.getSettingsVariables().playerList);
+       MiscClasses.PlayerArrayAdapter clientListViewAdapter = new  MiscClasses.PlayerArrayAdapter(ClientActivity.this,R.layout.clientlistview_row,R.id.connectionTextView, globals.getSettingsVariables().playerList);
 
         TextView myIpTextView = (TextView) findViewById(R.id.IpAdressTextView);
         EditText manualIpEditText = (EditText) findViewById(R.id.manualIpEditText);
@@ -175,30 +175,30 @@ public class ClientActivity extends AppCompatActivity{
 
             List<InetAddress> discoveryHosts;
 
-            while (globalVariables.getSettingsVariables().setupConnectionState == 0 && !isCancelled()) {
+            while (globals.getSettingsVariables().setupConnectionState == 0 && !isCancelled()) {
                 //sendClientConnect();
                 try {
                     Thread.currentThread().sleep(1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                discoveryHosts=globalVariables.getSettingsVariables().discoveryClientThread.getClient().discoverHosts(globalVariables.getSettingsVariables().udpPort,500);
+                discoveryHosts= globals.getSettingsVariables().discoveryClientRunnable.getClient().discoverHosts(globals.getSettingsVariables().udpPort,500);
                 for (int i = 0; i < discoveryHosts.toArray().length; i++) {
                     String tempIpAdress = discoveryHosts.toArray()[i].toString();
                     tempIpAdress = tempIpAdress.substring(1, tempIpAdress.length());
                     Log.d("discovery", tempIpAdress);
-                    globalVariables.getSettingsVariables().addDiscoveryIpToList(tempIpAdress);
+                    globals.getSettingsVariables().addDiscoveryIpToList(tempIpAdress);
                 }
-                for(String ipAdress : globalVariables.getSettingsVariables().discoveryIpAdresses) {
-                    globalVariables.getSettingsVariables().discoveryClientThread.sendDicoveryRequest(ipAdress);
+                for(String ipAdress : globals.getSettingsVariables().discoveryIpAdresses) {
+                    globals.getSettingsVariables().discoveryRequest(ipAdress);
                 }
-                globalVariables.getSettingsVariables().myIpAdress=wifiIpAddress(getApplicationContext());
+                globals.getSettingsVariables().myIpAdress=wifiIpAddress(getApplicationContext());
 
                 myIpTextView.post(new Runnable() {
                     @Override
                     public void run() {
-                        if (checkIfIp(globalVariables.getSettingsVariables().myIpAdress)) {
-                            myIpTextView.setText("Deine IP-Adresse lautet: " + globalVariables.getSettingsVariables().myIpAdress);
+                        if (checkIfIp(globals.getSettingsVariables().myIpAdress)) {
+                            myIpTextView.setText("Deine IP-Adresse lautet: " + globals.getSettingsVariables().myIpAdress);
 
                         } else {
                             myIpTextView.setText("Unable to get Ip-Adress");
@@ -215,23 +215,23 @@ public class ClientActivity extends AppCompatActivity{
 
             Log.d(TAG, "onPostExecute: Anfang Settings Senden");
 
-            while(globalVariables.getSettingsVariables().setupConnectionState == 1 && !isCancelled()) {
+            while(globals.getSettingsVariables().setupConnectionState == 1 && !isCancelled()) {
 
             }
 
-            while(!(globalVariables.getSettingsVariables().clientConnectionStates[0] ==3) && !isCancelled()) {
+            while(!(globals.getSettingsVariables().clientConnectionStates[0] ==3) && !isCancelled()) {
 
             }
             IGlobals.SendVariables.SendConnectionState sendConnectionState=new IGlobals.SendVariables.SendConnectionState();
-            sendConnectionState.myPlayerNumber=globalVariables.getSettingsVariables().myPlayerNumber;
+            sendConnectionState.myPlayerNumber= globals.getSettingsVariables().myPlayerNumber;
             sendConnectionState.connectionState=3;
-            globalVariables.getSettingsVariables().sendObjectToAllClients(sendConnectionState,"tcp");
+            globals.getSettingsVariables().sendObjectToAllClients(sendConnectionState,"tcp");
 
-            globalVariables.getSettingsVariables().clientConnectionStates[globalVariables.getSettingsVariables().myPlayerNumber] =3;
+            globals.getSettingsVariables().clientConnectionStates[globals.getSettingsVariables().myPlayerNumber] =3;
 
             if(!isCancelled()) {
                 startActivity(new Intent(getApplicationContext(), GDXGameLauncher.class));
-                //globalVariables.myThread.stop();
+                //globals.myThread.stop();
                 clientListUpdateTask.cancel(true);
                 finish();
 
@@ -247,33 +247,33 @@ public class ClientActivity extends AppCompatActivity{
         @Override
         protected void onPreExecute() {
 
-                loadIPAdress();
+                //loadIPAdress();
 
                 //Vor dem Thread Initialisierung
                 ListView ClientListView = (ListView) findViewById(R.id.ClientListView);
                 ClientListView.setAdapter(clientListViewAdapter);
-                //globalVariables.setSearchConnecState(true);
+                //globals.setSearchConnecState(true);
                 final Vibrator vib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                 ClientListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                     @Override
                     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                        //Toast.makeText(Client.this, globalVariables.getMyIpList().get(i), Toast.LENGTH_SHORT).show();
+                        //Toast.makeText(Client.this, globals.getMyIpList().get(i), Toast.LENGTH_SHORT).show();
                         vib.vibrate(50);
                         Log.d(TAG, "onItemClick: " + Integer.toString(i));
-                        Log.d(TAG, "onItemClick: " + globalVariables.getSettingsVariables().playerList.get(i).name);
-                        Toast.makeText(ClientActivity.this, "Zu \"" + globalVariables.getSettingsVariables().playerList.get(i).name + "\" wird verbunden", Toast.LENGTH_SHORT).show();
+                        Log.d(TAG, "onItemClick: " + globals.getSettingsVariables().playerList.get(i).name);
+                        Toast.makeText(ClientActivity.this, "Zu \"" + globals.getSettingsVariables().playerList.get(i).name + "\" wird verbunden", Toast.LENGTH_SHORT).show();
 
-                        //storeIP = globalVariables.getSettingsVariables().remoteIpAdress;
+                        //storeIP = globals.getSettingsVariables().remoteIpAdress;
                         //storeIPAdress();
-                        globalVariables.getSettingsVariables().connectDiscoveryClient(globalVariables.getSettingsVariables().playerList.get(i).ipAdress);
-                        //globalVariables.getSettingsVariables().discoveryClient.connect(5000,globalVariables.getSettingsVariables().discoveryIpAdresses.get(i),globalVariables.getSettingsVariables().tcpPort,globalVariables.getSettingsVariables().udpPort);
+                        globals.getSettingsVariables().connectDiscoveryClient(globals.getSettingsVariables().playerList.get(i).ipAdress);
+                        //globals.getSettingsVariables().discoveryClientRunnable.connect(5000,globals.getSettingsVariables().discoveryIpAdresses.get(i),globals.getSettingsVariables().tcpPort,globals.getSettingsVariables().udpPort);
 
                         Globals.SendVariables.SendConnectionRequest sendConnectionRequest = new IGlobals.SendVariables.SendConnectionRequest();
-                        sendConnectionRequest.myPlayerName=globalVariables.getSettingsVariables().myPlayerName;
+                        sendConnectionRequest.myPlayerName= globals.getSettingsVariables().myPlayerName;
 
-                        globalVariables.getSettingsVariables().discoveryClientThread.addObjectToProtocolSendList(sendConnectionRequest,"tcp");
+                        globals.getSettingsVariables().sendObjectClient(globals.getSettingsVariables().discoveryClientRunnable,sendConnectionRequest,"tcp");
 
-                        globalVariables.getSettingsVariables().setupConnectionState =1;
+                        globals.getSettingsVariables().setupConnectionState =1;
 
                         //sendClientConnect();
                     }
@@ -284,18 +284,18 @@ public class ClientActivity extends AppCompatActivity{
                         if(checkIfIp(manualIpEditText.getText().toString())) {
                             Toast.makeText(ClientActivity.this, "Zu \"" + manualIpEditText.getText().toString() + "\" wird verbunden", Toast.LENGTH_SHORT).show();
                             vib.vibrate(50);
-                            globalVariables.getSettingsVariables().manualConnectIpAdress=manualIpEditText.getText().toString();
-                            //storeIP = globalVariables.getSettingsVariables().remoteIpAdress;
+                            globals.getSettingsVariables().manualConnectIpAdress=manualIpEditText.getText().toString();
+                            //storeIP = globals.getSettingsVariables().remoteIpAdress;
                             //storeIPAdress();
 
-                            globalVariables.getSettingsVariables().connectDiscoveryClient(globalVariables.getSettingsVariables().manualConnectIpAdress);
-                            //globalVariables.getSettingsVariables().discoveryClient.connect(5000,globalVariables.getSettingsVariables().discoveryIpAdresses.get(i),globalVariables.getSettingsVariables().tcpPort,globalVariables.getSettingsVariables().udpPort);
+                            globals.getSettingsVariables().connectDiscoveryClient(globals.getSettingsVariables().manualConnectIpAdress);
+                            //globals.getSettingsVariables().discoveryClientRunnable.connect(5000,globals.getSettingsVariables().discoveryIpAdresses.get(i),globals.getSettingsVariables().tcpPort,globals.getSettingsVariables().udpPort);
                             Globals.SendVariables.SendConnectionRequest sendConnectionRequest = new IGlobals.SendVariables.SendConnectionRequest();
-                            sendConnectionRequest.myPlayerName=globalVariables.getSettingsVariables().myPlayerName;
+                            sendConnectionRequest.myPlayerName= globals.getSettingsVariables().myPlayerName;
 
-                            globalVariables.getSettingsVariables().discoveryClientThread.addObjectToProtocolSendList(sendConnectionRequest,"tcp");
+                            globals.getSettingsVariables().sendObjectClient(globals.getSettingsVariables().discoveryClientRunnable,sendConnectionRequest,"tcp");
 
-                            globalVariables.getSettingsVariables().setupConnectionState = 1;
+                            globals.getSettingsVariables().setupConnectionState = 1;
                         } else {
                             Toast.makeText(ClientActivity.this, "Gültige Ip-Adresse eingeben", Toast.LENGTH_SHORT).show();
                         }
@@ -315,9 +315,9 @@ public class ClientActivity extends AppCompatActivity{
         protected void onProgressUpdate(Void... values) {
             //Neue IP Adresse wird in die Listview geschrieben
 
-            if(globalVariables.getSettingsVariables().updateListViewState) {
+            if(globals.getSettingsVariables().updateListViewState) {
                 clientListViewAdapter.notifyDataSetChanged();
-                globalVariables.getSettingsVariables().updateListViewState=false;
+                globals.getSettingsVariables().updateListViewState=false;
                 //
             }
 
@@ -361,8 +361,8 @@ public class ClientActivity extends AppCompatActivity{
             EditText manualIpEditText = (EditText) findViewById(R.id.manualIpEditText);
             manualIpEditText.setText(stringBuffer.toString());
 
-            //if (globalVariables.getSettingsVariables().addDiscoveryIpToList(stringBuffer.toString())) {
-                //globalVariables.setUpdateListViewState(true);
+            //if (globals.getSettingsVariables().addDiscoveryIpToList(stringBuffer.toString())) {
+                //globals.setUpdateListViewState(true);
             //}
             //storedIPadress.setText(stringBuffer.toString());
 

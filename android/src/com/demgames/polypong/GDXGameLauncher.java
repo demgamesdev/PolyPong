@@ -35,8 +35,9 @@ public class GDXGameLauncher extends AndroidApplication {
         Globals globalVariables=(Globals)getApplicationContext();
         //TODO for more players
 
-        globalVariables.getSettingsVariables().serverThread.shutdownServer();
+        globalVariables.getSettingsVariables().serverRunnable.getServer().stop();
         globalVariables.getSettingsVariables().shutdownAllClients();
+        globalVariables.getSettingsVariables().networkThreadPool.shutdownNow();
         super.onDestroy();
     }
 

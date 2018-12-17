@@ -59,12 +59,12 @@ public class ServerActivity extends AppCompatActivity{
         final Globals globalVariables = (Globals) getApplicationContext();
         globalVariables.getSettingsVariables().setupConnectionState =0;
 
-        globalVariables.getSettingsVariables().resetArrayLists();
+        globalVariables.getSettingsVariables().resetObjects();
 
         globalVariables.getSettingsVariables().startServerThread();
 
         globalVariables.setListeners(getApplicationContext());
-        globalVariables.getSettingsVariables().serverThread.getServer().addListener(globalVariables.getServerListener());
+        globalVariables.getSettingsVariables().serverRunnable.getServer().addListener(globalVariables.getServerListener());
 
 
         globalVariables.getSettingsVariables().myPlayerNumber =0;
@@ -104,12 +104,12 @@ public class ServerActivity extends AppCompatActivity{
                     Toast.makeText(ServerActivity.this, "Verbindung zu" + Integer.toString(globalVariables.getSettingsVariables().numberOfPlayers - 1)
                             + " Spielern wird hergestellt", Toast.LENGTH_SHORT).show();
 
-                    if(globalVariables.getSettingsVariables().setupConnectionState<2) {
+                    if(true) {//globalVariables.getSettingsVariables().setupConnectionState<2
                         globalVariables.getSettingsVariables().startAllClientThreads();
                         globalVariables.getSettingsVariables().setAllClientListeners(globalVariables.getClientListener());
                     }
                     globalVariables.getSettingsVariables().connectAllClients();
-                    Log.d(TAG, "Connected to all clients.");
+                    Log.d(TAG, "Connected to all clientRunnables. "+globalVariables.getSettingsVariables().testNumber);
 
                     IGlobals.Ball[] tempBalls = new IGlobals.Ball[globalVariables.getGameVariables().numberOfBalls];
 
@@ -130,7 +130,9 @@ public class ServerActivity extends AppCompatActivity{
                         settings.gravityState = globalVariables.getGameVariables().gravityState;
                         settings.attractionState = globalVariables.getGameVariables().attractionState;
 
-                        globalVariables.getSettingsVariables().clientThreads[i].addObjectToProtocolSendList(settings, "tcp");
+                        globalVariables.getSettingsVariables().clientRunnables[i].setupClientTCPSend(settings);
+                        globalVariables.getSettingsVariables().networkThreadPool.submit(globalVariables.getSettingsVariables().clientRunnables[i]);
+                        //globalVariables.getSettingsVariables().sendObjectClient(globalVariables.getSettingsVariables().clientRunnables[i], settings, "tcp");
                     }
 
                     globalVariables.getSettingsVariables().setupConnectionState = 2;
@@ -190,8 +192,9 @@ public class ServerActivity extends AppCompatActivity{
         if ((keyCode == KeyEvent.KEYCODE_BACK)) {
             Log.d(this.getClass().getName(), "back button pressed");
             Globals globalVariables = (Globals) getApplicationContext();
-            globalVariables.getSettingsVariables().serverThread.shutdownServer();
+            globalVariables.getSettingsVariables().serverRunnable.getServer().stop();
             globalVariables.getSettingsVariables().shutdownAllClients();
+            globalVariables.getSettingsVariables().networkThreadPool.shutdownNow();
 
         }
         return super.onKeyDown(keyCode, event);
@@ -258,7 +261,7 @@ public class ServerActivity extends AppCompatActivity{
 
             if(!isCancelled()) {
                 startActivity(new Intent(getApplicationContext(), GDXGameLauncher.class));
-                //globalVariables.myThread.stop();
+                //globals.myThread.stop();
                 serverListUpdateTask.cancel(true);
                 finish();
 
@@ -274,11 +277,11 @@ public class ServerActivity extends AppCompatActivity{
             ListView serverListView = (ListView) findViewById(R.id.serverListView);
             serverListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
             serverListViewAdapter = new MiscClasses.PlayerArrayAdapter(ServerActivity.this,R.layout.serverlistview_row,R.id.connectionCheckedTextView,globalVariables.getSettingsVariables().playerList);
-            //serverListViewAdapter = new ClientPlayerArrayAdapter(ServerActivity.this, R.layout.serverlistview_row, R.id.connectionCheckedTextView,globalVariables.getSettingsVariables().discoveryIpAdresses);
+            //serverListViewAdapter = new ClientPlayerArrayAdapter(ServerActivity.this, R.layout.serverlistview_row, R.id.connectionCheckedTextView,globals.getSettingsVariables().discoveryIpAdresses);
             serverListView.setAdapter(serverListViewAdapter);
 
 
-            //globalVariables.setSearchConnecState(true);
+            //globals.setSearchConnecState(true);
 
 
             serverListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {

@@ -182,6 +182,7 @@ public class ClassicGameObjects {
             }
         }
 
+        //checking and sending
         for(int i=0;i<this.balls.length;i++) {
             if (this.balls[i].ballDisplayState == 1) {
                 this.balls[i].checkWrongPlayerField();
@@ -195,11 +196,11 @@ public class ClassicGameObjects {
                     }
                     if (this.balls[i].tempPlayerField == this.myPlayerNumber) {
                         Gdx.app.debug(TAG, "ball " + Integer.toString(this.balls[i].ballNumber) + " on field "+ Integer.toString(this.balls[i].tempPlayerField) + " sendfrequentball");
-                        globals.getSettingsVariables().sendFrequentBallToAllClient(this.balls[i]);
+                        miscObjects.addToFrequentBallsMap(this.balls[i]);
                     } else {
                         if (this.balls[i].tempPlayerField != 999) {
                             Gdx.app.debug(TAG, "ball " + Integer.toString(this.balls[i].ballNumber) + " on field "+ Integer.toString(this.balls[i].tempPlayerField) + " sendfieldchangeball");
-                            globals.getSettingsVariables().sendFieldChangeBallToAllClients(this.balls[i]);
+                            miscObjects.addToFieldChangeBallsMap(this.balls[i]);
                         }
                     }
                 }else {
@@ -207,7 +208,11 @@ public class ClassicGameObjects {
                 }
             }
         }
-        globals.getSettingsVariables().sendFrequentInfoToAllClients(this.bats[myPlayerNumber],this.ballDisplayStatesMap,scores);
+        miscObjects.sendFrequentInfo(this.bats[myPlayerNumber],this.ballDisplayStatesMap,scores);
+
+        miscObjects.sendAllClasses();
+        miscObjects.clearAllClasses();
+
         this.ballDisplayStatesMap.clear();
     }
 

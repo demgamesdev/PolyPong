@@ -11,11 +11,11 @@ import com.esotericsoftware.kryonet.Server;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 public interface IGlobals {
     String TAG = "IGlobals";
@@ -102,9 +102,11 @@ public interface IGlobals {
         public int[] clientConnectionStates;
         private SendVariables.SendDiscoveryRequest discoveryRequest;
 
-        public ServerThread serverThread;
-        public ClientThread[] clientThreads;
-        public ClientThread discoveryClientThread;
+        public ServerRunnable serverRunnable;
+        public ClientRunnable[] clientRunnables;
+        public ClientRunnable discoveryClientRunnable;
+
+        public ThreadPoolExecutor networkThreadPool;
 
         public List<Player> playerList;
 
@@ -121,12 +123,14 @@ public interface IGlobals {
         public int myPlayerNumber;
         public int numberOfPlayers;
 
+        public int testNumber;
+
         SettingsVariables() {
 
             this.tcpPort=12000;
             this.udpPort=12001;
 
-            this.resetArrayLists();
+            this.resetObjects();
 
             this.updateListViewState=false;
 
@@ -135,6 +139,10 @@ public interface IGlobals {
             this.hasFocus=true;
 
             this.discoveryRequest = new SendVariables.SendDiscoveryRequest();
+
+            this.networkThreadPool = (ThreadPoolExecutor)Executors.newCachedThreadPool();
+
+            this.testNumber = 0;
         }
 
         public void setMyPlayerName(String myPlayerName_){
@@ -143,30 +151,44 @@ public interface IGlobals {
         }
 
         public void startServerThread() {
-            this.serverThread = new ServerThread("serverThread",this.tcpPort,this.udpPort);
-            this.registerKryoClasses(this.serverThread.getServer().getKryo());
-            this.serverThread.start();
-            this.serverThread.bind();
-
+            this.serverRunnable = new ServerRunnable();
+            this.registerKryoClasses(this.serverRunnable.getServer().getKryo());
+            this.serverRunnable.getServer().start();//startServer();
+            //this.networkThreadPool.submit(this.serverRunnable);
+            this.serverRunnable.setupServerBind(this.tcpPort,this.udpPort);
+            this.networkThreadPool.submit(this.serverRunnable);
         }
 
         public void startDiscoveryClientThread() {
-            this.discoveryClientThread = new ClientThread("discoveryClientThread",this.tcpPort,this.udpPort);
-            this.registerKryoClasses(this.discoveryClientThread.getClient().getKryo());
-            this.discoveryClientThread.start();
+            this.discoveryClientRunnable = new ClientRunnable();
+            this.registerKryoClasses(this.discoveryClientRunnable.getClient().getKryo());
+            this.discoveryClientRunnable.getClient().start();//.startClient();
+            //this.networkThreadPool.submit(this.discoveryClientRunnable);
         }
 
         public void connectDiscoveryClient(String ipAdress_) {
-            this.discoveryClientThread.connect(ipAdress_);
+            this.discoveryClientRunnable.setupClientConnection(ipAdress_, this.tcpPort, this.udpPort);
+            this.networkThreadPool.submit(this.discoveryClientRunnable);
+        }
+
+        public void discoveryRequest(String ipAdress_) {
+            if(!ipAdress_.equals("127.0.0.1") && !ipAdress_.equals(myIpAdress)) {
+                this.discoveryClientRunnable.setupDiscoveryRequest(ipAdress_, this.tcpPort, this.udpPort, this.discoveryRequest);
+                this.networkThreadPool.submit(this.discoveryClientRunnable);
+            }
         }
 
         public void startAllClientThreads() {
-            this.clientThreads = new ClientThread[this.numberOfPlayers];
+            com.esotericsoftware.minlog.Log.debug("number of players "+this.numberOfPlayers);
+            this.clientRunnables = new ClientRunnable[this.numberOfPlayers];
             for(int i=0; i<this.numberOfPlayers; i++) {
                 if(i!=this.myPlayerNumber) {
-                    this.clientThreads[i] = new ClientThread("clientThread "+i,this.tcpPort,this.udpPort);
-                    this.registerKryoClasses(this.clientThreads[i].getClient().getKryo());
-                    this.clientThreads[i].start();
+                    this.clientRunnables[i] = new ClientRunnable();
+                    this.registerKryoClasses(this.clientRunnables[i].getClient().getKryo());
+                    this.clientRunnables[i].getClient().start();//.startClient();
+                    com.esotericsoftware.minlog.Log.debug("client "+i + "started");
+                    this.testNumber = i;
+                    //this.networkThreadPool.submit(this.clientRunnables[i]);
                 }
             }
         }
@@ -175,7 +197,7 @@ public interface IGlobals {
             for(int i=0;i<this.numberOfPlayers;i++) {
 
                 if(i!=this.myPlayerNumber) {
-                    this.clientThreads[i].getClient().addListener(listener);
+                    this.clientRunnables[i].getClient().addListener(listener);
                 }
             }
         }
@@ -183,42 +205,40 @@ public interface IGlobals {
         public void connectAllClients() {
             for(int i=0;i<this.numberOfPlayers;i++) {
                 if(i!=this.myPlayerNumber) {
-                    this.clientThreads[i].connect(this.ipAdresses.get(i));
+                    this.clientRunnables[i].setupClientConnection(this.ipAdresses.get(i), this.tcpPort, this.udpPort);
+                    this.networkThreadPool.submit(this.clientRunnables[i]);
+                    com.esotericsoftware.minlog.Log.debug("client "+i + " connected");
                     //this.clientThreads[i].start();
 
                 }
             }
         }
 
+        public void sendObjectClient(ClientRunnable clientRunnable_, Object object, String protocol) {
+            if(protocol.equals("tcp")) {
+                clientRunnable_.setupClientTCPSend(object);
+                this.networkThreadPool.submit(clientRunnable_);
+
+            } else if (protocol.equals("udp")) {
+                clientRunnable_.setupClientUDPSend(object);
+                this.networkThreadPool.submit(clientRunnable_);
+            }
+        }
+
         public void sendObjectToAllClients(Object object, String protocol) {
-            for(int i=0;i<this.numberOfPlayers;i++) {
-
-                if(i!=this.myPlayerNumber) {
-                    this.clientThreads[i].addObjectToProtocolSendList(object, protocol);
+            if(protocol.equals("tcp")) {
+                for(int i=0;i<this.numberOfPlayers;i++) {
+                    if(i!=this.myPlayerNumber) {
+                        this.clientRunnables[i].setupClientTCPSend(object);
+                        this.networkThreadPool.submit(this.clientRunnables[i]);
+                    }
                 }
-            }
-        }
-
-        public void sendFrequentBallToAllClient(ClassicGameObjects.Ball ball) {
-            for(int i=0;i<this.numberOfPlayers;i++) {
-                if(i!=this.myPlayerNumber) {
-                    this.clientThreads[i].addToFrequentBallsMap(ball);
-                }
-            }
-        }
-
-        public void sendFieldChangeBallToAllClients(ClassicGameObjects.Ball ball) {
-            for(int i=0;i<this.numberOfPlayers;i++) {
-                if(i!=this.myPlayerNumber) {
-                    this.clientThreads[i].addToFieldChangeBallsMap(ball);
-                }
-            }
-        }
-
-        public void sendFrequentInfoToAllClients(ClassicGameObjects.Bat bat, ConcurrentHashMap<Integer,Integer> ballDisplayStatesMap, int[] scores) {
-            for(int i=0;i<this.numberOfPlayers;i++) {
-                if(i!=this.myPlayerNumber) {
-                    this.clientThreads[i].sendFrequentInfo(bat,ballDisplayStatesMap, scores);
+            } else if (protocol.equals("udp")) {
+                for(int i=0;i<this.numberOfPlayers;i++) {
+                    if(i!=this.myPlayerNumber) {
+                        this.clientRunnables[i].setupClientUDPSend(object);
+                        this.networkThreadPool.submit(this.clientRunnables[i]);
+                    }
                 }
             }
         }
@@ -227,13 +247,13 @@ public interface IGlobals {
             for(int i=0;i<this.numberOfPlayers;i++) {
 
                 if(i!=this.myPlayerNumber) {
-                    this.clientThreads[i].shutdownClient();
+                    this.clientRunnables[i].getClient().stop();
                 }
             }
         }
 
         public boolean checkAllClientConnectionStates(int state) {
-            if(this.clientThreads==null){
+            if(this.clientRunnables ==null){
                 return(false);
             }
             for(int i=0;i<this.numberOfPlayers;i++) {
@@ -242,7 +262,7 @@ public interface IGlobals {
                     return(false);
                 }
             }
-            com.esotericsoftware.minlog.Log.debug("all clients in state "+state);
+            com.esotericsoftware.minlog.Log.debug("all clientRunnables in state "+state);
             return(true);
         }
 
@@ -302,341 +322,145 @@ public interface IGlobals {
             return(false);
         }
 
-        public void resetArrayLists() {
+        public void resetObjects() {
             this.discoveryIpAdresses = new ArrayList<String>(Arrays.asList(new String[] {}));
             this.ipAdresses = new ArrayList<String>(Arrays.asList(new String[] {}));
             this.playerNames =new ArrayList<String>(Arrays.asList(new String[] {}));
             this.discoveryPlayerNames =new ArrayList<String>(Arrays.asList(new String[] {}));
             this.discoveryIsChecked =new ArrayList<Boolean>(Arrays.asList(new Boolean[]{}));
             this.playerList = new ArrayList<Player>();
+
+            this.networkThreadPool = (ThreadPoolExecutor)Executors.newCachedThreadPool();
         }
 
-        public class ServerThread extends Thread {
+        public final class ServerRunnable implements Runnable{
+            private int tcpPort;
+            private int udpPort;
             private Server server;
-            private int tcpPort, udpPort;
-            private boolean isRunnning;
-            private boolean bindPending;
 
-            private String threadName;
+            private String runState;
 
-            public ServerThread(String threadName_, int tcpPort_, int udpPort_) {
-                this.threadName=threadName_;
+            ServerRunnable() {
                 this.server = new Server(10240,10240);
-                this.server.start();
+                this.runState ="";
+            }
 
+
+            @Override
+            public void run() {
+                if (this.runState.equals("serverstart")){
+                    this.server.start();
+
+                } else if(this.runState.equals("serverbind")){
+                    try{
+                        this.server.bind(this.tcpPort, this.udpPort);
+                    }catch (IOException e ) {
+                        e.printStackTrace();
+                    }
+
+                }
+
+            }
+            public synchronized void startServer(){
+                this.runState = "serverstart";
+            }
+
+            public synchronized void setupServerBind(int tcpPort_, int udpPort_){
                 this.tcpPort = tcpPort_;
                 this.udpPort = udpPort_;
-                this.isRunnning=true;
-                this.bindPending=false;
-
-            }
-
-            public void run() {
-                while (this.isRunnning) {
-                    if(this.bindPending) {
-                        try {
-                            this.server.bind(this.tcpPort, this.udpPort);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                        this.bindPending = false;
-                    }
-                }
-                this.server.stop();
-
-            }
-
-            public void bind() {
-                this.bindPending=true;
-            }
-
-            public void shutdownServer() {
-                this.isRunnning=false;
+                this.runState = "serverbind";
             }
 
             public Server getServer() {
-                return(this.server);
+                return this.server;
             }
         }
 
-        public class ClientThread extends Thread {
+        public final class ClientRunnable implements Runnable{
             private Client client;
+            private int tcpPort;
+            private int udpPort;
             private String ipAdress;
-            private int tcpPort, udpPort;
-            private boolean isRunnning;
-            private boolean connectionPending;
-            private long connectionReferenceTime,sendFrequentBallsReferenceTime,sendFieldChangeBallsReferenceTime,sendFrequentInfoReferenceTime;
-            private int connectionTimer,sendFrequentBallsTimer,sendFieldChangeBallsTimer,sendFrequentInfoTimer;
+            private Object sendObject;
 
-            private List<Object> tcpPendingObjects;
-            private List<Object> udpPendingObjects;
-            private List<Object> discoveryPendingObjects;
-            private List<String> connectionPendingIpAdresses;
-            private boolean tcpPending;
-            private boolean udpPending;
+            private String runState;
 
-            private SendVariables.SendFrequentBalls sendFrequentBalls;
-            private SendVariables.SendFieldChangeBalls sendFieldChangeBalls;
-            private SendVariables.SendFrequentInfo sendFrequentInfo;
-
-            private ConcurrentHashMap<Integer, Ball> frequentBallsMap;
-            private ConcurrentHashMap<Integer, Ball> fieldChangeBallsMap;
-
-            private final Object sendFrequentBallsThreadLock = new Object();
-            private final Object sendFieldChangeBallsThreadLock = new Object();
-            private final Object sendFrequentInfoThreadLock = new Object();
-
-
-            private boolean frequentBallsPending;
-            private boolean fieldChangeBallsPending;
-            private boolean frequentInfoPending;
-
-            private String threadName;
-
-            public ClientThread(String threadName_, int tcpPort_, int udpPort_) {
-                this.threadName=threadName_;
+            ClientRunnable() {
                 this.client = new Client(10240,10240);
-                this.client.start();
+                this.runState ="";
+            }
 
+
+            @Override
+            public void run() {
+                if (this.runState.equals("clientstart")){
+                    this.client.start();
+
+                } else if (this.runState.equals("clientconnection")){
+                    try{
+                        this.client.connect(5000, this.ipAdress, this.tcpPort, this.udpPort);
+                    }catch (IOException e ) {
+                        e.printStackTrace();
+                    }
+
+                } else if (this.runState.equals("clientsendtcp")){
+                    try{
+                        this.client.connect(5000, this.ipAdress, this.tcpPort, this.udpPort);
+                    }catch (IOException e ) {
+                        e.printStackTrace();
+                    }
+                    this.client.sendTCP(this.sendObject);
+
+                } else if (this.runState.equals("clientsendudp")){
+                    this.client.sendUDP(this.sendObject);
+
+                }else if (this.runState.equals("clientdiscoveryrequest")){
+                    try{
+                        this.client.connect(5000, this.ipAdress, this.tcpPort, this.udpPort);
+                    }catch (IOException e ) {
+                        e.printStackTrace();
+                    }
+                    this.client.sendTCP(this.sendObject);
+
+                }
+
+            }
+
+            public synchronized void startClient(){
+                this.runState = "clientstart";
+            }
+
+            public synchronized void setupClientConnection(String ipAdress_, int tcpPort_, int udpPort_){
+                this.ipAdress = ipAdress_;
                 this.tcpPort = tcpPort_;
                 this.udpPort = udpPort_;
-                this.isRunnning=true;
-                this.connectionPending=false;
 
-                this.connectionReferenceTime = System.currentTimeMillis();
-                this.sendFrequentBallsReferenceTime = System.currentTimeMillis();
-                this.sendFieldChangeBallsReferenceTime = System.currentTimeMillis();
-                this.sendFrequentInfoReferenceTime = System.currentTimeMillis();
-
-                this.connectionTimer = 0;
-                this.sendFrequentBallsTimer = 50;
-                this.sendFieldChangeBallsTimer = 50;
-                this.sendFrequentInfoTimer = 50;
-
-                this.tcpPendingObjects = new ArrayList<Object>();
-                this.udpPendingObjects = new ArrayList<Object>();
-                this.discoveryPendingObjects = new ArrayList<Object>();
-                this.connectionPendingIpAdresses = new ArrayList<String>();
-                this.tcpPending = false;
-                this.udpPending = false;
-
-                this.sendFrequentBalls = new SendVariables.SendFrequentBalls();
-                this.sendFieldChangeBalls = new SendVariables.SendFieldChangeBalls();
-                this.sendFrequentInfo = new SendVariables.SendFrequentInfo();
-
-
-                this.frequentBallsMap = new ConcurrentHashMap();
-                this.fieldChangeBallsMap = new ConcurrentHashMap();
-
-                this.frequentBallsPending = false;
-                this.fieldChangeBallsPending = false;
-                this.frequentInfoPending = false;
-
-
-
-                //this.udpPendingObjects = new ArrayList<Object>(Arrays.asList(new Object[] {}));
-
+                this.runState = "clientconnection";
             }
 
-            public void run() {
-                while (this.isRunnning) {
-                    if(System.currentTimeMillis() - this.connectionReferenceTime > this.connectionTimer) {
-                        if (this.connectionPending) {
-                            synchronized (connectionThreadLock) {
-                                /*for (int i = 0; i < this.connectionPendingIpAdresses.size(); i++) {
-                                    try {
-                                        this.client.connect(5000, this.connectionPendingIpAdresses.get(i), this.tcpPort, this.udpPort);
-                                    } catch (IOException e) {
-                                        e.printStackTrace();
-                                    }
-                                    this.client.sendUDP(discoveryRequest);
-                                }
-                                this.connectionPendingIpAdresses = new ArrayList();*/
-                                try {
-                                    this.client.connect(5000, this.ipAdress, this.tcpPort, this.udpPort);
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
+            public synchronized void setupClientTCPSend(Object object_) {
+                this.sendObject = object_;
 
-                                this.connectionPending = false;
-                            }
-                            this.connectionReferenceTime=System.currentTimeMillis();
-                        }
-                    }
-                    try {
-                        if (this.tcpPending) {
-                            synchronized (sendThreadLock) {
-                                for(int i=0;i<this.tcpPendingObjects.size();i++){
-                                    this.client.sendTCP(this.tcpPendingObjects.get(i));
-                                }
-                                this.tcpPendingObjects = new ArrayList();
-                                this.tcpPending = false;
-                            }
-                        }
-
-                        if (this.udpPending) {
-                            synchronized (sendThreadLock) {
-                                for(int i=0;i<this.udpPendingObjects.size();i++){
-                                    this.client.sendUDP(this.udpPendingObjects.get(i));
-                                }
-                                this.tcpPendingObjects = new ArrayList();
-                                this.udpPending = false;
-                            }
-                        }
-
-                        if(this.fieldChangeBallsPending){
-                            if(System.currentTimeMillis() - this.sendFieldChangeBallsReferenceTime > this.sendFieldChangeBallsTimer) {
-                                synchronized (this.sendFieldChangeBallsThreadLock) {
-                                    this.sendFieldChangeBalls.myPlayerNumber = myPlayerNumber;
-                                    this.sendFieldChangeBalls.fieldChangeBallsMap = this.fieldChangeBallsMap;
-
-                                    this.client.sendTCP(this.sendFieldChangeBalls);
-                                    this.fieldChangeBallsMap.clear();
-                                    this.fieldChangeBallsPending = false;
-                                }
-                                this.sendFieldChangeBallsReferenceTime = System.currentTimeMillis();
-                            }
-                        }
-
-                        if(this.frequentBallsPending){
-                            if(System.currentTimeMillis() - this.sendFrequentBallsReferenceTime > this.sendFrequentBallsTimer) {
-                                synchronized(this.sendFrequentBallsThreadLock) {
-                                    this.sendFrequentBalls.myPlayerNumber = myPlayerNumber;
-                                    this.sendFrequentBalls.frequentBallsMap = this.frequentBallsMap;
-
-                                    this.client.sendUDP(this.sendFrequentBalls);
-                                    this.frequentBallsMap.clear();
-                                    this.frequentBallsPending = false;
-                                }
-                                this.sendFrequentBallsReferenceTime = System.currentTimeMillis();
-                            }
-                        }
-
-                        if(this.frequentInfoPending) {
-                            if(System.currentTimeMillis() - this.sendFrequentInfoReferenceTime > this.sendFrequentInfoTimer) {
-                                synchronized(this.sendFrequentInfoThreadLock) {
-
-                                    this.client.sendUDP(this.sendFrequentInfo);
-                                    this.frequentInfoPending = false;
-                                }
-                                this.sendFrequentInfoReferenceTime = System.currentTimeMillis();
-                            }
-                        }
-
-                    }catch (IllegalArgumentException e) {
-                        e.printStackTrace();
-                    }
-
-                }
-                this.client.stop();
-
+                this.runState = "clientsendtcp";
             }
 
-            void connect(String ipAdress_) {
-                if(!ipAdress_.equals("127.0.0.1") && !ipAdress_.equals(myIpAdress)) {
-                    synchronized (connectionThreadLock) {
-                        this.connectionPendingIpAdresses.add(ipAdress_);
-                        this.ipAdress = ipAdress_;
-                        this.connectionPending = true;
-                    }
-                }
+            public synchronized void setupClientUDPSend(Object object_) {
+                this.sendObject = object_;
+
+                this.runState = "clientsendudp";
             }
 
-            public void addObjectToProtocolSendList(Object object, String protocol) {
-                try {
-                    if (protocol.equals("tcp")) {
-                        synchronized (sendThreadLock) {
-                            this.tcpPendingObjects.add(object);
-                            this.tcpPending = true;
-                        }
+            public synchronized void setupDiscoveryRequest(String ipAdress_, int tcpPort_, int udpPort_, Object object_) {
+                this.ipAdress = ipAdress_;
+                this.tcpPort = tcpPort_;
+                this.udpPort = udpPort_;
 
-                    } else if (protocol.equals("udp")) {
-                        synchronized (sendThreadLock) {
-                            this.udpPendingObjects.add(object);
-                            this.udpPending = true;
-                        }
-
-                    }
-                }catch (NullPointerException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            public void addToFrequentBallsMap(ClassicGameObjects.Ball ball){
-                synchronized (this.sendFrequentBallsThreadLock) {
-                    Ball tempBall = new Ball();
-                    tempBall.ballNumber = ball.ballNumber;
-                    tempBall.ballPlayerField = myPlayerNumber;
-                    tempBall.ballDisplayState = ball.ballDisplayState;
-
-                    if (tempBall.ballDisplayState == 1) {
-                        tempBall.ballPosition = ball.ballBody.getPosition();
-                        tempBall.ballVelocity = ball.ballBody.getLinearVelocity();
-                        tempBall.ballAngle = ball.ballBody.getAngle();
-                        tempBall.ballAngularVelocity = ball.ballBody.getAngularVelocity();
-                    }
-
-                    this.frequentBallsMap.put(tempBall.ballNumber, tempBall);
-                    this.frequentBallsPending = true;
-                }
-            }
-
-            public void addToFieldChangeBallsMap(ClassicGameObjects.Ball ball){
-                synchronized (this.sendFieldChangeBallsThreadLock) {
-                    Ball tempBall = new Ball();
-                    tempBall.ballNumber = ball.ballNumber;
-                    tempBall.ballPlayerField = ball.tempPlayerField;
-                    tempBall.ballDisplayState = ball.ballDisplayState;
-
-                    tempBall.ballPosition = ball.ballBody.getPosition();
-                    tempBall.ballVelocity = ball.ballBody.getLinearVelocity();
-                    tempBall.ballAngle = ball.ballBody.getAngle();
-                    tempBall.ballAngularVelocity = ball.ballBody.getAngularVelocity();
-
-                    this.fieldChangeBallsMap.put(tempBall.ballNumber, tempBall);
-                    this.fieldChangeBallsPending = true;
-                }
-
-            }
-
-            public void sendFrequentInfo(ClassicGameObjects.Bat bat, ConcurrentHashMap<Integer,Integer> ballDisplayStatesMap, int[] scores){
-                synchronized (this.sendFrequentInfoThreadLock) {
-                    this.sendFrequentInfo.myPlayerNumber = myPlayerNumber;
-
-                    this.sendFrequentInfo.bat = new Bat();
-                    this.sendFrequentInfo.bat.batPosition = bat.batBody.getPosition();
-                    this.sendFrequentInfo.bat.batVelocity = bat.batBody.getLinearVelocity();
-                    this.sendFrequentInfo.bat.batAngle = bat.batBody.getAngle();
-                    this.sendFrequentInfo.bat.batAngularVelocity = bat.batBody.getAngularVelocity();
-
-                    this.sendFrequentInfo.ballDisplayStatesMap = new ConcurrentHashMap<Integer, Integer>(ballDisplayStatesMap);
-
-                    this.sendFrequentInfo.scores = new int[scores.length];
-                    for (int i = 0; i < scores.length; i++) {
-                        this.sendFrequentInfo.scores[i] = scores[i];
-                    }
-                    this.frequentInfoPending = true;
-                }
-
-            }
-
-            public void sendDicoveryRequest(String ipAdress_) {
-                if(!ipAdress_.equals("127.0.0.1") && !ipAdress_.equals(myIpAdress)) {
-                    try {
-                        this.client.connect(5000, ipAdress_, this.tcpPort, this.udpPort);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    this.client.sendUDP(discoveryRequest);
-                }
-            }
-
-            public void shutdownClient() {
-                this.isRunnning=false;
+                this.sendObject = object_;
+                this.runState = "clientdiscoveryrequest";
             }
 
             public Client getClient() {
-                return(this.client);
+                return this.client;
             }
         }
     }

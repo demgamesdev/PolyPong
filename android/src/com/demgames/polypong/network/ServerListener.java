@@ -115,8 +115,8 @@ public class ServerListener extends Listener{
 
         } else if(object instanceof Globals.SendVariables.SendSettings) {
             synchronized (globals.getSettingsVariables().receiveThreadLock) {
+                Log.d(TAG, "received settings");
                 if (globals.getSettingsVariables().setupConnectionState == 1) {
-                    Log.d(TAG, "received settings");
                     Globals.SendVariables.SendSettings settings = (Globals.SendVariables.SendSettings) object;
 
                     globals.getSettingsVariables().myPlayerNumber = settings.yourPlayerNumber;
@@ -160,9 +160,9 @@ public class ServerListener extends Listener{
 Log.e(TAG, "Connection: "+ tempIpAdress);*/
                     }
 
-                    globals.getSettingsVariables().discoveryClientThread.shutdownClient();
+                    globals.getSettingsVariables().discoveryClientRunnable.getClient().stop();
 
-                    Log.d(TAG, "Connection of discoveryClient ended");
+                    Log.d(TAG, "Connection of discoveryClientRunnable ended");
 
                     globals.getSettingsVariables().startAllClientThreads();
                     globals.getSettingsVariables().setAllClientListeners(globals.getClientListener());

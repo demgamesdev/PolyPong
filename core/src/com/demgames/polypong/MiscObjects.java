@@ -7,6 +7,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.xml.bind.util.ValidationEventCollector;
 
@@ -21,6 +22,10 @@ public class MiscObjects {
     private float screenWidth, screenHeight,width, height;
     Vector2 zoomPoint;
     float zoomLevel;
+
+    private IGlobals.SendVariables.SendFrequentBalls sendFrequentBalls;
+    private IGlobals.SendVariables.SendFieldChangeBalls sendFieldChangeBalls;
+    private IGlobals.SendVariables.SendFrequentInfo sendFrequentInfo;
 
     //class for touch input and gestures
 
@@ -38,6 +43,74 @@ public class MiscObjects {
 
         this.zoomLevel = 1f;
         this.zoomPoint = new Vector2(0,-this.height/2);
+
+        this.sendFrequentBalls = new IGlobals.SendVariables.SendFrequentBalls();
+        this.sendFieldChangeBalls = new IGlobals.SendVariables.SendFieldChangeBalls();
+        this.sendFrequentInfo = new IGlobals.SendVariables.SendFrequentInfo();
+    }
+
+
+
+    //SENDFUNCTIONS
+
+    public void sendAllClasses() {
+        globals.getSettingsVariables().sendObjectToAllClients(this.sendFieldChangeBalls,"tcp");
+        globals.getSettingsVariables().sendObjectToAllClients(this.sendFrequentBalls,"udp");
+        globals.getSettingsVariables().sendObjectToAllClients(this.sendFrequentInfo,"udp");
+    }
+
+    public void clearAllClasses() {
+        this.sendFieldChangeBalls.fieldChangeBallsMap.clear();
+        this.sendFrequentBalls.frequentBallsMap.clear();
+        this.sendFrequentInfo.ballDisplayStatesMap.clear();
+    }
+
+    public void addToFrequentBallsMap(ClassicGameObjects.Ball ball){
+        IGlobals.Ball tempBall = new IGlobals.Ball();
+        tempBall.ballNumber = ball.ballNumber;
+        tempBall.ballPlayerField = myPlayerNumber;
+        tempBall.ballDisplayState = ball.ballDisplayState;
+
+        if (tempBall.ballDisplayState == 1) {
+            tempBall.ballPosition = ball.ballBody.getPosition();
+            tempBall.ballVelocity = ball.ballBody.getLinearVelocity();
+            tempBall.ballAngle = ball.ballBody.getAngle();
+            tempBall.ballAngularVelocity = ball.ballBody.getAngularVelocity();
+        }
+
+        this.sendFrequentBalls.frequentBallsMap.put(tempBall.ballNumber, tempBall);
+    }
+
+    public void addToFieldChangeBallsMap(ClassicGameObjects.Ball ball){
+        IGlobals.Ball tempBall = new IGlobals.Ball();
+        tempBall.ballNumber = ball.ballNumber;
+        tempBall.ballPlayerField = ball.tempPlayerField;
+        tempBall.ballDisplayState = ball.ballDisplayState;
+
+        tempBall.ballPosition = ball.ballBody.getPosition();
+        tempBall.ballVelocity = ball.ballBody.getLinearVelocity();
+        tempBall.ballAngle = ball.ballBody.getAngle();
+        tempBall.ballAngularVelocity = ball.ballBody.getAngularVelocity();
+
+        this.sendFieldChangeBalls.fieldChangeBallsMap.put(tempBall.ballNumber, tempBall);
+    }
+
+    public void sendFrequentInfo(ClassicGameObjects.Bat bat, ConcurrentHashMap<Integer,Integer> ballDisplayStatesMap, int[] scores){
+        this.sendFrequentInfo.myPlayerNumber = myPlayerNumber;
+
+        this.sendFrequentInfo.bat = new IGlobals.Bat();
+        this.sendFrequentInfo.bat.batPosition = bat.batBody.getPosition();
+        this.sendFrequentInfo.bat.batVelocity = bat.batBody.getLinearVelocity();
+        this.sendFrequentInfo.bat.batAngle = bat.batBody.getAngle();
+        this.sendFrequentInfo.bat.batAngularVelocity = bat.batBody.getAngularVelocity();
+
+        this.sendFrequentInfo.ballDisplayStatesMap = new ConcurrentHashMap<Integer, Integer>(ballDisplayStatesMap);
+
+        this.sendFrequentInfo.scores = new int[scores.length];
+        for (int i = 0; i < scores.length; i++) {
+            this.sendFrequentInfo.scores[i] = scores[i];
+        }
+
     }
 
     /********* OTHER FUNCTIONS *********/
