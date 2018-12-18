@@ -49,7 +49,7 @@ public class ServerListener extends Listener{
             /*Log.d(TAG, "ball " + Integer.toString(sendFrequentBalls.ballNumber) + " displayState " + Integer.toString(sendFrequentBalls.ballDisplayState) +
                     " playerfield " + Integer.toString(sendFrequentBalls.myPlayerNumber));*/
 
-                for (Map.Entry<Integer, IGlobals.Ball> ball : sendFrequentBalls.frequentBallsMap.entrySet()) {
+                /*for (Map.Entry<Integer, IGlobals.Ball> ball : sendFrequentBalls.frequentBallsMap.entrySet()) {
                     globals.getGameVariables().ballPlayerFields[ball.getKey()] = ball.getValue().ballPlayerField;
                     globals.getGameVariables().balls[ball.getKey()].ballDisplayState = ball.getValue().ballDisplayState;
 
@@ -63,6 +63,22 @@ public class ServerListener extends Listener{
                         globals.getGameVariables().balls[ball.getKey()].ballAngularVelocity = ball.getValue().ballAngularVelocity;
                     }
                     globals.getGameVariables().ballUpdateStates[ball.getKey()] = true;
+                }*/
+
+                for (IGlobals.Ball ball : sendFrequentBalls.frequentBalls) {
+                    globals.getGameVariables().ballPlayerFields[ball.ballNumber] = ball.ballPlayerField;
+                    globals.getGameVariables().balls[ball.ballNumber].ballDisplayState = ball.ballDisplayState;
+
+                    //Log.d(TAG, "ball " + Integer.toString(sendFieldChange.ballNumbers[i]) + " sendFrequents angle " + Float.toString(sendFieldChange.ballAngles[i]));
+                    //Log.d(TAG, "ball " + Integer.toString(sendFieldChange.ballNumbers[i]) + " sendFrequents position " + Float.toString(sendFieldChange.ballPositionsX[i]));
+                    //Log.d(TAG, "ball " + Integer.toString(sendFieldChange.ballNumbers[i]) + " sendFrequents velocity " + Float.toString(sendFieldChange.ballVelocitiesX[i]));
+                    if (ball.ballDisplayState == 1) {
+                        globals.getGameVariables().balls[ball.ballNumber].ballPosition = ball.ballPosition.rotateRad(rotateRad);
+                        globals.getGameVariables().balls[ball.ballNumber].ballVelocity = ball.ballVelocity.rotateRad(rotateRad);
+                        globals.getGameVariables().balls[ball.ballNumber].ballAngle = ball.ballAngle + rotateRad;
+                        globals.getGameVariables().balls[ball.ballNumber].ballAngularVelocity = ball.ballAngularVelocity;
+                    }
+                    globals.getGameVariables().ballUpdateStates[ball.ballNumber] = true;
                 }
             }
 
@@ -96,7 +112,7 @@ public class ServerListener extends Listener{
 
 
 
-                for (Map.Entry<Integer, IGlobals.Ball> ball : sendFieldChangeBalls.fieldChangeBallsMap.entrySet()) {
+                /*for (Map.Entry<Integer, IGlobals.Ball> ball : sendFieldChangeBalls.fieldChangeBallsMap.entrySet()) {
                     globals.getGameVariables().ballPlayerFields[ball.getKey()] = ball.getValue().ballPlayerField;
                     globals.getGameVariables().balls[ball.getKey()].ballDisplayState = ball.getValue().ballDisplayState;
 
@@ -110,6 +126,22 @@ public class ServerListener extends Listener{
                     globals.getGameVariables().balls[ball.getKey()].ballAngle = ball.getValue().ballAngle + rotateRad;
                     globals.getGameVariables().balls[ball.getKey()].ballAngularVelocity = ball.getValue().ballAngularVelocity;
                     globals.getGameVariables().ballUpdateStates[ball.getKey()] = true;
+                }*/
+
+                for (IGlobals.Ball ball : sendFieldChangeBalls.fieldChangeBalls) {
+                    globals.getGameVariables().ballPlayerFields[ball.ballNumber] = ball.ballPlayerField;
+                    globals.getGameVariables().balls[ball.ballNumber].ballDisplayState = ball.ballDisplayState;
+
+                    Log.d(TAG, "ball " + Integer.toString(ball.ballNumber) + " playerfield " + Integer.toString(ball.ballPlayerField) + " sendfieldchangeball received");
+
+                    //Log.d(TAG, "ball " + Integer.toString(sendFieldChange.ballNumbers[i]) + " sendFrequents angle " + Float.toString(sendFieldChange.ballAngles[i]));
+                    //Log.d(TAG, "ball " + Integer.toString(sendFieldChange.ballNumbers[i]) + " sendFrequents position " + Float.toString(sendFieldChange.ballPositionsX[i]));
+                    //Log.d(TAG, "ball " + Integer.toString(sendFieldChange.ballNumbers[i]) + " sendFrequents velocity " + Float.toString(sendFieldChange.ballVelocitiesX[i]));
+                    globals.getGameVariables().balls[ball.ballNumber].ballPosition = ball.ballPosition.rotateRad(rotateRad);
+                    globals.getGameVariables().balls[ball.ballNumber].ballVelocity = ball.ballVelocity.rotateRad(rotateRad);
+                    globals.getGameVariables().balls[ball.ballNumber].ballAngle = ball.ballAngle + rotateRad;
+                    globals.getGameVariables().balls[ball.ballNumber].ballAngularVelocity = ball.ballAngularVelocity;
+                    globals.getGameVariables().ballUpdateStates[ball.ballNumber] = true;
                 }
             }
 
@@ -147,6 +179,8 @@ public class ServerListener extends Listener{
                     float rotateRad = (-2f * MathUtils.PI / globals.getSettingsVariables().numberOfPlayers * globals.getSettingsVariables().myPlayerNumber);
 
                     for (int i = 0; i < settings.balls.length; i++) {
+
+                        globals.getGameVariables().balls[i].ballPlayerField = settings.balls[i].ballPlayerField;
                         globals.getGameVariables().balls[i].ballDisplayState = settings.balls[i].ballDisplayState;
                         globals.getGameVariables().balls[i].ballRadius = settings.balls[i].ballRadius;
                         globals.getGameVariables().balls[settings.balls[i].ballNumber].ballPosition = settings.balls[i].ballPosition.rotateRad(rotateRad);

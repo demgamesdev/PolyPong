@@ -13,5 +13,8 @@ eclipse.project {
 dependencies {
     compile files('libs/kryonet-2.21-all.jar')
     compile "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
+
+    //compile group: 'com.google.guava', name: 'guava', version: '23.5-android'
+    implementation 'com.google.guava:guava:27.0.1-android'
     //compile 'com.github.SilenceDut:AsyncTaskScheduler:1.0.0-alpha1'
 }

@@ -7,15 +7,21 @@ import com.esotericsoftware.kryonet.Client;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
 import com.esotericsoftware.kryonet.Server;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public interface IGlobals {
     String TAG = "IGlobals";
@@ -54,7 +60,7 @@ public interface IGlobals {
             attractionState=false;
         }
 
-        public void setBalls(boolean randomPosition) {
+        public void setBalls(boolean setupState) {
             Random rand = new Random();
             this.balls = new Ball[this.numberOfBalls];
             this.ballPlayerFields = new int[this.numberOfBalls];
@@ -62,10 +68,11 @@ public interface IGlobals {
 
             for (int i = 0; i < this.numberOfBalls; i++) {
                 this.balls[i] = new Ball();
-                if (randomPosition) {
+                if (setupState) {
                     this.balls[i].ballNumber = i;
+                    this.balls[i].ballPlayerField = i%numberOfPlayers;
                     this.balls[i].ballRadius = (rand.nextFloat()*0.2f+0.8f)*0.05f * this.factor;
-                    this.balls[i].ballPosition = new Vector2((rand.nextFloat()-0.5f)*0.8f * this.factor,((rand.nextFloat()-1f)*0.6f-0.2f)*this.factor);
+                    this.balls[i].ballPosition = new Vector2(0,0);
                     this.balls[i].ballVelocity = new Vector2(0,0);
                     this.balls[i].ballAngle = 0f;
                     this.balls[i].ballAngularVelocity = 0f;
@@ -379,7 +386,9 @@ public interface IGlobals {
             private SendVariables.SendFieldChangeBalls sendFieldChangeBalls;
             private SendVariables.SendFrequentInfo sendFrequentInfo;
 
-            private ConcurrentHashMap<Integer, Ball> frequentBallsMap;
+            private Multimap<String,Object> sendMultiMap;
+            private Map<String,Object> sendMap;
+
             private ConcurrentHashMap<Integer, Ball> fieldChangeBallsMap;
 
             private final Object sendFrequentBallsThreadLock = new Object();
@@ -387,9 +396,9 @@ public interface IGlobals {
             private final Object sendFrequentInfoThreadLock = new Object();
 
 
-            private boolean frequentBallsPending;
-            private boolean fieldChangeBallsPending;
-            private boolean frequentInfoPending;
+            private AtomicBoolean frequentBallsPending;
+            private AtomicBoolean fieldChangeBallsPending;
+            private AtomicBoolean frequentInfoPending;
 
             private String threadName;
 
@@ -424,13 +433,8 @@ public interface IGlobals {
                 this.sendFieldChangeBalls = new SendVariables.SendFieldChangeBalls();
                 this.sendFrequentInfo = new SendVariables.SendFrequentInfo();
 
-
-                this.frequentBallsMap = new ConcurrentHashMap();
-                this.fieldChangeBallsMap = new ConcurrentHashMap();
-
-                this.frequentBallsPending = false;
-                this.fieldChangeBallsPending = false;
-                this.frequentInfoPending = false;
+                this.sendMultiMap = Multimaps.synchronizedMultimap(HashMultimap.<String, Object>create());
+                this.sendMap = new ConcurrentHashMap<String, Object>();
 
 
 
@@ -484,40 +488,41 @@ public interface IGlobals {
                             }
                         }
 
-                        if(this.fieldChangeBallsPending){
-                            if(System.currentTimeMillis() - this.sendFieldChangeBallsReferenceTime > this.sendFieldChangeBallsTimer) {
+                        if(System.currentTimeMillis() - this.sendFieldChangeBallsReferenceTime > this.sendFieldChangeBallsTimer) {
+                            if(this.sendMultiMap.get("fieldchangeballs")!=null) {
+                                this.sendFieldChangeBalls.myPlayerNumber = myPlayerNumber;
                                 synchronized (this.sendFieldChangeBallsThreadLock) {
-                                    this.sendFieldChangeBalls.myPlayerNumber = myPlayerNumber;
-                                    this.sendFieldChangeBalls.fieldChangeBallsMap = this.fieldChangeBallsMap;
+                                    this.sendFieldChangeBalls.fieldChangeBalls = this.sendMultiMap.get("fieldchangeballs").toArray(new Ball[this.sendMultiMap.get("fieldchangeballs").size()]);
+                                    this.sendMultiMap.removeAll("fieldchangeballs");
 
                                     this.client.sendTCP(this.sendFieldChangeBalls);
-                                    this.fieldChangeBallsMap.clear();
-                                    this.fieldChangeBallsPending = false;
                                 }
                                 this.sendFieldChangeBallsReferenceTime = System.currentTimeMillis();
                             }
                         }
 
-                        if(this.frequentBallsPending){
-                            if(System.currentTimeMillis() - this.sendFrequentBallsReferenceTime > this.sendFrequentBallsTimer) {
-                                synchronized(this.sendFrequentBallsThreadLock) {
-                                    this.sendFrequentBalls.myPlayerNumber = myPlayerNumber;
-                                    this.sendFrequentBalls.frequentBallsMap = this.frequentBallsMap;
+                        if(System.currentTimeMillis() - this.sendFrequentBallsReferenceTime > this.sendFrequentBallsTimer) {
+                            if(this.sendMultiMap.get("frequentballs")!=null) {
+                                this.sendFrequentBalls.myPlayerNumber = myPlayerNumber;
+                                synchronized (this.sendFrequentBallsThreadLock) {
+                                    this.sendFrequentBalls.frequentBalls = this.sendMultiMap.get("frequentballs").toArray(new Ball[this.sendMultiMap.get("frequentballs").size()]);
+                                    this.sendMultiMap.removeAll("frequentballs");
 
                                     this.client.sendUDP(this.sendFrequentBalls);
-                                    this.frequentBallsMap.clear();
-                                    this.frequentBallsPending = false;
                                 }
                                 this.sendFrequentBallsReferenceTime = System.currentTimeMillis();
                             }
+
+
                         }
 
-                        if(this.frequentInfoPending) {
-                            if(System.currentTimeMillis() - this.sendFrequentInfoReferenceTime > this.sendFrequentInfoTimer) {
-                                synchronized(this.sendFrequentInfoThreadLock) {
+                        if(System.currentTimeMillis() - this.sendFrequentInfoReferenceTime > this.sendFrequentInfoTimer) {
+                            if(this.sendMap.get("frequentinfo")!=null) {
+                                synchronized (this.sendFrequentInfoThreadLock) {
 
-                                    this.client.sendUDP(this.sendFrequentInfo);
-                                    this.frequentInfoPending = false;
+                                    this.client.sendUDP(this.sendMap.get("frequentinfo"));
+
+                                    this.sendMap.remove("frequentinfo");
                                 }
                                 this.sendFrequentInfoReferenceTime = System.currentTimeMillis();
                             }
@@ -576,8 +581,7 @@ public interface IGlobals {
                         tempBall.ballAngularVelocity = ball.ballBody.getAngularVelocity();
                     }
 
-                    this.frequentBallsMap.put(tempBall.ballNumber, tempBall);
-                    this.frequentBallsPending = true;
+                    this.sendMultiMap.put("frequentballs",tempBall);
                 }
             }
 
@@ -593,8 +597,7 @@ public interface IGlobals {
                     tempBall.ballAngle = ball.ballBody.getAngle();
                     tempBall.ballAngularVelocity = ball.ballBody.getAngularVelocity();
 
-                    this.fieldChangeBallsMap.put(tempBall.ballNumber, tempBall);
-                    this.fieldChangeBallsPending = true;
+                    this.sendMultiMap.put("fieldchangeballs",tempBall);
                 }
 
             }
@@ -615,7 +618,8 @@ public interface IGlobals {
                     for (int i = 0; i < scores.length; i++) {
                         this.sendFrequentInfo.scores[i] = scores[i];
                     }
-                    this.frequentInfoPending = true;
+
+                    this.sendMap.put("frequentinfo", this.sendFrequentInfo);
                 }
 
             }
@@ -675,7 +679,7 @@ public interface IGlobals {
         static public class SendFrequentBalls {
             public int myPlayerNumber;
 
-            public ConcurrentHashMap<Integer, Ball> frequentBallsMap;
+            public Ball[] frequentBalls;
         }
 
         static public class SendFrequentInfo {
@@ -690,7 +694,7 @@ public interface IGlobals {
         static public class SendFieldChangeBalls {
             public int myPlayerNumber;
 
-            public ConcurrentHashMap<Integer, Ball> fieldChangeBallsMap;
+            public Ball[] fieldChangeBalls;
         }
     }
 

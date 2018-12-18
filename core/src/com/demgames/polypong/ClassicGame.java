@@ -170,8 +170,8 @@ public class ClassicGame extends ApplicationAdapter{
         camera.zoom= miscObjects.zoomLevel;
         //camera.position.set(0,-height+height/2*miscObjects.zoomLevel+gameObjects.gameField.offset.y,0);
         camera.position.set(0,gameObjects.fixedPoint.y+miscObjects.zoomLevel*camera.viewportHeight/2,0);
-        Gdx.app.debug(TAG,Float.toString(gameObjects.fixedPoint.y));
-        Gdx.app.debug(TAG,Float.toString(camera.viewportHeight));
+        //Gdx.app.debug(TAG,Float.toString(gameObjects.fixedPoint.y));
+        //Gdx.app.debug(TAG,Float.toString(camera.viewportHeight));
         //-height+height/2*miscObjects.zoomLevel
         camera.update();
 

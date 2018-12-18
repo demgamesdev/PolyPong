@@ -59,10 +59,12 @@ public class MiscObjects {
     }
 
     static Vector2[] transformVectorArray(Vector2[] vectorArray, float scale, float degrees) {
-        for(Vector2 vector : vectorArray) {
-            vector.scl(scale).rotate(degrees);
+        Vector2[] newVectorArray = new Vector2[vectorArray.length];
+        Gdx.app.debug(TAG,Float.toString(vectorArray[0].x));
+        for(int i=0;i<vectorArray.length;i++) {
+            newVectorArray[i] = new Vector2(vectorArray[i]).scl(scale).rotate(degrees);
         }
-        return(vectorArray);
+        return(newVectorArray);
     }
 
     static float[] transformFloatVertices(float[] floatArray, float scale, float translateX, float translateY) {

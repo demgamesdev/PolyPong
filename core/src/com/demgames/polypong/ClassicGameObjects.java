@@ -135,7 +135,7 @@ public class ClassicGameObjects {
 
         this.balls=new Ball[this.numberOfBalls];
         for(int i=0;i<this.balls.length;i++) {
-            this.balls[i]= new Ball(i,balls_[i].ballRadius,balls_[i].ballPosition, balls_[i].ballVelocity,balls_[i].ballAngle,balls_[i].ballAngularVelocity,10);
+            this.balls[i]= new Ball(i,balls_[i].ballPlayerField,balls_[i].ballRadius,balls_[i].ballPosition, balls_[i].ballVelocity,balls_[i].ballAngle,balls_[i].ballAngularVelocity,10);
             //Gdx.app.debug("ClassicGame", "setup ball " + Integer.toString(i) + " on field "+ Integer.toString(globalVariables.getGameVariables().ballPlayerFields[i]));
         }
 
@@ -302,7 +302,7 @@ public class ClassicGameObjects {
         int ballDisplayState;
 
         //constructor for Ball
-        Ball(int ballNumber_, float ballRadius_,Vector2 ballPosition_,Vector2 ballVelocity_, float ballAngle_, float ballAngularVelocity_, int ballPositionArrayListLength_) {
+        Ball(int ballNumber_, int ballPlayerField_, float ballRadius_,Vector2 ballPosition_,Vector2 ballVelocity_, float ballAngle_, float ballAngularVelocity_, int ballPositionArrayListLength_) {
 
 
             this.ballRadius =ballRadius_;
@@ -332,7 +332,7 @@ public class ClassicGameObjects {
             this.ballBody.createFixture(ballFixtureDef);
             ballShape.dispose();
 
-            this.ballBody.setTransform(ballPosition_,ballAngle_);
+            this.ballBody.setTransform(gameField.getNewBallStartPosition(ballPlayerField_),ballAngle_);
             this.ballBody.setLinearVelocity(ballVelocity_);
             this.ballBody.setAngularVelocity(ballAngularVelocity_);
 
@@ -555,6 +555,9 @@ public class ClassicGameObjects {
 
         private Vector2[] playerFieldVertices;
         private Vector2[] gameFieldVertices;
+        private Vector2[][] ballStartPositions;
+        private boolean[][] ballStartPositionStates;
+
         Vector2 offset;
 
         private PolygonSprite[] playerFieldSprites;
@@ -574,13 +577,24 @@ public class ClassicGameObjects {
             this.goalPolygons = new Polygon[numberOfPlayers];
             this.gameFieldVertices= new Vector2[7*numberOfPlayers];
 
+            this.ballStartPositions = new Vector2[numberOfPlayers][100];
+            this.ballStartPositionStates = new boolean[numberOfPlayers][100];
+
             this.polygonSpriteMap = new HashMap();
             this.spriteMap = new HashMap();
 
             //EdgeShape fieldLineShape = new EdgeShape();
+            for (int i=0;i<10;i++) {
+                for (int j=0;j<10;j++) {
+                    this.ballStartPositions[0][i*10 + j] = new Vector2(width*(-0.45f + 0.9f*0.1f * j),height*(-1+0.4f+0.4f*0.1f*i*100f/numberOfBalls));
+                    for (int k=0;k<numberOfPlayers;k++) {
+                        this.ballStartPositionStates[k][i*10 + j] = true;
+                    }
+                }
+            }
 
 
-            for (int i=0;i<playerFieldPolygons.length;i++) {
+            for (int i=0;i<numberOfPlayers;i++) {
                 this.playerFieldPolygons[i]=new Polygon();
                 this.goalPolygons[i] = new Polygon();
             }
@@ -659,9 +673,14 @@ public class ClassicGameObjects {
             }
 
             //rotate for perspective of player
-            this.playerFieldVertices = MiscObjects.transformVectorArray(playerFieldVertices,1,-360f/numberOfPlayers*myPlayerNumber);
+            this.playerFieldVertices = MiscObjects.transformVectorArray(this.playerFieldVertices,1,-360f/numberOfPlayers*myPlayerNumber);
+            this.ballStartPositions[0] = MiscObjects.transformVectorArray(this.ballStartPositions[0],1,-360f/numberOfPlayers*myPlayerNumber);
 
             for(int i = 0; i<numberOfPlayers; i++) {
+                if(i>0) {
+                    this.ballStartPositions[i] = MiscObjects.transformVectorArray(this.ballStartPositions[i-1],1,360f/numberOfPlayers);
+                }
+
                 if (numberOfPlayers==2) {
                     this.playerFieldPolygons[i] = new Polygon(MiscObjects.vecToFloatArray(new Vector2[]{this.playerFieldVertices[1],this.playerFieldVertices[2],this.playerFieldVertices[3],
                             this.playerFieldVertices[4],this.playerFieldVertices[5],this.playerFieldVertices[6],this.playerFieldVertices[7],this.playerFieldVertices[8]}));
@@ -702,7 +721,6 @@ public class ClassicGameObjects {
 
                     this.spriteMap.put("moveline"+i,createLineSprite(this.playerFieldVertices[1],this.playerFieldVertices[8],0.01f,texturesMap.get("fieldline")));
                 }
-
 
                 this.playerFieldVertices = MiscObjects.transformVectorArray(this.playerFieldVertices,1,360f/numberOfPlayers);
                 //Gdx.app.debug("ClassicGame", "bordersetup player " + i);
@@ -782,6 +800,18 @@ public class ClassicGameObjects {
             //polygonSprite.setPosition(-polygonSprite.getWidth()/2,-polygonSprite.getHeight()/2);
             //polygonSprite.setScale(width/texture.getWidth());
             return(polygonSprite);
+        }
+
+        Vector2 getNewBallStartPosition(int ballPlayerField_){
+            for (int i=0;i<10;i++) {
+                for (int j=0;j<10;j++) {
+                    if(this.ballStartPositionStates[ballPlayerField_][i*10+j]) {
+                        this.ballStartPositionStates[ballPlayerField_][i*10+j] = false;
+                        return(this.ballStartPositions[ballPlayerField_][i*10 + j]);
+                    }
+                }
+            }
+            return(new Vector2(0,0));
         }
     }
 
