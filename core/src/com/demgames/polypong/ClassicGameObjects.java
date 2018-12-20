@@ -148,6 +148,8 @@ public class ClassicGameObjects {
 
 
     void updateAndSend(IGlobals globals) {
+
+        //update local data from received data in globals
         synchronized (globals.getSettingsVariables().receiveThreadLock) {
             for (int i = 0; i < this.balls.length; i++) {
                 if (this.balls[i].ballDisplayState == 1) {
@@ -182,6 +184,7 @@ public class ClassicGameObjects {
             }
         }
 
+        //send local data
         for(int i=0;i<this.balls.length;i++) {
             if (this.balls[i].ballDisplayState == 1) {
                 this.balls[i].checkWrongPlayerField();
@@ -193,21 +196,16 @@ public class ClassicGameObjects {
                     if (this.balls[i].tempGoal == 1) {
                         scores[myPlayerNumber] -= 1;
                     }
-                    if (this.balls[i].tempPlayerField == this.myPlayerNumber) {
-                        Gdx.app.debug(TAG, "ball " + Integer.toString(this.balls[i].ballNumber) + " on field "+ Integer.toString(this.balls[i].tempPlayerField) + " sendfrequentball");
-                        globals.getSettingsVariables().sendFrequentBallToAllClient(this.balls[i]);
-                    } else {
-                        if (this.balls[i].tempPlayerField != 999) {
-                            Gdx.app.debug(TAG, "ball " + Integer.toString(this.balls[i].ballNumber) + " on field "+ Integer.toString(this.balls[i].tempPlayerField) + " sendfieldchangeball");
-                            globals.getSettingsVariables().sendFieldChangeBallToAllClients(this.balls[i]);
-                        }
+                    if (this.balls[i].tempPlayerField != 999) {
+                        Gdx.app.debug(TAG, "ball " + Integer.toString(this.balls[i].ballNumber) + " on field "+ Integer.toString(this.balls[i].tempPlayerField) + " sendfieldchangeball");
+                        globals.getSettingsVariables().sendBallToAllClients(this.balls[i]);
                     }
                 }else {
                     this.ballDisplayStatesMap.put(i,this.balls[i].ballDisplayState);
                 }
             }
         }
-        globals.getSettingsVariables().sendFrequentInfoToAllClients(this.bats[myPlayerNumber],this.ballDisplayStatesMap,scores);
+        globals.getSettingsVariables().sendInfoToAllClients(this.bats[myPlayerNumber],this.ballDisplayStatesMap,scores);
         this.ballDisplayStatesMap.clear();
     }
 
@@ -226,7 +224,7 @@ public class ClassicGameObjects {
             this.bats[i].doPhysics();
         }
 
-        this.world.step(Gdx.graphics.getDeltaTime(), 8, 3);
+        this.world.step(Gdx.graphics.getDeltaTime(), 4,2);
 
         this.allBallsDestroyedState = this.allBallsDestroyed();
     }
@@ -298,6 +296,8 @@ public class ClassicGameObjects {
         private Sprite traceSprite;
 
         private boolean lostState;
+
+        private int lostCounter;
 
         int ballDisplayState;
 
@@ -419,10 +419,10 @@ public class ClassicGameObjects {
 
         boolean checkWrongPlayerField() {
             if(this.playerField!= myPlayerNumber && gameField.playerFieldPolygons[myPlayerNumber].contains(this.ballBody.getPosition())) {
-                Gdx.app.error(TAG, "ball " + this.ballNumber + " in my field with wrong playernumber");
+                Gdx.app.debug(TAG, "ball " + this.ballNumber + " in my field with wrong playernumber");
                 return(true);
             } else if(this.playerField== myPlayerNumber && !gameField.playerFieldPolygons[myPlayerNumber].contains(this.ballBody.getPosition())) {
-                Gdx.app.error(TAG, "ball " + this.ballNumber + " in other field with my playernumber");
+                Gdx.app.debug(TAG, "ball " + this.ballNumber + " in other field with my playernumber");
                 return(true);
             }
             return(false);
@@ -431,10 +431,17 @@ public class ClassicGameObjects {
         void checkPlayerField() {
             this.setBallForwardPosition();
             if (!gameField.gameFieldPolygon.contains(this.ballBody.getPosition())) {
+                if(this.lostCounter>=5) {
+                    this.ballDisplayState = 0;
+                    Gdx.app.error(TAG, "ball " + this.ballNumber + " lost");
+
+                }
                 this.lostState = true;
-                Gdx.app.error("ClassicGame", "ball " + this.ballNumber + " outside gamefield " + this.playerField + " x " + this.ballBody.getPosition().x + " y " + this.ballBody.getPosition().y);
+                Gdx.app.error(TAG, "ball " + this.ballNumber + " outside gamefield " + this.playerField + " for frames " + this.lostCounter + " x " + this.ballBody.getPosition().x + " y " + this.ballBody.getPosition().y);
                 this.tempPlayerField = 999;
+                this.lostCounter++;
             } else {
+                this.lostCounter=0;
                 for (int i = 0; i < numberOfPlayers; i++) {
                     if (gameField.playerFieldPolygons[i].contains(this.ballForwardPosition)) {
                         if (gameField.playerFieldPolygons[i].contains(this.ballBody.getPosition())) {

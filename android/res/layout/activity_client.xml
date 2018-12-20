@@ -112,7 +112,7 @@
         android:ems="10"
         android:hint="Server IP manuell eingeben"
         android:inputType="date"
-        android:text="192.168.3.202"
+        android:text="192.168.1.116"
         android:textColor="@color/TColor"
         app:layout_constraintBottom_toTopOf="@+id/manualIpButton"
         app:layout_constraintEnd_toEndOf="parent"

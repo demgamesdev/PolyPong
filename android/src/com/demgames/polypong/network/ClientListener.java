@@ -46,17 +46,19 @@ public class ClientListener extends Listener{
                 synchronized (globals.getSettingsVariables().connectionThreadLock) {
                     Globals.SendVariables.SendDiscoveryResponse discoveryResponse = (Globals.SendVariables.SendDiscoveryResponse) object;
 
-                    String tempIpAdress = connection.getRemoteAddressTCP().toString();
-                    tempIpAdress = tempIpAdress.substring(1, tempIpAdress.length()).split(":")[0];
-                    Log.e(TAG, tempIpAdress + " discoveryresponse of " + discoveryResponse.myPlayerName);
-                    IGlobals.Player tempPlayer = new IGlobals.Player();
-                    tempPlayer.ipAdress = tempIpAdress;
-                    tempPlayer.name = discoveryResponse.myPlayerName;
+                    if(connection!=null) {
+                        String tempIpAdress = connection.getRemoteAddressTCP().toString();
+                        tempIpAdress = tempIpAdress.substring(1, tempIpAdress.length()).split(":")[0];
+                        Log.e(TAG, tempIpAdress + " discoveryresponse of " + discoveryResponse.myPlayerName);
+                        IGlobals.Player tempPlayer = new IGlobals.Player();
+                        tempPlayer.ipAdress = tempIpAdress;
+                        tempPlayer.name = discoveryResponse.myPlayerName;
 
-                    if(globals.getSettingsVariables().addPlayerToList(tempPlayer)) {
-                        globals.getSettingsVariables().updateListViewState = true;
-                    } else {
-                        Log.e(TAG, tempIpAdress + " already in playerlist");
+                        if (globals.getSettingsVariables().addPlayerToList(tempPlayer)) {
+                            globals.getSettingsVariables().updateListViewState = true;
+                        } else {
+                            Log.e(TAG, tempIpAdress + " already in playerlist");
+                        }
                     }
                 }
             }
