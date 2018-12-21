@@ -97,6 +97,8 @@ public class ServerActivity extends AppCompatActivity{
                     globalVariables.getSettingsVariables().numberOfPlayers = globalVariables.getSettingsVariables().ipAdresses.size();
                     globalVariables.getGameVariables().numberOfPlayers = globalVariables.getSettingsVariables().numberOfPlayers;
 
+                    globalVariables.getGameVariables().numberOfBalls = globalVariables.getGameVariables().perPlayerBalls * globalVariables.getGameVariables().numberOfPlayers;
+
                     globalVariables.getGameVariables().setBalls(true);
                     globalVariables.getGameVariables().setBats();
 

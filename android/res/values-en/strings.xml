@@ -10,6 +10,6 @@
     <string name="devicesFound">Devices found</string>
     <string name="hostGame">Host game</string>
     <string name="confirm">confirm</string>
-    <string name="numballs">"Number of balls: "</string>
+    <string name="numballs">"Balls per player: "</string>
     <string name="options">Game options</string>
 </resources>

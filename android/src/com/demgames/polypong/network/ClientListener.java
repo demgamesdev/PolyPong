@@ -21,10 +21,14 @@ public class ClientListener extends Listener{
 
     @Override
     public void connected(Connection connection) {
-        synchronized (globals.getSettingsVariables().connectionThreadLock) {
-            String tempIpAdress=connection.getRemoteAddressTCP().toString();
-            tempIpAdress=tempIpAdress.substring(1,tempIpAdress.length()).split(":")[0];
-            Log.e(TAG, tempIpAdress+" connected.");
+        try {
+            synchronized (globals.getSettingsVariables().connectionThreadLock) {
+                String tempIpAdress=connection.getRemoteAddressTCP().toString();
+                tempIpAdress=tempIpAdress.substring(1,tempIpAdress.length()).split(":")[0];
+                Log.e(TAG, tempIpAdress+" connected.");
+            }
+        } catch (NullPointerException e) {
+            e.printStackTrace();
         }
     }
 
@@ -42,11 +46,11 @@ public class ClientListener extends Listener{
     public void received(Connection connection,Object object) {
         Log.d(TAG, "Package received.");
         if(object instanceof Globals.SendVariables.SendDiscoveryResponse) {
-            synchronized (globals.getSettingsVariables().receiveThreadLock) {
-                synchronized (globals.getSettingsVariables().connectionThreadLock) {
-                    Globals.SendVariables.SendDiscoveryResponse discoveryResponse = (Globals.SendVariables.SendDiscoveryResponse) object;
+            try {
+                synchronized (globals.getSettingsVariables().receiveThreadLock) {
+                    synchronized (globals.getSettingsVariables().connectionThreadLock) {
+                        Globals.SendVariables.SendDiscoveryResponse discoveryResponse = (Globals.SendVariables.SendDiscoveryResponse) object;
 
-                    if(connection!=null) {
                         String tempIpAdress = connection.getRemoteAddressTCP().toString();
                         tempIpAdress = tempIpAdress.substring(1, tempIpAdress.length()).split(":")[0];
                         Log.e(TAG, tempIpAdress + " discoveryresponse of " + discoveryResponse.myPlayerName);
@@ -61,6 +65,8 @@ public class ClientListener extends Listener{
                         }
                     }
                 }
+            } catch (NullPointerException e) {
+                e.printStackTrace();
             }
         }
 

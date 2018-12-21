@@ -60,7 +60,7 @@ public class OptionsActivity extends AppCompatActivity implements AdapterView.On
             @Override
             public void onClick(View view) {
                 /***Optionen an Global Übergeben'**/
-                globalVariables.getGameVariables().numberOfBalls=ballnum;
+                globalVariables.getGameVariables().perPlayerBalls=ballnum;
                 Log.d(TAG, "Anzahl der bälle: "+ globalVariables.getGameVariables().numberOfBalls);
                 globalVariables.getGameVariables().gravityState=gravity.isChecked();
                 globalVariables.getGameVariables().attractionState=attraction.isChecked();
@@ -81,7 +81,6 @@ public class OptionsActivity extends AppCompatActivity implements AdapterView.On
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
                 ballnum = i+1;
                 ballTextView.setText(getString(R.string.numballs) + Integer.toString(ballnum));
-                globalVariables.getGameVariables().numberOfBalls=ballnum;
                 Log.d(TAG, "onProgressChanged: Anzahl der Bälle auf " + Integer.toString(globalVariables.getGameVariables().numberOfBalls) + " geändert");
             }
 

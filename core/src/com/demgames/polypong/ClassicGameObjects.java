@@ -101,6 +101,8 @@ public class ClassicGameObjects {
                 this.texturesMap.put("ball_"+i,new Texture(Gdx.files.internal("balls/ball_2.png")));
             }
         }
+        this.texturesMap.put("ball_1",new Texture(Gdx.files.internal("balls/ball_1.png")));
+
         this.texturesMap.put("ball_off",new Texture(Gdx.files.internal("balls/ball_off.png")));
         this.texturesMap.put("bat_0",new Texture(Gdx.files.internal("bats/bat_0.png")));
 
@@ -262,6 +264,10 @@ public class ClassicGameObjects {
             this.drawText(spriteBatch,this.fontsMap.get(48),message, 0, (this.gameField.offset.y-height/2f)/metersToPixels,true,false);
         }
 
+        if(this.balls[0].ballDisplayState==1){
+            this.drawText(spriteBatch,this.fontsMap.get(32),"ball 0 speed "+this.balls[0].ballBody.getLinearVelocity().len(), -width/2*0.9f, (-height/20f+this.gameField.offset.y)/metersToPixels,false,false);
+        }
+
         if(allBallsDestroyedState) {
             this.drawText(spriteBatch,this.fontsMap.get(48),"Spiel beendet. "+this.playerNames[this.getMaxScoreIndex()] + " hat gewonnen!", 0, (this.gameField.offset.y-height/3f)/metersToPixels,true,false);
         }
@@ -279,7 +285,7 @@ public class ClassicGameObjects {
     class Ball {
         Body ballBody;
 
-        private float ballRadius;
+        private float ballRadius,frictionFactor,spinFactor,frictionThreshold;
 
         int ballNumber, playerField, tempPlayerField,tempGoal;
 
@@ -288,7 +294,7 @@ public class ClassicGameObjects {
         private int ballPositionFrameSkip=4;
         private long ballUpdateCounter=0;
 
-        private Vector2 ballForwardPosition;
+        private Vector2 ballForwardPosition,ballUnitVelocity;
         private Vector2 destroyPosition;
         private long destroyTime;
 
@@ -325,7 +331,7 @@ public class ClassicGameObjects {
             FixtureDef ballFixtureDef = new FixtureDef();
             ballFixtureDef.shape= ballShape;
             ballFixtureDef.density=1e-5f;
-            ballFixtureDef.friction = 100f;
+            ballFixtureDef.friction = 1000f;
             ballFixtureDef.filter.categoryBits = CATEGORY_BALL;
             ballFixtureDef.filter.maskBits = MASK_BALL;
 
@@ -336,7 +342,10 @@ public class ClassicGameObjects {
             this.ballBody.setLinearVelocity(ballVelocity_);
             this.ballBody.setAngularVelocity(ballAngularVelocity_);
 
+            this.ballUnitVelocity = new Vector2(0,0);
             this.ballForwardPosition = new Vector2(this.ballBody.getPosition());
+
+            this.frictionThreshold = 5f;
 
             //Gdx.app.debug("ClassicGame checkPlayerField", "ballforwardposition x " + Float.toString(this.ballForwardPosition.x) + " y "+ Float.toString(this.ballForwardPosition.y));
             this.checkPlayerField();
@@ -358,20 +367,27 @@ public class ClassicGameObjects {
         //if ball on my screen apply forces etc. else update position and velocity by the ones stored globally and received from other player
             //Gdx.app.debug("ClassicGame", "ball "+ this. ballNumber+ " globals playerfield "+globalVariables.getGameVariables().ballPlayerFields[this.ballNumber]);
             if (this.playerField == myPlayerNumber) {
+                //brake too fast balls
+                if(this.ballBody.getLinearVelocity().len()>0) {
+                    this.ballUnitVelocity.set(this.ballBody.getLinearVelocity().x/this.ballBody.getLinearVelocity().len(),this.ballBody.getLinearVelocity().y/this.ballBody.getLinearVelocity().len());
 
-                //Gdx.app.debug("ClassicGame", "ball "+Integer.toString(this.ballNumber)+" computed");
-                for (int j = 0; j < miscObjects.touches.maxTouchCount; j++) {
-                    if (miscObjects.touches.isTouched[j]) {
-                        if (gameLogicStates.get("attractionState")) {
-                            //attraction
-                            //this.ballBody.applyForceToCenter((new Vector2(miscObjects.touches.touchPos[j]).sub(balls[this.ballNumber].ballBody.getPosition()).scl(1e-4f)), true);
-                            if(this.ballBody.getLinearVelocity().len()>0) {
-                                this.ballBody.applyForceToCenter(new Vector2(-this.ballBody.getLinearVelocity().y,this.ballBody.getLinearVelocity().x).scl(1e-2f*this.ballBody.getMass()*this.ballBody.getAngularVelocity()/this.ballBody.getLinearVelocity().len()), true);
-                            }
+                    if(this.ballBody.getLinearVelocity().len()>this.frictionThreshold) {
+                        this.frictionFactor = (1-this.frictionThreshold/this.ballBody.getLinearVelocity().len())*1e-5f;
+                        this.ballBody.applyForceToCenter(-this.ballUnitVelocity.x*this.frictionFactor,
+                                -this.ballUnitVelocity.y*this.frictionFactor,true);
+                    }
 
-                        }
+                    this.spinFactor = 1e-2f*this.ballBody.getMass()*this.ballBody.getAngularVelocity();
+                    this.ballBody.applyForceToCenter(-this.ballUnitVelocity.y*this.spinFactor,this.ballUnitVelocity.x*this.spinFactor, true);
+
+                    //Gdx.app.debug("ClassicGame", "ball "+Integer.toString(this.ballNumber)+" computed");
+                    if (gameLogicStates.get("attractionState")) {
+                        //attraction
+
                     }
                 }
+
+
                 if (gameLogicStates.get("gravityState")) {
                     //gravity
                     this.ballBody.applyForceToCenter(new Vector2(this.ballBody.getPosition()).scl(this.ballBody.getMass()*1e-2f/(float)Math.pow(this.ballBody.getPosition().len(),2)), true);//-(this.ballBody.getPosition().y+height/PIXELS_TO_METERS)*1f
@@ -389,7 +405,8 @@ public class ClassicGameObjects {
                 if(false) {//this.lostState
                     this.ballSprite.setTexture(texturesMap.get("ball_off"));//
                 } else {
-                    this.ballSprite.setTexture(texturesMap.get("ball_"+this.playerField));//
+                    //this.ballSprite.setTexture(texturesMap.get("ball_"+this.playerField));//
+                    this.ballSprite.setTexture(texturesMap.get("ball_1"));//
                 }
                 this.ballSprite.setPosition((this.ballBody.getPosition().x-this.ballRadius), (this.ballBody.getPosition().y-this.ballRadius));
                 this.ballSprite.setRotation(this.ballBody.getAngle()/MathUtils.PI*180f);
@@ -398,7 +415,8 @@ public class ClassicGameObjects {
                     if(false) {//this.lostState
                         this.traceSprite.setTexture(texturesMap.get("ball_off"));//
                     } else {
-                        this.traceSprite.setTexture(texturesMap.get("ball_"+this.playerField));//
+                        //this.traceSprite.setTexture(texturesMap.get("ball_"+this.playerField));//
+                        this.traceSprite.setTexture(texturesMap.get("ball_1"));//
                     }
                     this.traceSprite.setPosition((this.ballPositionArrayList.get(i).x-this.ballRadius/4f), (this.ballPositionArrayList.get(i).y-this.ballRadius/4f));
                     this.traceSprite.setRotation(this.ballBody.getAngle()/MathUtils.PI*180f);
@@ -584,19 +602,43 @@ public class ClassicGameObjects {
             this.goalPolygons = new Polygon[numberOfPlayers];
             this.gameFieldVertices= new Vector2[7*numberOfPlayers];
 
-            this.ballStartPositions = new Vector2[numberOfPlayers][100];
-            this.ballStartPositionStates = new boolean[numberOfPlayers][100];
+            this.ballStartPositions = new Vector2[numberOfPlayers][45];
+            this.ballStartPositionStates = new boolean[numberOfPlayers][45];
 
             this.polygonSpriteMap = new HashMap();
             this.spriteMap = new HashMap();
 
-            //EdgeShape fieldLineShape = new EdgeShape();
-            for (int i=0;i<10;i++) {
-                for (int j=0;j<10;j++) {
-                    this.ballStartPositions[0][i*10 + j] = new Vector2(width*(-0.45f + 0.9f*0.1f * j),height*(-1+0.4f+0.4f*0.1f*i*100f/numberOfBalls));
-                    for (int k=0;k<numberOfPlayers;k++) {
-                        this.ballStartPositionStates[k][i*10 + j] = true;
+
+            //position balls in pyramid startposition
+            int startPositionCounter=0;
+            int maxRows = 9;
+            int switchCounter;
+            int flip;
+            for (int i=0;i<maxRows;i++) {
+                switchCounter=0;
+                for (int j=0;j<i+1;j++) {
+                    if((i+1)%2==0) {
+                        if(j%2==0) {
+                            flip = 1;
+                            switchCounter++;
+                        } else {
+                            flip = -1;
+                        }
+                        this.ballStartPositions[0][startPositionCounter] = new Vector2(width/(float)maxRows*0.8f * flip*(switchCounter-0.5f), height * (-1 + 0.3f + 0.4f/maxRows* i));
+                    } else {
+                        if(j%2==0) {
+                            flip = 1;
+                        } else {
+                            flip = -1;
+                            switchCounter++;
+                        }
+                        this.ballStartPositions[0][startPositionCounter] = new Vector2(width/(float)maxRows*0.8f * flip*switchCounter, height * (-1 + 0.3f + 0.4f/maxRows * i));
                     }
+
+                    for (int k=0;k<numberOfPlayers;k++) {
+                        this.ballStartPositionStates[k][startPositionCounter] = true;
+                    }
+                    startPositionCounter++;
                 }
             }
 
@@ -609,7 +651,7 @@ public class ClassicGameObjects {
             PolygonShape[] borderShapes;
 
             if (numberOfPlayers==2) {
-                this.offset = new Vector2(0,-width/3f);
+                this.offset = new Vector2(0,-width/5f);
                 this.playerFieldVertices = new Vector2[20];
                 this.gameFieldVertices= new Vector2[14];
 

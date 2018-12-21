@@ -24,6 +24,7 @@ public interface IGlobals {
 
     class GameVariables {
 
+        public int perPlayerBalls;
         public int numberOfBalls;
 
         public float width, height;
@@ -42,8 +43,6 @@ public interface IGlobals {
         public boolean attractionState;
 
         public int[] playerScores;
-
-        private float factor =1;
 
         public int myPlayerNumber;
         public int numberOfPlayers;
@@ -67,7 +66,8 @@ public interface IGlobals {
                 if (setupState) {
                     this.balls[i].ballNumber = i;
                     this.balls[i].ballPlayerField = i%numberOfPlayers;
-                    this.balls[i].ballRadius = (rand.nextFloat()*0.2f+0.8f)*0.05f * this.factor;
+                    //this.balls[i].ballRadius = (rand.nextFloat()*0.2f+0.8f)*0.05f * this.factor;
+                    this.balls[i].ballRadius = 0.04f;
                     this.balls[i].ballPosition = new Vector2(0,0);
                     this.balls[i].ballVelocity = new Vector2(0,0);
                     this.balls[i].ballAngle = 0f;
@@ -593,7 +593,7 @@ public interface IGlobals {
 
             public void sendDicoveryRequest(String ipAdress_) {
                 if(!ipAdress_.equals("127.0.0.1") && !ipAdress_.equals(myIpAdress)) {
-                    synchronized (this.discoveryList){
+                    synchronized (this.discoveryThreadLock){
                         if(!this.discoveryList.contains(ipAdress_)){
                             this.discoveryList.add(ipAdress_);
                         }

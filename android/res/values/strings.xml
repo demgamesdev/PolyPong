@@ -11,6 +11,6 @@
     <string name="devicesFound">Gefundene Geräten:</string>
     <string name="hostGame">Spiel wird erstellt</string>
     <string name="options">Spieleinstellungen</string>
-    <string name="numballs">"Anzahl der Bälle: "</string>
+    <string name="numballs">"Bälle pro Spieler: "</string>
     <string name="confirm">Bestätigen</string>
 </resources>
