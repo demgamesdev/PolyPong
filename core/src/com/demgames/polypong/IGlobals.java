@@ -13,7 +13,6 @@ import com.google.common.collect.Multimaps;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -282,7 +281,7 @@ public interface IGlobals {
 
         public boolean addPlayerToList(Player player){
             for(int i=0;i<this.playerList.size();i++) {
-                //Gdx.app.debug(TAG,player.ipAdress + " vs " + this.playerList.get(i).ipAdress);
+                //Gdx.app.debug(TAG,player.connectionIpAdress + " vs " + this.playerList.get(i).connectionIpAdress);
                 if(player.ipAdress.equals(this.playerList.get(i).ipAdress)) {
                     return(false);
                 }
@@ -355,19 +354,22 @@ public interface IGlobals {
 
         public class ClientThread extends Thread {
             private Client client;
-            private String ipAdress;
+            private String connectionIpAdress;
             private int tcpPort, udpPort;
             private boolean isRunnning;
-            private boolean connectionPending;
-            private long connectionReferenceTime, sendGameInfoReferenceTime;
-            private int connectionTimer, sendGameInfoTimer;
+
+            private long connectionReferenceTime,discoveryReferenceTime, sendGameInfoReferenceTime;
+            private int connectionTimer,discoveryTimer, sendGameInfoTimer;
 
             private List<Object> tcpPendingObjects;
             private List<Object> udpPendingObjects;
-            private List<Object> discoveryPendingObjects;
-            private List<String> connectionPendingIpAdresses;
+            private List<String> discoveryList;
+
+            private boolean connectionPending;
             private boolean tcpPending;
             private boolean udpPending;
+            private boolean discoveryPending;
+
 
             private boolean sendGameInfoTcp;
             private SendVariables.SendGameInfo sendGameInfo;
@@ -377,13 +379,12 @@ public interface IGlobals {
             private Map<Integer,Object> sendBallsMap;
 
             private final Object sendGameInfoThreadLock = new Object();
-
-
-            private AtomicBoolean frequentBallsPending;
-            private AtomicBoolean fieldChangeBallsPending;
-            private AtomicBoolean frequentInfoPending;
+            private final Object discoveryThreadLock = new Object();
 
             private String threadName;
+
+            private Ball tempBall;
+            private Bat tempBat;
 
             public ClientThread(String threadName_, int tcpPort_, int udpPort_) {
                 this.threadName=threadName_;
@@ -393,20 +394,23 @@ public interface IGlobals {
                 this.tcpPort = tcpPort_;
                 this.udpPort = udpPort_;
                 this.isRunnning=true;
-                this.connectionPending=false;
 
                 this.connectionReferenceTime = System.currentTimeMillis();
+                this.discoveryReferenceTime = System.currentTimeMillis();
                 this.sendGameInfoReferenceTime = System.currentTimeMillis();
 
                 this.connectionTimer = 0;
-                this.sendGameInfoTimer = 100;
+                this.discoveryTimer = 50;
+                this.sendGameInfoTimer = 50;
 
                 this.tcpPendingObjects = new ArrayList<Object>();
                 this.udpPendingObjects = new ArrayList<Object>();
-                this.discoveryPendingObjects = new ArrayList<Object>();
-                this.connectionPendingIpAdresses = new ArrayList<String>();
+                this.discoveryList = new ArrayList<String>();
+
+                this.connectionPending=false;
                 this.tcpPending = false;
                 this.udpPending = false;
+                this.discoveryPending=false;
 
                 this.sendGameInfoTcp = false;
                 this.sendGameInfo = new SendVariables.SendGameInfo();
@@ -415,6 +419,9 @@ public interface IGlobals {
                 this.sendMultiMap = Multimaps.synchronizedMultimap(HashMultimap.<String, Object>create());
                 this.sendInfoMap = new ConcurrentHashMap<String, Object>();
                 this.sendBallsMap = new ConcurrentHashMap<Integer, Object>();
+
+                this.tempBall = new Ball();
+                this.tempBat = new Bat();
 
 
 
@@ -427,17 +434,8 @@ public interface IGlobals {
                     if(System.currentTimeMillis() - this.connectionReferenceTime > this.connectionTimer) {
                         if (this.connectionPending) {
                             synchronized (connectionThreadLock) {
-                                /*for (int i = 0; i < this.connectionPendingIpAdresses.size(); i++) {
-                                    try {
-                                        this.client.connect(5000, this.connectionPendingIpAdresses.get(i), this.tcpPort, this.udpPort);
-                                    } catch (IOException e) {
-                                        e.printStackTrace();
-                                    }
-                                    this.client.sendUDP(discoveryRequest);
-                                }
-                                this.connectionPendingIpAdresses = new ArrayList();*/
                                 try {
-                                    this.client.connect(5000, this.ipAdress, this.tcpPort, this.udpPort);
+                                    this.client.connect(5000, this.connectionIpAdress, this.tcpPort, this.udpPort);
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                 }
@@ -448,72 +446,79 @@ public interface IGlobals {
                         }
                     }
                     try {
+                        if(System.currentTimeMillis() - this.discoveryReferenceTime > this.discoveryTimer) {
+                            if (this.discoveryPending) {
+                                synchronized (this.discoveryThreadLock) {
+                                    for (String ipAdress : this.discoveryList) {
+                                        try {
+                                            this.client.connect(5000, ipAdress, this.tcpPort, this.udpPort);
+                                        } catch (IOException e) {
+                                            e.printStackTrace();
+                                        }
+                                        this.client.sendUDP(discoveryRequest);
+                                    }
+                                    this.discoveryPending = false;
+                                    this.discoveryList.clear();
+                                }
+                                this.discoveryReferenceTime = System.currentTimeMillis();
+                            }
+                        }
+
+
                         if (this.tcpPending) {
                             synchronized (sendThreadLock) {
-                                for(int i=0;i<this.tcpPendingObjects.size();i++){
-                                    this.client.sendTCP(this.tcpPendingObjects.get(i));
+                                for(Object object : this.tcpPendingObjects){
+                                    this.client.sendTCP(object);
                                 }
-                                this.tcpPendingObjects = new ArrayList();
+                                this.tcpPendingObjects.clear();
                                 this.tcpPending = false;
                             }
                         }
 
                         if (this.udpPending) {
                             synchronized (sendThreadLock) {
-                                for(int i=0;i<this.udpPendingObjects.size();i++){
-                                    this.client.sendUDP(this.udpPendingObjects.get(i));
+                                for(Object object : this.udpPendingObjects){
+                                    this.client.sendUDP(object);
                                 }
-                                this.tcpPendingObjects = new ArrayList();
+                                this.udpPendingObjects.clear();
                                 this.udpPending = false;
                             }
                         }
 
                         if(System.currentTimeMillis() - this.sendGameInfoReferenceTime > this.sendGameInfoTimer) {
-                            this.sendGameInfo.gameInfoMap.put("myplayernumber",myPlayerNumber);
-                            if(this.sendInfoMap.get("balldisplaystates")!=null) {
-                                this.sendGameInfo.gameInfoMap.put("balldisplaystates", this.sendInfoMap.get("balldisplaystates"));
-                            }
-
-                            if(this.sendInfoMap.get("scores")!=null) {
-                                this.sendGameInfo.gameInfoMap.put("scores", this.sendInfoMap.get("scores"));
-                            }
-
-                            if(this.sendInfoMap.get("bat")!=null) {
-                                this.sendGameInfo.gameInfoMap.put("bat", this.sendInfoMap.get("bat"));
-                            }
-                            if(this.sendBallsMap.values().size()!=0) {
-                                this.sendGameInfo.gameInfoMap.put("balls",this.sendBallsMap);
-                            }
-
-                            if(this.sendGameInfoTcp) {
-                                this.client.sendTCP(this.sendGameInfo);
-                                this.sendGameInfoTcp = false;
-                            } else {
-                                this.client.sendUDP(this.sendGameInfo);
-                            }
-
-                            this.sendBallsMap.clear();
-                            this.sendInfoMap.clear();
-                            this.sendGameInfo.gameInfoMap.clear();
-
                             synchronized (this.sendGameInfoThreadLock) {
+                                this.sendGameInfo.gameInfoMap.put("myplayernumber", myPlayerNumber);
+                                if (this.sendInfoMap.get("balldisplaystates") != null) {
+                                    this.sendGameInfo.gameInfoMap.put("balldisplaystates", this.sendInfoMap.get("balldisplaystates"));
+                                }
 
-                                /*this.sendGameInfo.myPlayerNumber = myPlayerNumber;
-                                this.sendGameInfo.ballDisplayStatesMap = (ConcurrentHashMap<Integer, Integer>)(this.sendInfoMap.get("balldisplaystates"));
-                                this.sendGameInfo.scores = (int[])this.sendInfoMap.get("scores");
+                                if (this.sendInfoMap.get("scores") != null) {
+                                    this.sendGameInfo.gameInfoMap.put("scores", this.sendInfoMap.get("scores"));
+                                }
 
-                                this.sendGameInfo.bat = (Bat)this.sendInfoMap.get("bat");
-                                this.sendGameInfo.balls = Arrays.copyOf(this.sendBallsMap.values().toArray(),this.sendBallsMap.size(),Ball[].class);*/
+                                if (this.sendInfoMap.get("bat") != null) {
+                                    this.sendGameInfo.gameInfoMap.put("bat", this.sendInfoMap.get("bat"));
+                                }
+                                if (this.sendBallsMap.values().size() != 0) {
+                                    this.sendGameInfo.gameInfoMap.put("balls", this.sendBallsMap);
+                                }
 
+                                if (this.sendGameInfoTcp) {
+                                    this.client.sendTCP(this.sendGameInfo);
+                                    this.sendGameInfoTcp = false;
+                                } else {
+                                    this.client.sendUDP(this.sendGameInfo);
+                                }
 
+                                this.sendBallsMap.clear();
+                                this.sendInfoMap.clear();
+                                this.sendGameInfo.gameInfoMap.clear();
+                                //Thread.sleep(this.sendGameInfoTimer);
                             }
                             this.sendGameInfoReferenceTime = System.currentTimeMillis();
-                            Thread.sleep(this.sendGameInfoTimer);
                         }
 
-                    }catch (IllegalArgumentException e) {
-                        e.printStackTrace();
-                    } catch (InterruptedException e) {
+                    } catch (IllegalArgumentException e) {
                         e.printStackTrace();
                     }
 
@@ -525,8 +530,7 @@ public interface IGlobals {
             void connect(String ipAdress_) {
                 if(!ipAdress_.equals("127.0.0.1") && !ipAdress_.equals(myIpAdress)) {
                     synchronized (connectionThreadLock) {
-                        this.connectionPendingIpAdresses.add(ipAdress_);
-                        this.ipAdress = ipAdress_;
+                        this.connectionIpAdress = ipAdress_;
                         this.connectionPending = true;
                     }
                 }
@@ -553,49 +557,48 @@ public interface IGlobals {
             }
 
             public void addToBallsMap(ClassicGameObjects.Ball ball){
+                this.tempBall = new Ball();
+                this.tempBall.ballNumber = ball.ballNumber;
+                this.tempBall.ballPlayerField = ball.tempPlayerField;
+                this.tempBall.ballDisplayState = ball.ballDisplayState;
+
+                if (this.tempBall.ballDisplayState == 1) {
+                    this.tempBall.ballPosition = ball.ballBody.getPosition();
+                    this.tempBall.ballVelocity = ball.ballBody.getLinearVelocity();
+                    this.tempBall.ballAngle = ball.ballBody.getAngle();
+                    this.tempBall.ballAngularVelocity = ball.ballBody.getAngularVelocity();
+                }
                 synchronized (this.sendGameInfoThreadLock) {
-                    Ball tempBall = new Ball();
-                    tempBall.ballNumber = ball.ballNumber;
-                    tempBall.ballPlayerField = ball.tempPlayerField;
-                    tempBall.ballDisplayState = ball.ballDisplayState;
-
-                    if (tempBall.ballDisplayState == 1) {
-                        tempBall.ballPosition = ball.ballBody.getPosition();
-                        tempBall.ballVelocity = ball.ballBody.getLinearVelocity();
-                        tempBall.ballAngle = ball.ballBody.getAngle();
-                        tempBall.ballAngularVelocity = ball.ballBody.getAngularVelocity();
-                    }
-
-                    if(tempBall.ballPlayerField!= myPlayerNumber) this.sendGameInfoTcp = true;
-                    this.sendBallsMap.put(tempBall.ballNumber,tempBall);
+                    if (this.tempBall.ballPlayerField != myPlayerNumber) this.sendGameInfoTcp = true;
+                    this.sendBallsMap.put(this.tempBall.ballNumber, this.tempBall);
                 }
             }
 
             public void sendFrequentInfo(ClassicGameObjects.Bat bat, ConcurrentHashMap<Integer,Integer> ballDisplayStatesMap, int[] scores){
                 synchronized (this.sendGameInfoThreadLock) {
-                    this.sendInfoMap.put("myplayernumber",myPlayerNumber);
-                    this.sendInfoMap.put("scores",scores);
-                    this.sendInfoMap.put("balldisplaystates",ballDisplayStatesMap);
-
-                    Bat tempBat = new Bat();
-                    tempBat.batPosition = bat.batBody.getPosition();
-                    tempBat.batVelocity = bat.batBody.getLinearVelocity();
-                    tempBat.batAngle = bat.batBody.getAngle();
-                    tempBat.batAngularVelocity = bat.batBody.getAngularVelocity();
-
-                    this.sendInfoMap.put("bat",tempBat);
+                    this.sendInfoMap.put("myplayernumber", myPlayerNumber);
+                    this.sendInfoMap.put("scores", scores);
+                    this.sendInfoMap.put("balldisplaystates", ballDisplayStatesMap);
                 }
+                this.tempBat = new Bat();
+                this.tempBat.batPosition = bat.batBody.getPosition();
+                this.tempBat.batVelocity = bat.batBody.getLinearVelocity();
+                this.tempBat.batAngle = bat.batBody.getAngle();
+                this.tempBat.batAngularVelocity = bat.batBody.getAngularVelocity();
 
+                synchronized (this.sendGameInfoThreadLock) {
+                    this.sendInfoMap.put("bat", this.tempBat);
+                }
             }
 
             public void sendDicoveryRequest(String ipAdress_) {
                 if(!ipAdress_.equals("127.0.0.1") && !ipAdress_.equals(myIpAdress)) {
-                    try {
-                        this.client.connect(5000, ipAdress_, this.tcpPort, this.udpPort);
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                    synchronized (this.discoveryList){
+                        if(!this.discoveryList.contains(ipAdress_)){
+                            this.discoveryList.add(ipAdress_);
+                        }
+                        this.discoveryPending = true;
                     }
-                    this.client.sendUDP(discoveryRequest);
                 }
             }
 

@@ -164,8 +164,8 @@ public class ClassicGameObjects {
                         }
                         globals.getGameVariables().ballUpdateStates[i] = false;
                     }
-                    Gdx.app.debug(TAG, "ball " + this.balls[i].ballNumber + " displayState " + globals.getGameVariables().balls[i].ballDisplayState + " playerfield " + globals.getGameVariables().ballPlayerFields[i] + " globals ");
-                    Gdx.app.debug(TAG, "ball " + this.balls[i].ballNumber + " displayState " + this.balls[i].ballDisplayState + " playerfield " + this.balls[i].playerField + " tempplayerfield " + this.balls[i].tempPlayerField);
+                    //Gdx.app.debug(TAG, "ball " + this.balls[i].ballNumber + " displayState " + globals.getGameVariables().balls[i].ballDisplayState + " playerfield " + globals.getGameVariables().ballPlayerFields[i] + " globals ");
+                    //Gdx.app.debug(TAG, "ball " + this.balls[i].ballNumber + " displayState " + this.balls[i].ballDisplayState + " playerfield " + this.balls[i].playerField + " tempplayerfield " + this.balls[i].tempPlayerField);
                 }
             }
 
@@ -197,7 +197,7 @@ public class ClassicGameObjects {
                         scores[myPlayerNumber] -= 1;
                     }
                     if (this.balls[i].tempPlayerField != 999) {
-                        Gdx.app.debug(TAG, "ball " + Integer.toString(this.balls[i].ballNumber) + " on field "+ Integer.toString(this.balls[i].tempPlayerField) + " sendfieldchangeball");
+                        //Gdx.app.debug(TAG, "ball " + Integer.toString(this.balls[i].ballNumber) + " on field "+ Integer.toString(this.balls[i].tempPlayerField) + " sendfieldchangeball");
                         globals.getSettingsVariables().sendBallToAllClients(this.balls[i]);
                     }
                 }else {

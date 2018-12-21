@@ -76,19 +76,21 @@ public class ServerListener extends Listener{
                     globals.getGameVariables().ballUpdateStates[ball.ballNumber] = true;
                 }*/
                 if(sendGameInfo.gameInfoMap.get("myplayernumber")!=null) {
+                    int tempMyPlayerNumber = (int)sendGameInfo.gameInfoMap.get("myplayernumber");
                     if (sendGameInfo.gameInfoMap.get("scores") != null) {
-                        globals.getGameVariables().playerScores[(int) sendGameInfo.gameInfoMap.get("myplayernumber")] = ((int[]) (sendGameInfo.gameInfoMap.get("scores")))[(int) sendGameInfo.gameInfoMap.get("myplayernumber")];
+                        globals.getGameVariables().playerScores[tempMyPlayerNumber] = ((int[]) (sendGameInfo.gameInfoMap.get("scores")))[tempMyPlayerNumber];
                     }
 
 
-                    float rotateRad = (2f * MathUtils.PI / globals.getSettingsVariables().numberOfPlayers * ((int) sendGameInfo.gameInfoMap.get("myplayernumber") - globals.getSettingsVariables().myPlayerNumber));
+                    float rotateRad = (2f * MathUtils.PI / globals.getSettingsVariables().numberOfPlayers * (tempMyPlayerNumber - globals.getSettingsVariables().myPlayerNumber));
 
                     if(sendGameInfo.gameInfoMap.get("bat")!=null) {
-                        globals.getGameVariables().bats[(int) sendGameInfo.gameInfoMap.get("myplayernumber")].batPosition = ((IGlobals.Bat)sendGameInfo.gameInfoMap.get("bat")).batPosition.rotateRad(rotateRad);
-                        globals.getGameVariables().bats[(int) sendGameInfo.gameInfoMap.get("myplayernumber")].batVelocity = ((IGlobals.Bat)sendGameInfo.gameInfoMap.get("bat")).batVelocity.rotateRad(rotateRad);
-                        globals.getGameVariables().bats[(int) sendGameInfo.gameInfoMap.get("myplayernumber")].batAngle = ((IGlobals.Bat)sendGameInfo.gameInfoMap.get("bat")).batAngle + rotateRad;
-                        globals.getGameVariables().bats[(int) sendGameInfo.gameInfoMap.get("myplayernumber")].batAngularVelocity = ((IGlobals.Bat)sendGameInfo.gameInfoMap.get("bat")).batAngularVelocity;
-                        globals.getGameVariables().batUpdateStates[(int) sendGameInfo.gameInfoMap.get("myplayernumber")] = true;
+                        IGlobals.Bat tempBat = ((IGlobals.Bat)sendGameInfo.gameInfoMap.get("bat"));
+                        globals.getGameVariables().bats[tempMyPlayerNumber].batPosition = tempBat.batPosition.rotateRad(rotateRad);
+                        globals.getGameVariables().bats[tempMyPlayerNumber].batVelocity = tempBat.batVelocity.rotateRad(rotateRad);
+                        globals.getGameVariables().bats[tempMyPlayerNumber].batAngle = tempBat.batAngle + rotateRad;
+                        globals.getGameVariables().bats[tempMyPlayerNumber].batAngularVelocity = tempBat.batAngularVelocity;
+                        globals.getGameVariables().batUpdateStates[tempMyPlayerNumber] = true;
                     }
 
                     if(sendGameInfo.gameInfoMap.get("balldisplaystates")!=null) {
