@@ -111,7 +111,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 if (getName()) {
                     NameEditToTextView();
-                    Intent startHost = new Intent(getApplicationContext(), OptionsActivity.class);
+                    Intent startHost = new Intent(getApplicationContext(), Game_Selection.class);
                     startActivity(startHost);
                 }
             }
