@@ -169,7 +169,7 @@ public class ClassicGame extends ApplicationAdapter{
         //Gdx.gl.glDisable(GL20.GL_BLEND);
         camera.zoom= miscObjects.zoomLevel;
         //camera.position.set(0,-height+height/2*miscObjects.zoomLevel+gameObjects.gameField.offset.y,0);
-        //camera.position.set(0,gameObjects.fixedPoint.y+miscObjects.zoomLevel*camera.viewportHeight/2,0);
+        camera.position.set(0,gameObjects.fixedPoint.y+miscObjects.zoomLevel*camera.viewportHeight/2,0);
         //Gdx.app.debug(TAG,Float.toString(gameObjects.fixedPoint.y));
         //Gdx.app.debug(TAG,Float.toString(camera.viewportHeight));
         //-height+height/2*miscObjects.zoomLevel
@@ -196,7 +196,7 @@ public class ClassicGame extends ApplicationAdapter{
         spriteBatch.end();
 
         //uncomment for box2d bodies to be shown
-        debugRenderer.render(gameObjects.world,camera.combined);
+        //debugRenderer.render(gameObjects.world,camera.combined);
     }
 
 }

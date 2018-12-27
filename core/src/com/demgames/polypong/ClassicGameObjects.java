@@ -96,33 +96,30 @@ public class ClassicGameObjects {
 
         //load textures to map
         for(int i=0;i<numberOfPlayers;i++) {
-            if(i<2) {
-                this.texturesMap.put("ball_"+i,new Texture(Gdx.files.internal("balls/ball_"+i+".png")));
+
+            if(this.playerNames[i].equals("memes")) {
+                this.texturesMap.put("ball_"+i,new Texture(Gdx.files.internal("balls/ball_memes.png")));
+                this.texturesMap.put("playerfield_"+i,new Texture(Gdx.files.internal("field/playerfield_memes.png")));
+                this.texturesMap.put("bat_"+i,new Texture(Gdx.files.internal("bats/bat_0.png")));
+                Gdx.app.debug(TAG,"memes activated");
+            } else if(this.playerNames[i].equals("southpark")) {
+                this.texturesMap.put("ball_"+i,new Texture(Gdx.files.internal("balls/ball_southpark.png")));
+                this.texturesMap.put("playerfield_"+i,new Texture(Gdx.files.internal("field/playerfield_southpark.png")));
+                this.texturesMap.put("bat_"+i,new Texture(Gdx.files.internal("bats/bat_0.png")));
+                Gdx.app.debug(TAG,"memes activated");
             }else {
-                this.texturesMap.put("ball_"+i,new Texture(Gdx.files.internal("balls/ball_2.png")));
+                this.texturesMap.put("ball_"+i,new Texture(Gdx.files.internal("balls/ball_1.png")));
+                this.texturesMap.put("playerfield_"+i,new Texture(Gdx.files.internal("field/playerfield_normal.png")));
+                this.texturesMap.put("bat_"+i,new Texture(Gdx.files.internal("bats/bat_0.png")));
             }
         }
-        if(this.playerNames[this.myPlayerNumber].equals("franzi")) {
-            this.texturesMap.put("ball_normal",new Texture(Gdx.files.internal("balls/ball_franzi.png")));
-            Gdx.app.debug(TAG,"franzi ball selected");
-        } else if(this.playerNames[this.myPlayerNumber].equals("memes")) {
-            this.texturesMap.put("ball_normal",new Texture(Gdx.files.internal("balls/ball_memes.png")));
-            Gdx.app.debug(TAG,"franzi ball selected");
-        }else {
-            this.texturesMap.put("ball_normal",new Texture(Gdx.files.internal("balls/ball_1.png")));
-        }
 
-        this.texturesMap.put("ball_off",new Texture(Gdx.files.internal("balls/ball_off.png")));
-        this.texturesMap.put("bat_0",new Texture(Gdx.files.internal("bats/bat_0.png")));
-
-        this.texturesMap.put("meme_background",new Texture(Gdx.files.internal("field/meme_background.jpg")));
-        this.texturesMap.put("normal_background",new Texture(Gdx.files.internal("field/playerfield_background.png")));
         this.texturesMap.put("fieldline",new Texture(Gdx.files.internal("field/fieldline.png")));
 
         this.texturesMap.put("goal",new Texture(Gdx.files.internal("field/playerfield_goal.png")));
 
         this.texturesMap.put("boom",new Texture(Gdx.files.internal("effects/boom.png")));
-        this.texturesMap.put("gravityfield",new Texture(Gdx.files.internal("field/test_region.png")));
+        this.texturesMap.put("gravityfield",new Texture(Gdx.files.internal("field/gravityfield.png")));
 
         this.spritesMap.put("boom",new Sprite(texturesMap.get("boom")));
 
@@ -412,7 +409,7 @@ public class ClassicGameObjects {
             //color depending on playerfield
             if(this.ballDisplayState == 1) {
                 for (int i=0; i<this.ballPositionArrayList.size();i++) {
-                    this.traceSprite.setTexture(texturesMap.get("ball_normal"));
+                    //this.traceSprite.setTexture(texturesMap.get("ball_normal"));
                     this.traceSprite.setPosition((this.ballPositionArrayList.get(i).x-this.ballRadius/4f), (this.ballPositionArrayList.get(i).y-this.ballRadius/4f));
                     this.traceSprite.setRotation(this.ballBody.getAngle()/MathUtils.PI*180f+360f/numberOfPlayers*myPlayerNumber);
                     this.traceSprite.draw(spriteBatch);
@@ -420,7 +417,7 @@ public class ClassicGameObjects {
                     //Gdx.app.debug("ClassicGame", "pos x " +Float.toString(this.ballPositionArrayList.get(i).x)+" y "+ Float.toString(this.ballPositionArrayList.get(i).y));
                 }
 
-                this.ballSprite.setTexture(texturesMap.get("ball_normal"));
+                //this.ballSprite.setTexture(texturesMap.get("ball_normal"));
                 this.ballSprite.setPosition((this.ballBody.getPosition().x-this.ballRadius), (this.ballBody.getPosition().y-this.ballRadius));
                 this.ballSprite.setRotation(this.ballBody.getAngle()/MathUtils.PI*180f+360f/numberOfPlayers*myPlayerNumber);
                 this.ballSprite.draw(spriteBatch);
@@ -534,7 +531,7 @@ public class ClassicGameObjects {
             this.newPos = new Vector2(miscObjects.touches.touchPos[0]).rotate(360f/numberOfPlayers*(this.batPlayerField-myPlayerNumber));
             this.batBody.setTransform(this.newPos,2f*MathUtils.PI/numberOfBalls*((this.batPlayerField-myPlayerNumber)));
 
-            this.batSprite = new Sprite(texturesMap.get("bat_0"));
+            this.batSprite = new Sprite(texturesMap.get("bat_"+this.batPlayerField));
             this.batSprite.setOrigin(this.batWidth/2,this.batHeight/2);
             this.batSprite.setSize(this.batWidth,this.batHeight);
         }
@@ -651,7 +648,7 @@ public class ClassicGameObjects {
             PolygonShape[] borderShapes;
 
             if (numberOfPlayers==2) {
-                this.offset = new Vector2(0,-width/5f);
+                this.offset = new Vector2(0,0);
                 this.playerFieldVertices = new Vector2[20];
                 this.gameFieldVertices= new Vector2[14];
 
@@ -817,13 +814,15 @@ public class ClassicGameObjects {
             this.fieldSprites.get("gravityfield").setPosition(-this.fieldSprites.get("gravityfield").getWidth()/2,-this.fieldSprites.get("gravityfield").getHeight()/2);*/
 
             for(int i=0; i<numberOfPlayers;i++) {
-                this.playerFieldSprites[i]= createTexturePolygonSprite(this.playerFieldPolygons[i],texturesMap.get("gravityfield"));
-                this.goalSprites[i]= createTexturePolygonSprite(this.goalPolygons[i],texturesMap.get("goal"));
+                float rotateDeg = (360f/ numberOfPlayers * (i - myPlayerNumber));
+
+                this.playerFieldSprites[i]= createTexturePolygonSprite(this.playerFieldPolygons[myPlayerNumber],rotateDeg,texturesMap.get("playerfield_"+i));
+                this.goalSprites[i]= createTexturePolygonSprite(this.goalPolygons[myPlayerNumber],rotateDeg,texturesMap.get("goal"));
                 this.fieldLineSprites[i] = createLineSprite(fieldLineVertices[i],new Vector2(0,0),0.01f,texturesMap.get("fieldline"));
             }
-            this.playerFieldSprites[0]= createTexturePolygonSprite(this.playerFieldPolygons[0],texturesMap.get("gravityfield"));
+            //this.playerFieldSprites[0]= createTexturePolygonSprite(this.playerFieldPolygons[0],rotateDeg,texturesMap.get("gravityfield"));
 
-            this.gamefieldSprite = createTexturePolygonSprite(this.gameFieldPolygon,texturesMap.get("goal"));
+            this.gamefieldSprite = createTexturePolygonSprite(this.gameFieldPolygon,0,texturesMap.get("goal"));
         }
 
         void display(PolygonSpriteBatch polygonSpriteBatch) {
@@ -841,29 +840,28 @@ public class ClassicGameObjects {
 
         }
 
-        PolygonSprite createTexturePolygonSprite(Polygon polygon, Texture texture) {
+        PolygonSprite createTexturePolygonSprite(Polygon polygon,float rotateDeg, Texture texture) {
             Rectangle bounds = polygon.getBoundingRectangle();
-            /*Vector2 position = new Vector2(polygon.getBoundingRectangle().x,polygon.getBoundingRectangle().y);
-            float[] minXY = miscObjects.getMinXY(vertices);
-            float[] maxXY = miscObjects.getMaxXY(vertices);
-            float[] dims = new float[]{maxXY[0]-minXY[0],maxXY[1]-minXY[1]};
-            Gdx.app.debug(TAG,"polygon pos x " + Float.toString(position.x) + " y " + Float.toString(position.y));
-            Gdx.app.debug(TAG,"min pos x " + Float.toString(minXY[0]) + " y " + Float.toString(minXY[1]));
-            Gdx.app.debug(TAG,"max pos x " + Float.toString(maxXY[0]) + " y " + Float.toString(maxXY[1]));*/
-            float [] vertices = miscObjects.transformFloatVertices(polygon.getVertices(),texture.getWidth()/bounds.width,-bounds.x,-bounds.y);
 
-            PolygonRegion polyRegion = new PolygonRegion(new TextureRegion(texture),
+            Gdx.app.debug(TAG,"polygon bounds x "+ Float.toString(bounds.x)
+                    + " y "+ Float.toString(bounds.y) + " width "+ Float.toString(bounds.width)
+                    + " height "+ Float.toString(bounds.height));
+
+            float scale = texture.getWidth()/bounds.width;
+            if(texture.getHeight()/bounds.height<scale) {
+                scale = texture.getHeight()/bounds.height;
+            }
+            //float [] vertices = tempPolygon.getVertices();
+            float [] vertices = miscObjects.transformFloatVertices(polygon.getVertices(),scale,-bounds.x,-bounds.y);
+
+            PolygonRegion polyRegion = new PolygonRegion(new TextureRegion(texture,Math.round(bounds.width*scale),Math.round(bounds.height*scale)),
                     vertices,new EarClippingTriangulator().computeTriangles(vertices).toArray());
             PolygonSprite polygonSprite = new PolygonSprite(polyRegion);
-            /*polygonSprite.translate(-texture.getWidth()/2,-texture.getHeight()/2);
-            Gdx.app.debug(TAG,"polygonsprite width " + polygonSprite.getWidth() + " pos x " + polygonSprite.getX());*/
-            //polygonSprite.setPosition(-polygonSprite.getWidth()/2,-polygonSprite.getHeight()/2);
-            //polygonSprite.translate(-polygonSprite.getWidth()/2,-polygonSprite.getHeight()/2);
-            //Gdx.app.debug(TAG,"ps scale 1 "+ Float.toString(polygonSprite.getScaleX()));
-            //polygonSprite.setScale(dims[0]/texture.getWidth());
 
             polygonSprite.setBounds(bounds.x,bounds.y,bounds.width,bounds.height);
-            //polygonSprite.setOrigin(0,0);
+
+            polygonSprite.setOrigin(-polygonSprite.getX(),-polygonSprite.getY());
+            polygonSprite.setRotation(rotateDeg);
 
             Gdx.app.debug(TAG,"ps bounds x "+ Float.toString(polygonSprite.getBoundingRectangle().x)
             + " y "+ Float.toString(polygonSprite.getBoundingRectangle().y) + " width "+ Float.toString(polygonSprite.getBoundingRectangle().width)
