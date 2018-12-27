@@ -75,13 +75,41 @@ public class MiscObjects {
             tempfloat[2*i] = floatArray[2*i];
             tempfloat[2*i+1] = floatArray[2*i+1];
 
-            tempfloat[2*i]*=scale;
-            tempfloat[2*i+1]*=scale;
-
             tempfloat[2*i]+=translateX;
             tempfloat[2*i+1]+=translateY;
+
+            tempfloat[2*i]*=scale;
+            tempfloat[2*i+1]*=scale;
         }
-        return(floatArray);
+        return(tempfloat);
+    }
+
+    static float[] getMinXY(float[] floatArray){
+        float[] tempFloat = new float[]{floatArray[0],floatArray[1]};
+        for(int i =1; i<floatArray.length/2;i++) {
+            if(floatArray[2*i]<tempFloat[0]) {
+                tempFloat[0]= floatArray[2*i];
+            }
+
+            if(floatArray[2*i+1]<tempFloat[1]) {
+                tempFloat[1]= floatArray[2*i+1];
+            }
+        }
+        return(tempFloat);
+    }
+
+    static float[] getMaxXY(float[] floatArray){
+        float[] tempFloat = new float[]{floatArray[0],floatArray[1]};
+        for(int i =1; i<floatArray.length/2;i++) {
+            if(floatArray[2*i]>tempFloat[0]) {
+                tempFloat[0]= floatArray[2*i];
+            }
+
+            if(floatArray[2*i+1]>tempFloat[1]) {
+                tempFloat[1]= floatArray[2*i+1];
+            }
+        }
+        return(tempFloat);
     }
 
     //touchclass
