@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
 import java.util.ArrayList;
@@ -21,6 +22,7 @@ public class MiscObjects {
     private float screenWidth, screenHeight,width, height;
     Vector2 zoomPoint;
     float zoomLevel;
+    float maxZoomLevel;
 
     //class for touch input and gestures
 
@@ -42,7 +44,15 @@ public class MiscObjects {
 
     /********* OTHER FUNCTIONS *********/
     //adjust camera for zooming
-
+    void setMaxZoom(Rectangle rectangle, float width) {
+        Gdx.app.debug(TAG,"camera height " +Float.toString(width*this.globals.getGameVariables().height/this.globals.getGameVariables().width));
+        Gdx.app.debug(TAG,"game rect height " +Float.toString(rectangle.height));
+        if(rectangle.height/(width*this.globals.getGameVariables().height/this.globals.getGameVariables().width)>rectangle.width/width) {
+            this.maxZoomLevel = rectangle.height/(width*this.globals.getGameVariables().height/this.globals.getGameVariables().width);
+        } else {
+            this.maxZoomLevel = rectangle.width/width;
+        }
+    }
 
     //transform touch input for variable zoomlevel
     Vector2 transformZoom(float touchX,float touchY, Camera camera, Vector2 fixedPoint) {
@@ -156,11 +166,11 @@ public class MiscObjects {
 
         private void zoom (float originalDistance, float currentDistance){
             float newZoomLevel=zoomLevel+(originalDistance-currentDistance)/5;
-            if(newZoomLevel<=2.0f && newZoomLevel>=1.0f) {
+            if(newZoomLevel<=maxZoomLevel && newZoomLevel>=1.0f) {
                 zoomLevel=newZoomLevel;
 
-            } else if(newZoomLevel>2.0f) {
-                zoomLevel=newZoomLevel;//2.0f;
+            } else if(newZoomLevel>maxZoomLevel) {
+                zoomLevel=maxZoomLevel;//2.0f;
             } else if(newZoomLevel<1.0f) {
                 zoomLevel=1.0f;
             }
@@ -171,14 +181,6 @@ public class MiscObjects {
         void checkZoomGesture() {
             if(this.isTouched[0] && this.isTouched[1]) {
                 zoom(this.startTouchPos[0].cpy().sub(this.startTouchPos[1]).len(),this.touchPos[0].cpy().sub(this.touchPos[1]).len());
-            }
-
-            if(!this.isTouched[0] || !this.isTouched[1]) {
-                if(zoomLevel != 2.0 || zoomLevel != 1.0) {
-                    //continuously update camera
-                    zoomLevel=MathUtils.round(zoomLevel);
-                }
-
             }
         }
 

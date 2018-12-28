@@ -70,6 +70,7 @@ public class ClassicGame extends ApplicationAdapter{
                 globalVariables.getSettingsVariables().playerNames.toArray(new String[0]),globalVariables.getGameVariables().numberOfBalls,globalVariables.getGameVariables().balls,width,height,globalVariables.getGameVariables().width,globalVariables.getGameVariables().height, miscObjects,
                 globalVariables.getGameVariables().gravityState,globalVariables.getGameVariables().attractionState);
 
+        this.miscObjects.setMaxZoom(this.gameObjects.gameField.gameFieldPolygon.getBoundingRectangle(),this.width);
         //set fov of camera to displayGame
         this.camera = new OrthographicCamera(this.width, globalVariables.getGameVariables().height/globalVariables.getGameVariables().width*width);
 
