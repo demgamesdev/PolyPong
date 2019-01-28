@@ -102,43 +102,33 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/klassisch_layout">
 
-                <LinearLayout
+                <TextView
+                    android:id="@+id/textView7"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="horizontal">
+                    android:layout_height="wrap_content"
+                    android:layout_margin="8dp"
+                    android:gravity="center"
+                    android:text="In diesem Spiel müssen Sie soviele Bälle wie möglich in das gegnerische Tor schubsen."
+                    android:textColor="@color/TColor"
+                    android:textSize="16sp"
+                    app:fontFamily="sans-serif" />
 
-                    <TextView
-                        android:id="@+id/textView7"
-                        android:layout_width="200dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:layout_marginLeft="8dp"
-                        android:layout_marginTop="8dp"
-                        android:layout_marginEnd="16dp"
-                        android:layout_marginRight="8dp"
-                        android:layout_marginBottom="8dp"
-                        android:text="piifjowfjWKJFHEHGHERIHIJGNQEIJGNQIJGNERNERGOJEldjgnijrgougeiugaeogjeogjreogerojgnreoriinaigjrjiuwrgpsjgjengijngijafnguaueonrrrrrrrrruuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuNGPERGERGÜERMG\nwsfsdofsfojnsdfpinsdgpksndgsdngsojngsojnojfnfüerg"
-                        android:textColor="@color/TColor" />
-
-                    <pl.droidsonroids.gif.GifImageView
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:layout_marginTop="8dp"
-                        android:layout_marginRight="8dp"
-                        android:layout_marginBottom="8dp"
-                        android:src="@drawable/giphy" />
-                </LinearLayout>
+                <SeekBar
+                    android:id="@+id/seekBar"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
 
                 <Button
                     android:id="@+id/klassisch_weiter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="end"
-                    android:layout_marginTop="16dp"
+                    android:layout_gravity="right|center_vertical|end"
+                    android:layout_marginLeft="8dp"
+                    android:layout_marginTop="8dp"
                     android:layout_marginRight="8dp"
                     android:layout_marginBottom="8dp"
-                    android:text="Weiter"
-                    android:visibility="visible" />
+                    android:text="Optionen"
+                    app:layout_constraintTop_toBottomOf="@+id/linear" />
 
             </LinearLayout>
 
@@ -200,6 +190,29 @@
                     android:text="piifjowfjWKJFHEHGHERIHIJGNQEIJGNQIJGNERNERGOJEldjgnijrgougeiugaeogjeogjreogerojgnreoriinaigjrjiuwrgpsjgjengijngijafnguaueonrrrrrrrrruuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuNGPERGERGÜERMG\nwsfsdofsfojnsdfpinsdgpksndgsdngsojngsojnojfnfüerg"
                     android:textColor="@color/TColor" />
 
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/pong_Arrow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginLeft="8dp"
+                android:layout_marginTop="0dp"
+                android:layout_marginEnd="8dp"
+                android:layout_marginRight="8dp"
+                android:background="#8E24AA"
+                android:orientation="vertical"
+                app:layout_constraintTop_toBottomOf="@+id/pongInfo">
+
+                <ImageView
+                    android:id="@+id/pongArrow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="8dp"
+                    app:srcCompat="@android:drawable/arrow_down_float" />
             </LinearLayout>
 
 

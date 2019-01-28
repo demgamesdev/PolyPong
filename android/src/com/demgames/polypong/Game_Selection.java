@@ -5,13 +5,17 @@ import android.animation.ValueAnimator;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Point;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.support.constraint.ConstraintLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Display;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.animation.Transformation;
@@ -39,6 +43,11 @@ public class Game_Selection extends AppCompatActivity {
 
         final LinearLayout klassischInfo = (LinearLayout) findViewById(R.id.expandable_klassisch);
         final LinearLayout pongInfo = (LinearLayout) findViewById(R.id.pongInfo);
+        final LinearLayout pongArrow = (LinearLayout) findViewById(R.id.pong_Arrow);
+
+
+        final ImageView klassischarrow = (ImageView) findViewById(R.id.downarrow);
+        final ImageView pongarrow = (ImageView) findViewById(R.id.pongArrow);
 
         klassischInfo.setVisibility(View.GONE);
         pongInfo.setVisibility(View.GONE);
@@ -65,10 +74,11 @@ public class Game_Selection extends AppCompatActivity {
             public void onClick(View v) {
 
                 if (klassischInfo.getVisibility()==View.GONE){
-                    expand(klassischInfo);
+                    expand(klassischInfo, klassischarrow);
+                    collapse(pongInfo, pongarrow);
                 }
                 else if (klassischInfo.getVisibility()==View.VISIBLE){
-                    collapse(klassischInfo);
+                    collapse(klassischInfo, klassischarrow);
                 }
                 else{
                     Log.d("Expand", "onClick: "+klassischInfo.getVisibility());
@@ -81,10 +91,11 @@ public class Game_Selection extends AppCompatActivity {
             public void onClick(View v) {
 
                 if (pongInfo.getVisibility()==View.GONE){
-                    expand(pongInfo);
+                    expand(pongInfo, pongarrow);
+                    collapse(klassischInfo, klassischarrow);
                 }
                 else if (pongInfo.getVisibility()==View.VISIBLE){
-                    collapse(pongInfo);
+                    collapse(pongInfo, pongarrow);
                 }
                 else{
                     Log.d("Expand", "onClick: "+pongInfo.getVisibility());
@@ -98,10 +109,11 @@ public class Game_Selection extends AppCompatActivity {
 
                 Log.d("klassisch", "onClick: "+klassischInfo.getVisibility());
                 if (klassischInfo.getVisibility()==View.GONE){
-                    expand(klassischInfo);
+                    expand(klassischInfo, klassischarrow);
+                    collapse(pongInfo, pongarrow);
                 }
                 else if (klassischInfo.getVisibility()==View.VISIBLE){
-                    collapse(klassischInfo);
+                    collapse(klassischInfo, klassischarrow);
                 }
                 else{
                     Log.d("Expand", "onClick: "+klassischInfo.getVisibility());
@@ -111,16 +123,17 @@ public class Game_Selection extends AppCompatActivity {
             }
         });
 
-        pongInfo.setOnClickListener(new View.OnClickListener() {
+        pongArrow.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
                 Log.d("klassisch", "onClick: "+pongInfo.getVisibility());
                 if (pongInfo.getVisibility()==View.GONE){
-                    expand(pongInfo);
+                    expand(pongInfo, pongarrow);
+                    collapse(klassischInfo, klassischarrow);
                 }
                 else if (pongInfo.getVisibility()==View.VISIBLE){
-                    collapse(pongInfo);
+                    collapse(pongInfo, pongarrow);
                 }
                 else{
                     Log.d("Expand", "onClick: "+pongInfo.getVisibility());
@@ -131,23 +144,36 @@ public class Game_Selection extends AppCompatActivity {
     }
 
 
-    private void expand(final LinearLayout expand){
+    private void expand(final LinearLayout expand, final ImageView image){
 
         expand.setVisibility(View.VISIBLE);
-        final int widthSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+
+        ViewTreeObserver vto = expand.getViewTreeObserver();
+
+
+        //Display Breite für Messen von Höhe des Layouts wird erfasst
+        Display display = getWindowManager().getDefaultDisplay();
+        Point size = new Point();
+        display.getSize(size);
+        int displayWidth = size.x;
+
+        //Höhe von Layout wird gemessen
+        final int widthSpec = View.MeasureSpec.makeMeasureSpec(displayWidth, View.MeasureSpec.AT_MOST);
         final int heightSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
         expand.measure(widthSpec, heightSpec);
 
+        //Animation von Layout expand wird gestartet
         ValueAnimator mAnimator = slideAnimator(0, expand.getMeasuredHeight(), expand);
         mAnimator.start();
-        ImageView downarrow = (ImageView) findViewById(R.id.downarrow);
+
+
         Drawable uparrow = getResources().getDrawable(android.R.drawable.arrow_up_float);
-        downarrow.setImageDrawable(uparrow);
+        image.setImageDrawable(uparrow);
 
     }
 
 
-    private void collapse(final LinearLayout collapse){
+    private void collapse(final LinearLayout collapse, final ImageView image){
         int finalHeight = collapse.getHeight();
         ValueAnimator mAnimator = slideAnimator(finalHeight, 0, collapse);
         mAnimator.addListener(new Animator.AnimatorListener() {
@@ -168,9 +194,9 @@ public class Game_Selection extends AppCompatActivity {
         });
 
         mAnimator.start();
-        ImageView downarrow = (ImageView) findViewById(R.id.downarrow);
+
         Drawable uparrow = getResources().getDrawable(android.R.drawable.arrow_down_float);
-        downarrow.setImageDrawable(uparrow);
+        image.setImageDrawable(uparrow);
 
     }
 
