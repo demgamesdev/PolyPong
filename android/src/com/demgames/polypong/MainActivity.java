@@ -72,9 +72,11 @@ public class MainActivity extends AppCompatActivity {
 
         final Button startHostButton = (Button) findViewById(R.id.startHostButton);
         final Button startClientButton = (Button) findViewById(R.id.startClientButton);
+        final Button trainingButton = (Button) findViewById(R.id.trainingButton);
         Typeface typeface = Typeface.createFromAsset(getAssets(), "fonts/Quicksand-Regular.ttf");
         startHostButton.setTypeface(typeface);
         startClientButton.setTypeface(typeface);
+        trainingButton.setTypeface(typeface);
 
         myPlayerNameEditText = (EditText) findViewById(R.id.nameEditText);
         myPlayerNameEditText.setTypeface(typeface);
@@ -98,6 +100,21 @@ public class MainActivity extends AppCompatActivity {
                 if (getMyPlayerName()) {
                     Intent startClient = new Intent(getApplicationContext(), ClientActivity.class);
                     startActivity(startClient);
+                    //myThread.stop();
+                }
+
+
+
+
+            }
+        });
+
+        trainingButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (getMyPlayerName()) {
+                    Intent training = new Intent(getApplicationContext(), TrainingActivity.class);
+                    startActivity(training);
                     //myThread.stop();
                 }
 

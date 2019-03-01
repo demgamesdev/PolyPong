@@ -37,7 +37,7 @@ dependencies {
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
     compile 'com.android.support:design:26.1.0'
 
-    compile files('libs/kryonet-2.21-all.jar')
+    //compile files('libs/kryonet-2.21-all.jar')
     compile "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
     natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-armeabi"
     natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-armeabi-v7a"

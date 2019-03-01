@@ -11,7 +11,8 @@ eclipse.project {
 }
 
 dependencies {
-    compile files('libs/kryonet-2.21-all.jar')
+    //compile files('libs/kryonet-2.21-all.jar')
+
     compile "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
 
     //compile group: 'com.google.guava', name: 'guava', version: '23.5-android'
