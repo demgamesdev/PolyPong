@@ -150,7 +150,7 @@ public class MiscObjects {
         }
 
         //check for touches
-        void checkTouches(Vector2 offset, Camera camera, Vector2 fixedPoint) {
+        void checkTouches(boolean updateBat,Vector2 offset, Camera camera, Vector2 fixedPoint) {
             for(int i=0;i<this.maxTouchCount;i++) {
                 if (Gdx.input.isTouched(i)) {
                     this.isTouched[i] = true;
@@ -161,6 +161,10 @@ public class MiscObjects {
                 if(!this.lastIsTouched[i] && this.isTouched[i]) {
                     this.startTouchPos[i]=this.touchPos[i];
                 }
+            }
+
+            if(updateBat && this.isTouched[0] && !this.isTouched[1]) {
+                globals.getGameVariables().bats[globals.getGameVariables().myPlayerNumber].batPosition.set(this.touchPos[0]);
             }
         }
 

@@ -12,16 +12,15 @@ import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-public class ClassicGame extends ApplicationAdapter{
+public class TrainingGame extends ApplicationAdapter{
     private static final String TAG = "ClassicGame";
     //use of private etc is not consistently done
     private IGlobals globals;
 
     //setup global variables
-    public ClassicGame(IGlobals globals_ ) {
+    public TrainingGame(IGlobals globals_ ) {
         this.globals =globals_;
     }
 
@@ -42,12 +41,15 @@ public class ClassicGame extends ApplicationAdapter{
 
     private MiscObjects miscObjects;
 
-    private ClassicGameObjects gameObjects;
+    private TrainingGameObjects gameObjects;
 
     //stuff for potential use
     private long frameNumber=0;
     private int sendFrameSkip=1;
     private long currentMillis=System.currentTimeMillis();
+
+    double[] gameInput;
+
 
     @Override
     public void create() {
@@ -59,14 +61,14 @@ public class ClassicGame extends ApplicationAdapter{
 
         //Gdx.app.debug("ClassicGame", " has focus " + globals.getSettingsVariables().hasFocus);
 
-        this.myPlayerNumber = globals.getSettingsVariables().myPlayerNumber;
-        this.numberOfPlayers = globals.getSettingsVariables().numberOfPlayers;
+        this.myPlayerNumber = globals.getGameVariables().myPlayerNumber;
+        this.numberOfPlayers = globals.getGameVariables().numberOfPlayers;
         this.allPlayersReady = false;
         this.notReadyPlayerList = new ArrayList<String>();
         //setup gameobjects
         this.miscObjects = new MiscObjects(globals,this.myPlayerNumber,this.width,this.height);
 
-        this.gameObjects = new ClassicGameObjects(this.myPlayerNumber,this.numberOfPlayers,
+        this.gameObjects = new TrainingGameObjects(globals,this.myPlayerNumber,this.numberOfPlayers,
                 globals.getSettingsVariables().playerNames.toArray(new String[0]), globals.getGameVariables().numberOfBalls, globals.getGameVariables().balls,width,height, globals.getGameVariables().width, globals.getGameVariables().height, miscObjects,
                 globals.getGameVariables().gravityState, globals.getGameVariables().attractionState);
 
@@ -87,70 +89,60 @@ public class ClassicGame extends ApplicationAdapter{
         this.spriteBatch = new SpriteBatch();
         this.polygonSpriteBatch = new PolygonSpriteBatch();
 
-        /*for(int i=0; i< globals.getSettingsVariables().numberOfPlayers;i++) {
-            globals.getGameVariables().bats[i].batPosition = miscObjects.touches.touchPos[0];
-        }*/
-
-        globals.getSettingsVariables().clientConnectionStates[globals.getSettingsVariables().myPlayerNumber] =4;
-        IGlobals.SendVariables.SendConnectionState sendConnectionState = new IGlobals.SendVariables.SendConnectionState();
-        sendConnectionState.myPlayerNumber = globals.getSettingsVariables().myPlayerNumber;
-        sendConnectionState.connectionState = 4;
-        globals.getSettingsVariables().sendObjectToAllClients(sendConnectionState, "tcp");
-
-        globals.getGameVariables().gameState =1;
+        this.globals.getGameVariables().inputs = new ArrayList<double[]>();
+        this.globals.getGameVariables().outputs = new ArrayList<double[]>();
 
     }
 
     //executed when closed i think
     @Override
     public void dispose() {
+
+
         this.spriteBatch.dispose();
         this.polygonSpriteBatch.dispose();
         this.debugRenderer.dispose();
         this.gameObjects.dispose();
     }
 
-
     @Override
     public void render() {
         //Gdx.app.debug("ClassicGame", " has focus " + globals.getSettingsVariables().hasFocus);
+
         Gdx.app.postRunnable(new Runnable() {
             @Override
             public void run() {
 
             }
         });
-        this.miscObjects.touches.checkTouches(true,gameObjects.gameField.offset,camera,gameObjects.fixedPoint);
+        /*this.gameInput = new double[]{gameObjects.bats[this.myPlayerNumber].batBody.getPosition().x,gameObjects.bats[this.myPlayerNumber].batBody.getPosition().y,
+                gameObjects.bats[this.myPlayerNumber].batBody.getLinearVelocity().x,gameObjects.bats[this.myPlayerNumber].batBody.getLinearVelocity().y,gameObjects.balls[0].ballBody.getPosition().x,gameObjects.balls[0].ballBody.getPosition().y,
+                gameObjects.balls[0].ballBody.getLinearVelocity().x,gameObjects.balls[0].ballBody.getLinearVelocity().y};*/
+        this.gameInput = new double[4*gameObjects.balls.length];
+        for(int i=0;i<gameObjects.balls.length;i++) {
+            this.gameInput[4*i+0] = gameObjects.balls[i].ballBody.getPosition().x;
+            this.gameInput[4*i+1] = gameObjects.balls[i].ballBody.getPosition().y;
+            this.gameInput[4*i+2] = gameObjects.balls[i].ballBody.getLinearVelocity().x;
+            this.gameInput[4*i+3] = gameObjects.balls[i].ballBody.getLinearVelocity().y;
+        }
+
+        if(globals.getGameVariables().aiState) {
+            globals.getGameVariables().nn.setInput(gameInput);
+            globals.getGameVariables().nn.calculate();
+            globals.getGameVariables().bats[this.myPlayerNumber].batPosition.set((float) globals.getGameVariables().nn.getOutput()[0],
+                    (float) globals.getGameVariables().nn.getOutput()[1]);
+        } else {
+            if (frameNumber%2 == 0) {
+                this.globals.getGameVariables().inputs.add(gameInput);
+                this.globals.getGameVariables().outputs.add(new double[]{gameObjects.bats[0].batBody.getPosition().x,gameObjects.bats[0].batBody.getPosition().y});
+            }
+        }
+        this.miscObjects.touches.checkTouches(!globals.getGameVariables().aiState,gameObjects.gameField.offset,camera,gameObjects.fixedPoint);
         this.miscObjects.touches.checkZoomGesture();
 
-        this.allPlayersReady = globals.getSettingsVariables().checkAllClientConnectionStates(4);
-        //Gdx.app.debug("ClassicGame", " touchPos "+miscObjects.touches.touchPos[0]);
+        if(!gameObjects.allBallsDestroyedState) {
+            gameObjects.doPhysics();
 
-        if(this.allPlayersReady && globals.getGameVariables().gameState == 1) {
-
-            //update from globals and update playerfields
-
-            //dophysics
-            gameObjects.updateAndSend(globals);
-
-            if(!gameObjects.allBallsDestroyedState) {
-                gameObjects.doPhysics();
-
-            }
-
-
-        } else if(!gameObjects.allBallsDestroyedState){
-            this.notReadyPlayerList = new ArrayList(Arrays.asList(new String[]{}));
-            for(int i=0; i<this.numberOfPlayers;i++) {
-                if(globals.getSettingsVariables().clientConnectionStates[i]!=4) {
-                    this.notReadyPlayerList.add(globals.getSettingsVariables().playerNames.get(i));
-                }
-            }
-
-            Gdx.app.debug("ClassicGame", " not all players ready");
-            for(int i=0; i<this.numberOfPlayers;i++){
-                Gdx.app.debug("ClassicGame", " state of player "+i + " : " + globals.getSettingsVariables().clientConnectionStates[i]);
-            }
         }
         this.drawScreen();
 
@@ -197,7 +189,9 @@ public class ClassicGame extends ApplicationAdapter{
         spriteBatch.end();
 
         //uncomment for box2d bodies to be shown
-        //debugRenderer.render(gameObjects.world,camera.combined);
+        debugRenderer.render(gameObjects.world,camera.combined);
     }
 
 }
+
+

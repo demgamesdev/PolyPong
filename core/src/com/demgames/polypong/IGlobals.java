@@ -10,6 +10,8 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 
+import org.neuroph.core.NeuralNetwork;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,6 +48,12 @@ public interface IGlobals {
 
         public int myPlayerNumber;
         public int numberOfPlayers;
+
+        public List<double[]> inputs= new ArrayList<double[]>();
+        public List<double[]> outputs = new ArrayList<double[]>();
+
+        public NeuralNetwork nn;
+        public boolean aiState=false;
 
         GameVariables() {
             this.gameState = 0;
@@ -85,6 +93,7 @@ public interface IGlobals {
 
             for (int i = 0; i < this.numberOfPlayers; i++) {
                 this.bats[i]= new Bat();
+                this.bats[i].batPosition = new Vector2(0,0);
                 this.batUpdateStates[i] = false;
             }
         }
@@ -111,7 +120,7 @@ public interface IGlobals {
 
         public List<Player> playerList;
 
-        public int gameMode;
+        public String gameMode;
         public boolean hasFocus;
 
         public int setupConnectionState =0;
@@ -610,6 +619,8 @@ public interface IGlobals {
                 return(this.client);
             }
         }
+
+        //
     }
 
     class SendVariables {
@@ -621,7 +632,7 @@ public interface IGlobals {
 
             public Ball[] balls;
 
-            public int gameMode;
+            public String gameMode;
             public boolean gravityState;
             public boolean attractionState;
         }
