@@ -47,6 +47,8 @@ allprojects {
             url = "http://neuroph.sourceforge.net/maven2/"
         }
     }
+
+
 }
 
 project(":desktop") {
@@ -83,9 +85,11 @@ project(":android") {
         natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-x86_64"
         compile "com.badlogicgames.gdx:gdx-ai:$aiVersion"
 
-        compile "org.neuroph:neuroph-core:2.94"
         compile files('libs/kryonet-2.21-all.jar')
+
+
     }
+
 }
 
 project(":html") {
@@ -117,11 +121,19 @@ project(":core") {
         //compile group: 'com.google.guava', name: 'guava', version: '23.5-android'
 
         implementation 'com.google.guava:guava:27.0.1-android'
-        compile "org.neuroph:neuroph-core:2.94"
         compile files('libs/kryonet-2.21-all.jar')
         //compile "com.esotericsoftware:kryonet:2.22.0-RC1"
+
+
     }
 }
+
+configurations.all {
+    resolutionStrategy.force 'junit:junit:4.12'
+}
+
+
+
 
 tasks.eclipse.doLast {
     delete ".project"

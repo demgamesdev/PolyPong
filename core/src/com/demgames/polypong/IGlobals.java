@@ -10,7 +10,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 
-import org.neuroph.core.NeuralNetwork;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -52,7 +52,7 @@ public interface IGlobals {
         public List<double[]> inputs= new ArrayList<double[]>();
         public List<double[]> outputs = new ArrayList<double[]>();
 
-        public NeuralNetwork nn;
+        public MultiLayerNetwork model;
         public boolean aiState=false;
 
         GameVariables() {
@@ -693,4 +693,5 @@ public interface IGlobals {
 
     GameVariables getGameVariables();
     SettingsVariables getSettingsVariables();
+
 }

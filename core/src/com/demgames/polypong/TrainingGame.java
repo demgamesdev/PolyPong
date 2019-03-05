@@ -11,6 +11,9 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,9 +50,6 @@ public class TrainingGame extends ApplicationAdapter{
     private long frameNumber=0;
     private int sendFrameSkip=1;
     private long currentMillis=System.currentTimeMillis();
-
-    double[] gameInput;
-
 
     @Override
     public void create() {
@@ -118,23 +118,25 @@ public class TrainingGame extends ApplicationAdapter{
         /*this.gameInput = new double[]{gameObjects.bats[this.myPlayerNumber].batBody.getPosition().x,gameObjects.bats[this.myPlayerNumber].batBody.getPosition().y,
                 gameObjects.bats[this.myPlayerNumber].batBody.getLinearVelocity().x,gameObjects.bats[this.myPlayerNumber].batBody.getLinearVelocity().y,gameObjects.balls[0].ballBody.getPosition().x,gameObjects.balls[0].ballBody.getPosition().y,
                 gameObjects.balls[0].ballBody.getLinearVelocity().x,gameObjects.balls[0].ballBody.getLinearVelocity().y};*/
-        this.gameInput = new double[4*gameObjects.balls.length];
+
+        double [] gameInput = new double[4*gameObjects.balls.length];
         for(int i=0;i<gameObjects.balls.length;i++) {
-            this.gameInput[4*i+0] = gameObjects.balls[i].ballBody.getPosition().x;
-            this.gameInput[4*i+1] = gameObjects.balls[i].ballBody.getPosition().y;
-            this.gameInput[4*i+2] = gameObjects.balls[i].ballBody.getLinearVelocity().x;
-            this.gameInput[4*i+3] = gameObjects.balls[i].ballBody.getLinearVelocity().y;
+            gameInput[4*i+0] = gameObjects.balls[i].ballBody.getPosition().x;
+            gameInput[4*i+1] = gameObjects.balls[i].ballBody.getPosition().y;
+            gameInput[4*i+2] = gameObjects.balls[i].ballBody.getLinearVelocity().x;
+            gameInput[4*i+3] = gameObjects.balls[i].ballBody.getLinearVelocity().y;
         }
 
+
         if(globals.getGameVariables().aiState) {
-            globals.getGameVariables().nn.setInput(gameInput);
-            globals.getGameVariables().nn.calculate();
-            globals.getGameVariables().bats[this.myPlayerNumber].batPosition.set((float) globals.getGameVariables().nn.getOutput()[0],
-                    (float) globals.getGameVariables().nn.getOutput()[1]);
+            INDArray output = globals.getGameVariables().model.output(Nd4j.create(gameInput));
+            System.out.println("output " + output + output.getFloat(0));
+            globals.getGameVariables().bats[this.myPlayerNumber].batPosition.set(output.getFloat(0)*width,output.getFloat(1)*height);
         } else {
-            if (frameNumber%2 == 0) {
+            if (frameNumber%4 == 0) {
+
                 this.globals.getGameVariables().inputs.add(gameInput);
-                this.globals.getGameVariables().outputs.add(new double[]{gameObjects.bats[0].batBody.getPosition().x,gameObjects.bats[0].batBody.getPosition().y});
+                this.globals.getGameVariables().outputs.add(new double[]{gameObjects.bats[0].batBody.getPosition().x/width,gameObjects.bats[0].batBody.getPosition().y/height});
             }
         }
         this.miscObjects.touches.checkTouches(!globals.getGameVariables().aiState,gameObjects.gameField.offset,camera,gameObjects.fixedPoint);
@@ -149,7 +151,6 @@ public class TrainingGame extends ApplicationAdapter{
         miscObjects.touches.updateLasts();
         frameNumber++;
         //Gdx.app.debug("ClassicGame", " here 2");
-
 
     }
 

@@ -11,8 +11,9 @@ import android.view.View;
 import com.badlogic.gdx.backends.android.AndroidApplication;
 import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration;
 
-import org.neuroph.core.data.DataSet;
-import org.neuroph.core.data.DataSetRow;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -22,6 +23,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 public class GDXGameLauncher extends AndroidApplication {
     private static final String TAG = "GDXGameLauncher" ;
@@ -58,8 +60,7 @@ public class GDXGameLauncher extends AndroidApplication {
         //TODO for more players
 
         if(globals.getSettingsVariables().gameMode.equals("training")) {
-            DS ds = new DS("test",globals.getGameVariables().inputs.get(0).length,globals.getGameVariables().outputs.get(0).length);
-            //DS ds = new DS("test",4,2);
+
 
             Log.d(TAG, "input length "+globals.getGameVariables().inputs.size());
             //System.out.println(globals.getGameVariables().inputs);
@@ -67,8 +68,8 @@ public class GDXGameLauncher extends AndroidApplication {
         /*for(int i=0;i<globals.getGameVariables().inputs.size();i++) {
             ds.add(globals.getGameVariables().inputs.get(i),globals.getGameVariables().outputs.get(i));
         }*/
-            ds.create(globals.getGameVariables().inputs,globals.getGameVariables().outputs);
-            ds.save();
+            globals.getAI().createDataSet("test",globals.getGameVariables().inputs,globals.getGameVariables().outputs);
+            globals.getAI().saveData();
         }
 
 
@@ -115,55 +116,6 @@ public class GDXGameLauncher extends AndroidApplication {
                 sendConnectionState.myPlayerNumber = globalVariables.getSettingsVariables().myPlayerNumber;
                 sendConnectionState.connectionState = 5;
                 globalVariables.getSettingsVariables().sendObjectToAllClients(sendConnectionState, "tcp");
-            }
-        }
-    }
-
-    public class DS{
-        private String name;
-        private DataSet dataSet;
-
-        DS(String name_, int inputSize, int outputSize){
-            this.dataSet = new DataSet(inputSize,outputSize);
-            this.name = name_;
-        }
-
-
-        void create(List<double[]> inputs, List<double[]> outputs) {
-            for(int i=0;i<inputs.size();i++) {
-                this.dataSet.addRow(new DataSetRow(inputs.get(i),outputs.get(i)));
-            }
-        }
-
-        void add(double[] input, double[] output){
-            this.dataSet.addRow(new DataSetRow(input,output));
-        }
-
-        void save() {
-            try {
-                //FileOutputStream fos = GDXGameLauncher.this.openFileOutput(this.name+".ds", Context.MODE_PRIVATE);
-                //FileOutputStream fos = new FileOutputStream(new File(getFilesDir(),"")+File.separator+this.name+".ds");
-                ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(new File(getFilesDir(),"")+File.separator+this.name+".ds"));
-                os.writeObject(this.dataSet);
-                os.close();
-                //fos.close();
-                System.out.println("dataset saved size "+this.dataSet.size());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        void load() {
-            try {
-                //FileInputStream fis = GDXGameLauncher.this.openFileInput(this.name+".ds");
-                //FileInputStream fis = new FileInputStream(new File(getFilesDir(),"")+File.separator+this.name+".ds");
-                ObjectInputStream is = new ObjectInputStream(new FileInputStream(new File(getFilesDir(),"")+File.separator+this.name+".ds"));
-                this.dataSet = (DataSet) is.readObject();
-                is.close();
-                //fis.close();
-                System.out.println("dataset loaded size "+this.dataSet.size());
-            } catch (IOException | ClassNotFoundException e) {
-                e.printStackTrace();
             }
         }
     }
