@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Random;
 
 
-import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.iterator.DoublesDataSetIterator;
 import org.deeplearning4j.datasets.iterator.INDArrayDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;

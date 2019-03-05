@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
+
 public class GDXGameLauncher extends AndroidApplication {
     private static final String TAG = "GDXGameLauncher" ;
     public static Activity GDXGAME;
