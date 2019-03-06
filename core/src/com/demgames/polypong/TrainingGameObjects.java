@@ -317,7 +317,7 @@ public class TrainingGameObjects {
                 //gravity
                 //this.ballBody.applyForceToCenter(new Vector2(this.ballBody.getPosition()).scl(this.ballBody.getMass()*1e-1f/(float)Math.pow(this.ballBody.getPosition().len(),2)), true);//-(this.ballBody.getPosition().y+height/PIXELS_TO_METERS)*1f
 
-                float grav = (float)Math.exp((this.ballBody.getPosition().y+height)*1f)*1e-8f;
+                float grav = (float)Math.exp((this.ballBody.getPosition().y+height)*2f)*1e-8f;
                 //System.out.println("grav "+ grav);
                 this.ballBody.applyForceToCenter(0,-grav, true);//-(this.ballBody.getPosition().y+height/PIXELS_TO_METERS)*1f
             }

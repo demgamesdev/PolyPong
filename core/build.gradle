@@ -13,10 +13,6 @@ eclipse.project {
 dependencies {
     implementation "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
 
-    //implementation group: 'com.google.guava', name: 'guava', version: '23.5-android'
-    //implementation 'com.google.guava:guava:27.0.1-android'
-    //implementation 'com.github.SilenceDut:AsyncTaskScheduler:1.0.0-alpha1'
-    //implementation group: 'org.deeplearning4j', name: 'deeplearning4j-core', version: '1.0.0-beta3'
     implementation (group: 'org.deeplearning4j', name: 'deeplearning4j-nn', version: '1.0.0-beta3'){
         exclude group: 'org.bytedeco.javacpp-presets', module: 'opencv-platform'
         exclude group: 'org.bytedeco.javacpp-presets', module: 'leptonica-platform'

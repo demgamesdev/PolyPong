@@ -85,7 +85,7 @@ public class TrainingActivity extends AppCompatActivity {
                 globals.getSettingsVariables().playerNames.add("test1");
                 globals.getSettingsVariables().playerNames.add("test2");
 
-                globals.getGameVariables().numberOfBalls = 2;
+                globals.getGameVariables().numberOfBalls = 1;
                 globals.getGameVariables().numberOfPlayers = 2;
                 globals.getGameVariables().setBalls(true);
                 globals.getGameVariables().setBats();
@@ -112,7 +112,8 @@ public class TrainingActivity extends AppCompatActivity {
                     globals.getAI().buildModel("test",new int[]{globals.getAI().dataSet.numInputs(),20,20,globals.getAI().dataSet.numOutcomes()});
                 }
 
-                globals.getAI().train(1000);
+                globals.getAI().infoTextView = trainingTextView;
+                globals.getAI().train(10000,true);
                 //model.save();
             }
         });
@@ -129,7 +130,7 @@ public class TrainingActivity extends AppCompatActivity {
                 globals.getSettingsVariables().playerNames.add("test1");
                 globals.getSettingsVariables().playerNames.add("test2");
 
-                globals.getGameVariables().numberOfBalls = 2;
+                globals.getGameVariables().numberOfBalls = 1;
                 globals.getGameVariables().numberOfPlayers = 2;
                 globals.getGameVariables().setBalls(true);
                 globals.getGameVariables().setBats();
@@ -150,9 +151,10 @@ public class TrainingActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        Globals globals = (Globals) getApplicationContext();
 
         try{
-            this.trainingThread.interrupt();
+            globals.getAI().trainingTask.cancel(true);
         } catch(Exception e) {
             e.printStackTrace();
         }

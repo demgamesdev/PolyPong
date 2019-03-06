@@ -31,6 +31,8 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.ModelSerializer;
+import org.nd4j.evaluation.classification.Evaluation;
+import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -93,9 +95,12 @@ public class Globals extends Application implements IGlobals{
         public MultiLayerNetwork model;
         public DataSet dataSet;
         int[] n_units;
+        public TrainTask trainingTask;
+        public TextView infoTextView;
 
         private class BuildTask extends AsyncTask<Integer, Integer, String> {
             private AI ai;
+
             BuildTask(AI ai_) {
                 super();
                 this.ai = ai_;
@@ -118,23 +123,23 @@ public class Globals extends Application implements IGlobals{
                         .weightInit(WeightInit.XAVIER)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new RmsProp(0.01))
-                        .l2(1e-5) // regularize learning model
+                        .l2(1e-4) // regularize learning model
                         .list()
 
-                        .layer(0, new DenseLayer.Builder().nIn(this.ai.n_units[0]).nOut(this.ai.n_units[1]).weightInit(WeightInit.XAVIER)
+                        .layer( new DenseLayer.Builder().nIn(this.ai.n_units[0]).nOut(this.ai.n_units[1]).weightInit(WeightInit.XAVIER)
                                 .activation(Activation.RELU)
                                 .build())
-                        .layer(1, new DenseLayer.Builder().nIn(this.ai.n_units[1]).nOut(this.ai.n_units[2]).weightInit(WeightInit.XAVIER)
+                        .layer(new DenseLayer.Builder().nIn(this.ai.n_units[1]).nOut(this.ai.n_units[2]).weightInit(WeightInit.XAVIER)
                                 .activation(Activation.RELU)
                                 .build())
-                        .layer(2, new OutputLayer.Builder().nIn(this.ai.n_units[2]).nOut(this.ai.n_units[this.ai.n_units.length - 1]).weightInit(WeightInit.XAVIER)
+                        .layer( new OutputLayer.Builder().nIn(this.ai.n_units[2]).nOut(this.ai.n_units[this.ai.n_units.length - 1]).weightInit(WeightInit.XAVIER)
                                 .activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.SQUARED_LOSS)
                                 .build())
                         .build();
 
                 this.ai.model = new MultiLayerNetwork(conf);
                 this.ai.model.init();
-                this.ai.model.setListeners(new ScoreIterationListener(5)); //print the score with every iteration
+                //this.ai.model.setListeners(new ScoreIterationListener(5)); //print the score with every iteration
 
                 return("0");
 
@@ -150,13 +155,14 @@ public class Globals extends Application implements IGlobals{
             buildTask.execute();
         }
 
-        private class TrainTask extends AsyncTask<Integer, Integer, INDArray> {
+        public class TrainTask extends AsyncTask<Integer, Integer, INDArray> {
             private Handler handler = new Handler();
-
             private AI ai;
-            TrainTask(AI ai_) {
+            private boolean showInfo;
+            TrainTask(AI ai_,boolean showInfo_) {
                 super();
                 this.ai = ai_;
+                this.showInfo = showInfo_;
 
             }
 
@@ -174,9 +180,21 @@ public class Globals extends Application implements IGlobals{
                     dataPairs.add(new Pair<INDArray, INDArray>(dataRow.getFeatures(), dataRow.getLabels()));
                 }
                 DataSetIterator dataSetIterator = new INDArrayDataSetIterator(dataPairs, 100);
-
+                DataSet miniBatch;
+                RegressionEvaluation evaluation = new RegressionEvaluation(this.ai.dataSet.numOutcomes());
+                double predictionError;
+                String infoText;
                 for (int i = 0; i < params[0]; i++) {
-                    this.ai.model.fit(this.ai.dataSet);
+                    //miniBatch = dataSetIterator.next();
+                    this.ai.model.fit(dataSet);
+                    if(i% 10 ==0 && this.showInfo) {
+                        evaluation.eval(this.ai.dataSet.getLabels(), this.ai.model.output(this.ai.dataSet.getFeatures(), false));
+                        predictionError = evaluation.averageMeanSquaredError();
+                        infoText = "Epoch " + i + "/"+params[0] +" error " + Math.round(predictionError*10000.0)/10000.0;
+                        System.out.println(infoText);
+                        handler.post(new TextViewUpdateRunnable(infoText,this.ai.infoTextView));
+                    }
+
                     if(this.isCancelled()){
                         System.out.println("training canceled");
                         break;
@@ -214,14 +232,13 @@ public class Globals extends Application implements IGlobals{
 
         }
 
-        void train(Integer n_iterations) {
-
+        void train(Integer n_iterations, boolean showInfo) {
 
             System.out.println("training neural network started");
             System.out.println("set size "+this.dataSet.numExamples());
 
-            TrainTask trainingTask = new TrainTask(this);
-            trainingTask.execute(n_iterations);
+            this.trainingTask = new TrainTask(this,showInfo);
+            this.trainingTask.execute(n_iterations);
 
 
             /*for(DataSetRow dataRow : trainingSet.getRows()) {
