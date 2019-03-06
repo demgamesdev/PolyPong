@@ -14,47 +14,10 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.TextView;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Random;
-
-
-import org.deeplearning4j.datasets.iterator.DoublesDataSetIterator;
-import org.deeplearning4j.datasets.iterator.INDArrayDataSetIterator;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.nd4j.evaluation.classification.Evaluation;
-import org.nd4j.linalg.activations.Activation;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.dataset.api.iterator.BaseDatasetIterator;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.config.Nesterovs;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.linalg.primitives.Pair;
-
 
 public class TrainingActivity extends AppCompatActivity {
 
     private static final String TAG = "trainingActivity";
-    private TextView trainingTextView;
-    Thread trainingThread;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,9 +35,9 @@ public class TrainingActivity extends AppCompatActivity {
         final Button trainButton = (Button) findViewById(R.id.trainButton);
         final Button testButton = (Button) findViewById(R.id.testButton);
 
-        this.trainingTextView = (TextView) findViewById(R.id.trainingTextView);
+        TextView trainingTextView = (TextView) findViewById(R.id.trainingTextView);
         final CheckBox resumeCheckBox = (CheckBox) findViewById(R.id.resumeCheckBox);
-
+        globals.getAI().infoTextView = trainingTextView;
 
         genButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -112,7 +75,6 @@ public class TrainingActivity extends AppCompatActivity {
                     globals.getAI().buildModel("test",new int[]{globals.getAI().dataSet.numInputs(),20,20,globals.getAI().dataSet.numOutcomes()});
                 }
 
-                globals.getAI().infoTextView = trainingTextView;
                 globals.getAI().train(10000,true);
                 //model.save();
             }
