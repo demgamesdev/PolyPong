@@ -22,20 +22,25 @@ import android.view.animation.Transformation;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.SeekBar;
+import android.widget.TextView;
 
 import com.esotericsoftware.kryonet.Server;
 
 public class Game_Selection extends AppCompatActivity {
 
+    int ballnum = 1;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
 
         //Vollbildmodus
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_game__selection);
+
+        final Globals globalVariables = (Globals) getApplicationContext();
 
         final Button klassisch_weiter = (Button) findViewById(R.id.klassisch_weiter);
         final LinearLayout klassisch = (LinearLayout) findViewById(R.id.klassisch_layout);
@@ -49,13 +54,16 @@ public class Game_Selection extends AppCompatActivity {
         final ImageView klassischarrow = (ImageView) findViewById(R.id.downarrow);
         final ImageView pongarrow = (ImageView) findViewById(R.id.pongArrow);
 
+        final TextView ballTextView = (TextView) findViewById(R.id.ballcount);
+
+        final SeekBar ballSeekBar = (SeekBar) findViewById(R.id.seekBarBallNum);
+
         klassischInfo.setVisibility(View.GONE);
         pongInfo.setVisibility(View.GONE);
 
 
         final ConstraintLayout.LayoutParams params = new ConstraintLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT, 600);
-
 
 
         klassisch_weiter.setOnClickListener(new View.OnClickListener() {
@@ -103,7 +111,7 @@ public class Game_Selection extends AppCompatActivity {
             }
         });
 
-        klassischInfo.setOnClickListener(new View.OnClickListener() {
+        /*klassischInfo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
@@ -118,10 +126,8 @@ public class Game_Selection extends AppCompatActivity {
                 else{
                     Log.d("Expand", "onClick: "+klassischInfo.getVisibility());
                 }
-
-
             }
-        });
+        });*/
 
         pongArrow.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -140,6 +146,33 @@ public class Game_Selection extends AppCompatActivity {
                 }
             }
         });
+
+        ballTextView.setText( getString(R.string.numballs) + Integer.toString(ballnum));
+
+        ballSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+                ballnum = i+1;
+                ballTextView.setText(getString(R.string.numballs) + Integer.toString(ballnum));
+                globalVariables.getGameVariables().numberOfBalls=ballnum;
+                //Log.d("Game_Selection", "onProgressChanged: Anzahl der Bälle auf " + Integer.toString(globalVariables.getGameVariables().numberOfBalls) + " geändert");
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+
+
+//Todo Alle Optionen einbauen
+// Todo Weitere Spielmodi integrieren
+
 
     }
 
