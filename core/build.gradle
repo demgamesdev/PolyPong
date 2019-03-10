@@ -12,16 +12,21 @@ eclipse.project {
 
 dependencies {
     implementation "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
-    implementation('org.deeplearning4j:deeplearning4j-nn:1.0.0-beta3') {
+    implementation (group: 'org.deeplearning4j', name: 'deeplearning4j-nn', version: '1.0.0-SNAPSHOT'){
         exclude group: 'org.bytedeco.javacpp-presets', module: 'opencv-platform'
         exclude group: 'org.bytedeco.javacpp-presets', module: 'leptonica-platform'
         exclude group: 'org.bytedeco.javacpp-presets', module: 'hdf5-platform'
         exclude group: 'org.nd4j', module: 'nd4j-base64'
     }
-    implementation 'org.nd4j:nd4j-native:1.0.0-beta3'
-    implementation 'org.nd4j:nd4j-native:1.0.0-beta3'
-    implementation 'org.nd4j:nd4j-native:1.0.0-beta3'
-    implementation 'org.bytedeco.javacpp-presets:openblas:0.3.3-1.4.3'
-    implementation 'org.bytedeco.javacpp-presets:openblas:0.3.3-1.4.3'
-    implementation 'org.bytedeco.javacpp-presets:openblas:0.3.3-1.4.3'
+    //x86 libs for emulator should be removed in release?
+    implementation group: 'org.nd4j', name: 'nd4j-native', version: '1.0.0-SNAPSHOT'
+    implementation group: 'org.nd4j', name: 'nd4j-native', version: '1.0.0-SNAPSHOT', classifier: "android-arm"
+    implementation group: 'org.nd4j', name: 'nd4j-native', version: '1.0.0-SNAPSHOT', classifier: "android-arm64"
+    implementation group: 'org.nd4j', name: 'nd4j-native', version: '1.0.0-SNAPSHOT', classifier: "android-x86"
+    implementation group: 'org.nd4j', name: 'nd4j-native', version: '1.0.0-SNAPSHOT', classifier: "android-x86_64"
+    implementation group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.3.5-1.4.4'
+    implementation group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.3.5-1.4.4', classifier: "android-arm"
+    implementation group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.3.5-1.4.4', classifier: "android-arm64"
+    implementation group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.3.5-1.4.4', classifier: "android-x86"
+    implementation group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.3.5-1.4.4', classifier: "android-x86_64"
 }

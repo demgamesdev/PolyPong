@@ -121,15 +121,15 @@ public class TrainingGame extends ApplicationAdapter{
 
         double [] gameInput = new double[4*gameObjects.balls.length];
         for(int i=0;i<gameObjects.balls.length;i++) {
-            gameInput[4*i+0] = gameObjects.balls[i].ballBody.getPosition().x;
-            gameInput[4*i+1] = gameObjects.balls[i].ballBody.getPosition().y;
-            gameInput[4*i+2] = gameObjects.balls[i].ballBody.getLinearVelocity().x;
-            gameInput[4*i+3] = gameObjects.balls[i].ballBody.getLinearVelocity().y;
+            gameInput[0+4*i] = gameObjects.balls[i].ballBody.getPosition().x;
+            gameInput[1+4*i] = gameObjects.balls[i].ballBody.getPosition().y;
+            gameInput[2+4*i] = gameObjects.balls[i].ballBody.getLinearVelocity().x;
+            gameInput[3+4*i] = gameObjects.balls[i].ballBody.getLinearVelocity().y;
         }
 
 
         if(globals.getGameVariables().aiState) {
-            INDArray output = globals.getGameVariables().model.output(Nd4j.create(gameInput));
+            INDArray output = globals.getGameVariables().model.output(Nd4j.create(new double[][]{gameInput}));
             System.out.println("output " + output + output.getFloat(0));
             globals.getGameVariables().bats[this.myPlayerNumber].batPosition.set(output.getFloat(0)*width,output.getFloat(1)*height);
         } else {

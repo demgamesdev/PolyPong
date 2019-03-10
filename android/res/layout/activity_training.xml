@@ -7,6 +7,24 @@
     android:background="@color/backgroundColor"
     tools:context="com.demgames.polypong.OptionsActivity">
 
+    <SeekBar
+        android:id="@+id/ballsSeekBar"
+        android:layout_width="261dp"
+        android:layout_height="25dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginBottom="8dp"
+        android:max="10"
+        android:min="1"
+        app:layout_constraintBottom_toTopOf="@+id/genButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.695" />
+
     <Button
         android:id="@+id/genButton"
         android:layout_width="wrap_content"
@@ -85,5 +103,22 @@
         app:layout_constraintHorizontal_bias="0.549"
         app:layout_constraintStart_toEndOf="@+id/trainButton"
         app:layout_constraintTop_toTopOf="@+id/trainButton" />
+
+    <SeekBar
+        android:id="@+id/layersSeekBar"
+        android:layout_width="261dp"
+        android:layout_height="19dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginBottom="8dp"
+        android:min="1"
+        android:max="10"
+        app:layout_constraintBottom_toTopOf="@+id/trainButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/genButton" />
 
 </android.support.constraint.ConstraintLayout>

@@ -12,7 +12,11 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import org.w3c.dom.Text;
 
 
 public class TrainingActivity extends AppCompatActivity {
@@ -35,9 +39,45 @@ public class TrainingActivity extends AppCompatActivity {
         final Button trainButton = (Button) findViewById(R.id.trainButton);
         final Button testButton = (Button) findViewById(R.id.testButton);
 
-        TextView trainingTextView = (TextView) findViewById(R.id.trainingTextView);
+        final TextView infoTextView = (TextView) findViewById(R.id.trainingTextView);
         final CheckBox resumeCheckBox = (CheckBox) findViewById(R.id.resumeCheckBox);
-        globals.getAI().infoTextView = trainingTextView;
+        SeekBar layersSeekBar = (SeekBar) findViewById(R.id.layersSeekBar);
+        SeekBar ballsSeekBar = (SeekBar) findViewById(R.id.ballsSeekBar);
+        globals.getAI().infoTextView = infoTextView;
+
+        layersSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            int progressChangedValue = 0;
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                progressChangedValue = progress;
+                infoTextView.setText("Layers set to " + progress);
+            }
+
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                // TODO Auto-generated method stub
+            }
+
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                /*Toast.makeText(TrainingActivity.this, "Layernumber set to:" + progressChangedValue,
+                        Toast.LENGTH_SHORT).show();*/
+            }
+        });
+
+        ballsSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            int progressChangedValue = 0;
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                progressChangedValue = progress;
+                infoTextView.setText("Balls set to " + progress);
+            }
+
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                // TODO Auto-generated method stub
+            }
+
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                /*Toast.makeText(TrainingActivity.this, "Layernumber set to:" + progressChangedValue,
+                        Toast.LENGTH_SHORT).show();*/
+            }
+        });
 
         genButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -48,7 +88,7 @@ public class TrainingActivity extends AppCompatActivity {
                 globals.getSettingsVariables().playerNames.add("test1");
                 globals.getSettingsVariables().playerNames.add("test2");
 
-                globals.getGameVariables().numberOfBalls = 1;
+                globals.getGameVariables().numberOfBalls = ballsSeekBar.getProgress();
                 globals.getGameVariables().numberOfPlayers = 2;
                 globals.getGameVariables().setBalls(true);
                 globals.getGameVariables().setBats();
@@ -58,6 +98,7 @@ public class TrainingActivity extends AppCompatActivity {
 
                 globals.getGameVariables().inputs.clear();
                 globals.getGameVariables().outputs.clear();
+
                 Intent startGame = new Intent(getApplicationContext(), GDXGameLauncher.class);
                 startActivity(startGame);
             }
@@ -72,7 +113,15 @@ public class TrainingActivity extends AppCompatActivity {
                 if(resumeCheckBox.isChecked()) {
                     globals.getAI().loadModel("test");
                 } else {
-                    globals.getAI().buildModel("test",new int[]{globals.getAI().dataSet.numInputs(),20,20,globals.getAI().dataSet.numOutcomes()});
+                    int[] n_units = new int[layersSeekBar.getProgress()+2];
+                    n_units[0] = globals.getAI().dataSet.numInputs(); //inputs dimension
+                    n_units[1] = 10; //units per ball from convolution
+                    n_units[n_units.length-1] = globals.getAI().dataSet.numOutcomes();
+                    for(int l=2;l<n_units.length-1;l++) {
+                        n_units[l] = 10; //hidden units
+                    }
+                    System.out.println("Input size " + n_units[0]);
+                    globals.getAI().buildModel("test",n_units);
                 }
 
                 globals.getAI().train(10000,true);
@@ -92,7 +141,7 @@ public class TrainingActivity extends AppCompatActivity {
                 globals.getSettingsVariables().playerNames.add("test1");
                 globals.getSettingsVariables().playerNames.add("test2");
 
-                globals.getGameVariables().numberOfBalls = 1;
+                globals.getGameVariables().numberOfBalls = ballsSeekBar.getProgress();
                 globals.getGameVariables().numberOfPlayers = 2;
                 globals.getGameVariables().setBalls(true);
                 globals.getGameVariables().setBats();
