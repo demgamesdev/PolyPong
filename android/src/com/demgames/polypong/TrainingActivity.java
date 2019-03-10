@@ -79,6 +79,7 @@ public class TrainingActivity extends AppCompatActivity {
             }
         });
 
+        String agentName = getIntent().getStringExtra("agentname");
         genButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -100,6 +101,7 @@ public class TrainingActivity extends AppCompatActivity {
                 globals.getGameVariables().outputs.clear();
 
                 Intent startGame = new Intent(getApplicationContext(), GDXGameLauncher.class);
+                startGame.putExtra("agentname",agentName);
                 startActivity(startGame);
             }
         });
@@ -108,10 +110,10 @@ public class TrainingActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
 
-                globals.getAI().loadData("test");
+                globals.getAI().loadData(agentName);
 
                 if(resumeCheckBox.isChecked()) {
-                    globals.getAI().loadModel("test");
+                    globals.getAI().loadModel(agentName);
                 } else {
                     int[] n_units = new int[layersSeekBar.getProgress()+2];
                     n_units[0] = globals.getAI().dataSet.numInputs(); //inputs dimension
@@ -121,7 +123,7 @@ public class TrainingActivity extends AppCompatActivity {
                         n_units[l] = 10; //hidden units
                     }
                     System.out.println("Input size " + n_units[0]);
-                    globals.getAI().buildModel("test",n_units);
+                    globals.getAI().buildModel(agentName,n_units);
                 }
 
                 globals.getAI().train(10000,true);
@@ -132,7 +134,7 @@ public class TrainingActivity extends AppCompatActivity {
         testButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                globals.getAI().loadModel("test");
+                globals.getAI().loadModel(agentName);
                 globals.getGameVariables().model = globals.getAI().model;
                 //model.test(trainingSet.dataSet);
 

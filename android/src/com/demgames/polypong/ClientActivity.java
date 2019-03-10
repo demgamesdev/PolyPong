@@ -157,9 +157,9 @@ public class ClientActivity extends AppCompatActivity{
 
         Globals globalVariables = (Globals) getApplicationContext();
         /*ArrayAdapter<String> clientListViewAdapter = new ArrayAdapter<String>
-                (ClientActivity.this, R.layout.clientlistview_row, globalVariables.getSettingsVariables().discoveryIpAdresses);*/
+                (ClientActivity.this, R.layout.item_clients, globalVariables.getSettingsVariables().discoveryIpAdresses);*/
 
-       MiscClasses.PlayerArrayAdapter clientListViewAdapter = new  MiscClasses.PlayerArrayAdapter(ClientActivity.this,R.layout.clientlistview_row,R.id.connectionTextView, globalVariables.getSettingsVariables().playerList);
+       MiscClasses.PlayerArrayAdapter clientListViewAdapter = new  MiscClasses.PlayerArrayAdapter(ClientActivity.this,R.layout.item_clients,R.id.connectionTextView, globalVariables.getSettingsVariables().playerList);
 
         TextView myIpTextView = (TextView) findViewById(R.id.IpAdressTextView);
         EditText manualIpEditText = (EditText) findViewById(R.id.manualIpEditText);

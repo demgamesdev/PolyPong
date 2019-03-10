@@ -128,7 +128,7 @@ public class Globals extends Application implements IGlobals{
 
         void saveModel() {
             try {
-                FileOutputStream fos = new FileOutputStream(new File(getFilesDir(),"")+File.separator+this.nameModel+".model");
+                FileOutputStream fos = new FileOutputStream(new File(getFilesDir(),"")+File.separator+"agents"+File.separator+this.nameModel+".model");
                 boolean saveUpdater = true;
                 ModelSerializer.writeModel(this.model, fos, saveUpdater);
                 fos.close();
@@ -142,7 +142,7 @@ public class Globals extends Application implements IGlobals{
         void loadModel(String name) {
             this.nameModel = name;
             try{
-                FileInputStream fis = new FileInputStream(new File(getFilesDir(),"")+File.separator+this.nameModel+".model");
+                FileInputStream fis = new FileInputStream(new File(getFilesDir(),"")+File.separator+"agents"+File.separator+this.nameModel+".model");
                 this.model = ModelSerializer.restoreMultiLayerNetwork(fis);
                 fis.close();
                 System.out.println("model loaded");
@@ -169,7 +169,7 @@ public class Globals extends Application implements IGlobals{
 
         void saveData() {
             try {
-                FileOutputStream fos = new FileOutputStream(new File(getFilesDir(),"")+File.separator+this.nameDataSet+".ds");
+                FileOutputStream fos = new FileOutputStream(new File(getFilesDir(),"")+File.separator+"data"+File.separator+this.nameDataSet+".ds");
                 /*ObjectOutputStream os = new ObjectOutputStream(fos);
                 os.writeObject(this.dataSet);
                 os.close();*/
@@ -186,7 +186,7 @@ public class Globals extends Application implements IGlobals{
             this.dataSet = new DataSet();
             try {
                 //System.out.println(Arrays.toString(getApplicationContext().fileList()));
-                FileInputStream fis = new FileInputStream(new File(getFilesDir(),"")+File.separator+this.nameDataSet+".ds");
+                FileInputStream fis = new FileInputStream(new File(getFilesDir(),"")+File.separator+"data"+File.separator+this.nameDataSet+".ds");
                 /*ObjectInputStream is = new ObjectInputStream(fis);
                 this.dataSet = (DataSet) is.readObject();
                 is.close();*/

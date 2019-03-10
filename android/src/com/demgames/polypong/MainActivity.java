@@ -16,6 +16,7 @@ import android.widget.EditText;
 import android.util.Log;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -72,16 +73,25 @@ public class MainActivity extends AppCompatActivity {
 
         final Button startHostButton = (Button) findViewById(R.id.startHostButton);
         final Button startClientButton = (Button) findViewById(R.id.startClientButton);
-        final Button trainingButton = (Button) findViewById(R.id.trainingButton);
+        final Button manageButton = (Button) findViewById(R.id.manageButton);
         Typeface typeface = Typeface.createFromAsset(getAssets(), "fonts/Quicksand-Regular.ttf");
         startHostButton.setTypeface(typeface);
         startClientButton.setTypeface(typeface);
-        trainingButton.setTypeface(typeface);
+        manageButton.setTypeface(typeface);
 
         myPlayerNameEditText = (EditText) findViewById(R.id.nameEditText);
         myPlayerNameEditText.setTypeface(typeface);
 
         readName();
+
+        //create data folders
+        String [] directoryNames = new String[]{"agents","data"};
+        for(String dir : directoryNames) {
+            File projDir = new File(getFilesDir().getAbsolutePath() + File.separator + dir);
+            if (!projDir.exists())
+                projDir.mkdirs();
+        }
+
 
         startHostButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -109,12 +119,12 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        trainingButton.setOnClickListener(new View.OnClickListener() {
+        manageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if (getMyPlayerName()) {
-                    Intent training = new Intent(getApplicationContext(), TrainingActivity.class);
-                    startActivity(training);
+                    Intent manage = new Intent(getApplicationContext(), ManageActivity.class);
+                    startActivity(manage);
                     //myThread.stop();
                 }
 

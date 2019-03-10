@@ -69,7 +69,7 @@ public class GDXGameLauncher extends AndroidApplication {
         /*for(int i=0;i<globals.getGameVariables().inputs.size();i++) {
             ds.add(globals.getGameVariables().inputs.get(i),globals.getGameVariables().outputs.get(i));
         }*/
-            globals.getAI().createDataSet("test",globals.getGameVariables().inputs,globals.getGameVariables().outputs);
+            globals.getAI().createDataSet(getIntent().getStringExtra("agentname"),globals.getGameVariables().inputs,globals.getGameVariables().outputs);
             globals.getAI().saveData();
         }
 

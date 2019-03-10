@@ -13,4 +13,7 @@
     <string name="options">Spieleinstellungen</string>
     <string name="numballs">"Bälle pro Spieler: "</string>
     <string name="confirm">Bestätigen</string>
+    <string name="title_activity_manage">ManageActivity</string>
+    <string name="action_settings">Settings</string>
+    <string name="section_format">Hello World from section: %1$d</string>
 </resources>
