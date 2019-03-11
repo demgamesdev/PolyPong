@@ -4,19 +4,19 @@
     android:layout_height="match_parent">
 
     <TextView
-        android:id="@+id/createAgentTextView"
+        android:id="@+id/createDataTextView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:text="Create Agent"
+        android:text="Create Data"
         android:textSize="25sp" />
 
     <EditText
-        android:id="@+id/agentNameEditText"
+        android:id="@+id/dataNameEditText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ems="10"
-        android:hint="Enter agent"
+        android:hint="Enter data name"
         android:inputType="textPersonName" />
 
     <SeekBar
@@ -30,19 +30,11 @@
         android:id="@+id/ballsTextView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="TextView" />
+        android:text="TextView" /><![CDATA[
 
-    <SeekBar
-        android:id="@+id/layersSeekBar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:max="10"
-        android:min="1"/>/>
+    />
 
-    <TextView
-        android:id="@+id/layersTextView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="TextView" />
 
+
+    ]]>
 </LinearLayout>

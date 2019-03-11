@@ -26,12 +26,12 @@ public class MiscClasses {
             IGlobals.Player player = getItem(position);
             // Check if an existing view is being reused, otherwise inflate the view
             if (convertView == null) {
-                convertView = LayoutInflater.from(getContext()).inflate(R.layout.item_clients, parent, false);
+                convertView = LayoutInflater.from(getContext()).inflate(R.layout.item_choice_multiple, parent, false);
             }
 
 
             // Lookup view for data population
-            TextView connectionTextView = (TextView) convertView.findViewById(R.id.connectionTextView);
+            TextView connectionTextView = (TextView) convertView.findViewById(R.id.choiceMultipleTextView);
             // Populate the data into the template view using the data object
             connectionTextView.setText(player.name + " ("+player.ipAdress+")");
             // Return the completed view to render on screen
@@ -50,12 +50,12 @@ public class MiscClasses {
             IGlobals.Player player = getItem(position);
             // Check if an existing view is being reused, otherwise inflate the view
             if (convertView == null) {
-                convertView = LayoutInflater.from(getContext()).inflate(R.layout.item_clients, parent, false);
+                convertView = LayoutInflater.from(getContext()).inflate(R.layout.item_choice_multiple, parent, false);
             }
 
 
             // Lookup view for data population
-            TextView connectionTextView = (TextView) convertView.findViewById(R.id.connectionTextView);
+            TextView connectionTextView = (TextView) convertView.findViewById(R.id.choiceMultipleTextView);
             // Populate the data into the template view using the data object
             connectionTextView.setText(player.name + " ("+player.ipAdress+")");
             // Return the completed view to render on screen

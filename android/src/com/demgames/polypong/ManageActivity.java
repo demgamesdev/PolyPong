@@ -1,12 +1,10 @@
 package com.demgames.polypong;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
 import android.support.v7.app.AppCompatActivity;
 
@@ -23,13 +21,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.SeekBar;
+import android.widget.TextView;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class ManageActivity extends AppCompatActivity {
@@ -48,6 +46,7 @@ public class ManageActivity extends AppCompatActivity {
      * The {@link ViewPager} that will host the section contents.
      */
     private ViewPager mViewPager;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -121,24 +120,34 @@ public class ManageActivity extends AppCompatActivity {
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                  Bundle savedInstanceState) {
             View rootView = null;
+            final Globals globals = (Globals) getActivity().getApplicationContext();
+            List<String> agentsList = new ArrayList<>();
+            List<String> agentsNameList = new ArrayList<>();
+            List<String> dataList = new ArrayList<>();
+            List<String> dataNameList = new ArrayList<>();
+
             switch (getArguments().getInt(ARG_SECTION_NUMBER)) {
                 case 1:
                     rootView = inflater.inflate(R.layout.fragment_manage_agents, container, false);
                     ListView agentsListView = (ListView) rootView.findViewById(R.id.agentsListView);
 
-                    List<String> agentsList = new ArrayList<>();
                     File agentsDir = new File(getActivity().getFilesDir().getAbsolutePath() + File.separator + "agents");
                     String[] agentFiles = agentsDir.list();
                     for(int i = 0; i<agentFiles.length;i++) {
-                        agentsList.add(agentFiles[i].split("\\.")[0]);
+                        String[] tempSplit1 = agentFiles[i].split("\\.");
+                        agentsList.add(tempSplit1[0]);
+                        String[] tempSplit2 = tempSplit1[0].split("_");
+
+                        agentsNameList.add(tempSplit2[0]+" (" + tempSplit2[1]+")");
                     }
+
 
                     ArrayAdapter<String> agentsAdapter =
                             new ArrayAdapter<>(
                                     getActivity(), // Die aktuelle Umgebung (diese Activity)
-                                    R.layout.item_agents, // ID der XML-Layout Datei
-                                    R.id.agentsTextView, // ID des TextViews
-                                    agentsList); // Beispieldaten in einer ArrayList
+                                    R.layout.item_textview, // ID der XML-Layout Datei
+                                    R.id.listViewtextView, // ID des TextViews
+                                    agentsNameList); // Beispieldaten in einer ArrayList
 
 
                     agentsListView.setAdapter(agentsAdapter);
@@ -162,13 +171,61 @@ public class ManageActivity extends AppCompatActivity {
                             AlertDialog.Builder makeDialog = new AlertDialog.Builder(getActivity());
                             View mView = getLayoutInflater().inflate(R.layout.dialog_create_agent,null);
                             EditText agentNameEditText = (EditText) mView.findViewById(R.id.agentNameEditText);
+                            TextView ballsTextView = (TextView) mView.findViewById(R.id.ballsTextView);
+                            SeekBar ballsSeekBar = (SeekBar) mView.findViewById(R.id.ballsSeekBar);
+                            TextView layersTextView = (TextView) mView.findViewById(R.id.layersTextView);
+                            SeekBar layersSeekBar = (SeekBar) mView.findViewById(R.id.layersSeekBar);
+
+                            ballsTextView.setText("Balls set to "+ ballsSeekBar.getProgress());
+                            layersTextView.setText("Layers set to "+ layersSeekBar.getProgress());
+
+                            ballsSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                                    ballsTextView.setText("Balls set to " + progress);
+                                }
+
+                                public void onStartTrackingTouch(SeekBar seekBar) {
+                                    // TODO Auto-generated method stub
+                                }
+
+                                public void onStopTrackingTouch(SeekBar seekBar) {
+                                }
+                            });
+                            layersSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                                    layersTextView.setText("Layers set to " + progress);
+                                }
+
+                                public void onStartTrackingTouch(SeekBar seekBar) {
+                                    // TODO Auto-generated method stub
+                                }
+
+                                public void onStopTrackingTouch(SeekBar seekBar) {
+                                }
+                            });
+
+
 
                             makeDialog.setPositiveButton("Create", new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
                                     if(!agentNameEditText.getText().toString().isEmpty()) {
+
+                                        int[] n_units = new int[layersSeekBar.getProgress()+2];
+                                        n_units[0] = ballsSeekBar.getProgress()*4; //inputs dimension
+                                        n_units[1] = 20; //units per ball from convolution
+                                        n_units[n_units.length-1] = 2;
+                                        String tempUnits = Integer.toString(n_units[0]) +"-" + Integer.toString(n_units[1]);
+                                        for(int l=2;l<n_units.length-1;l++) {
+                                            n_units[l] = 20; //hidden units
+                                            tempUnits+="-" + Integer.toString(n_units[l]);
+                                        }
+                                        tempUnits+="-" + Integer.toString(n_units[n_units.length-1]);
+
+                                        String agentName = agentNameEditText.getText().toString() + "_" + tempUnits;
+
                                         Intent intent = new Intent(getActivity(),TrainingActivity.class);
-                                        intent.putExtra("agentname",agentNameEditText.getText().toString());
+                                        intent.putExtra("agentname",agentName);
                                         //based on item add info to intent
                                         startActivity(intent);
                                     }
@@ -190,21 +247,109 @@ public class ManageActivity extends AppCompatActivity {
                     });
 
                     break;
+
+
                 case 2:
                     rootView = inflater.inflate(R.layout.fragment_manage_data, container, false);
 
                     ListView dataListView = (ListView) rootView.findViewById(R.id.dataListView);
 
-                    FloatingActionButton dataFAB = (FloatingActionButton) rootView.findViewById(R.id.dataFAB);
-                    dataFAB.setOnClickListener(new View.OnClickListener() {
+                    File dataDir = new File(getActivity().getFilesDir().getAbsolutePath() + File.separator + "data");
+                    String[] dataFiles = dataDir.list();
+                    for(int i = 0; i<dataFiles.length;i++) {
+                        String[] tempSplit1 = dataFiles[i].split("\\.");
+                        dataList.add(tempSplit1[0]);
+                        String[] tempSplit2 = tempSplit1[0].split("_");//name_balls_players.ds
+
+                        dataNameList.add(tempSplit2[0]+" (" + tempSplit2[1]+";" + tempSplit2[2]+")");
+                    }
+
+                    ArrayAdapter<String> dataAdapter =
+                            new ArrayAdapter<>(
+                                    getActivity(), // Die aktuelle Umgebung (diese Activity)
+                                    R.layout.item_textview, // ID der XML-Layout Datei
+                                    R.id.listViewtextView, // ID des TextViews
+                                    dataNameList); // Beispieldaten in einer ArrayList
+
+
+                    dataListView.setAdapter(dataAdapter);
+
+                    FloatingActionButton dataFab = (FloatingActionButton) rootView.findViewById(R.id.dataFAB);
+                    dataFab.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
-                            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                                    .setAction("Action", null).show();
+                            Log.d("ManageActivity","agentsFAB pressed");
+                            AlertDialog.Builder makeDialog = new AlertDialog.Builder(getActivity());
+                            View mView = getLayoutInflater().inflate(R.layout.dialog_create_data,null);
+                            EditText dataNameEditText = (EditText) mView.findViewById(R.id.dataNameEditText);
+                            TextView ballsTextView = (TextView) mView.findViewById(R.id.ballsTextView);
+                            SeekBar ballsSeekBar = (SeekBar) mView.findViewById(R.id.ballsSeekBar);
+
+                            ballsTextView.setText("Balls set to "+ ballsSeekBar.getProgress());
+
+                            ballsSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                                    ballsTextView.setText("Balls set to " + progress);
+                                }
+
+                                public void onStartTrackingTouch(SeekBar seekBar) {
+                                    // TODO Auto-generated method stub
+                                }
+
+                                public void onStopTrackingTouch(SeekBar seekBar) {
+                                }
+                            });
+
+
+                            makeDialog.setPositiveButton("Create", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    if(!dataNameEditText.getText().toString().isEmpty()) {
+
+
+                                        String dataName = dataNameEditText.getText().toString() + "_" + ballsSeekBar.getProgress() + "_" + "2";
+
+                                        globals.getGameVariables().myPlayerNumber = 0;
+                                        globals.getSettingsVariables().gameMode = "training";
+                                        globals.getSettingsVariables().playerNames.add("test1");
+                                        globals.getSettingsVariables().playerNames.add("test2");
+
+                                        globals.getGameVariables().numberOfBalls = ballsSeekBar.getProgress();
+                                        globals.getGameVariables().numberOfPlayers = 2;
+                                        globals.getGameVariables().setBalls(true);
+                                        globals.getGameVariables().setBats();
+
+                                        globals.getGameVariables().aiState = false;
+                                        globals.getGameVariables().gravityState = true;
+
+                                        globals.getGameVariables().inputs.clear();
+                                        globals.getGameVariables().outputs.clear();
+
+                                        Intent startGame = new Intent(getActivity(), GDXGameLauncher.class);
+                                        startGame.putExtra("dataname",dataName);
+                                        startActivity(startGame);
+                                    }
+                                }
+                            });
+
+                            makeDialog.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    dialog.cancel();
+                                }
+                            });
+
+                            makeDialog.setView(mView);
+                            AlertDialog ad = makeDialog.create();
+                            ad.show();
+
                         }
                     });
+
                     break;
             }
+
+
             return rootView;
         }
     }

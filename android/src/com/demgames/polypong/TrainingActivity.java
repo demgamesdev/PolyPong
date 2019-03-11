@@ -7,16 +7,25 @@ import android.os.Handler;
 import android.service.autofill.Dataset;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
+import android.util.SparseBooleanArray;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.nd4j.linalg.dataset.DataSet;
 import org.w3c.dom.Text;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class TrainingActivity extends AppCompatActivity {
@@ -35,98 +44,70 @@ public class TrainingActivity extends AppCompatActivity {
 
         final Globals globals = (Globals) getApplicationContext();
 
-        final Button genButton = (Button) findViewById(R.id.genButton);
         final Button trainButton = (Button) findViewById(R.id.trainButton);
         final Button testButton = (Button) findViewById(R.id.testButton);
 
         final TextView infoTextView = (TextView) findViewById(R.id.trainingTextView);
+        final TextView agentNameTextView = (TextView) findViewById(R.id.agentNameTextView);
         final CheckBox resumeCheckBox = (CheckBox) findViewById(R.id.resumeCheckBox);
-        SeekBar layersSeekBar = (SeekBar) findViewById(R.id.layersSeekBar);
-        SeekBar ballsSeekBar = (SeekBar) findViewById(R.id.ballsSeekBar);
+        final ListView trainingDataListView = (ListView) findViewById(R.id.trainingDataListView);
         globals.getAI().infoTextView = infoTextView;
 
-        layersSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            int progressChangedValue = 0;
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                progressChangedValue = progress;
-                infoTextView.setText("Layers set to " + progress);
-            }
-
-            public void onStartTrackingTouch(SeekBar seekBar) {
-                // TODO Auto-generated method stub
-            }
-
-            public void onStopTrackingTouch(SeekBar seekBar) {
-                /*Toast.makeText(TrainingActivity.this, "Layernumber set to:" + progressChangedValue,
-                        Toast.LENGTH_SHORT).show();*/
-            }
-        });
-
-        ballsSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            int progressChangedValue = 0;
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                progressChangedValue = progress;
-                infoTextView.setText("Balls set to " + progress);
-            }
-
-            public void onStartTrackingTouch(SeekBar seekBar) {
-                // TODO Auto-generated method stub
-            }
-
-            public void onStopTrackingTouch(SeekBar seekBar) {
-                /*Toast.makeText(TrainingActivity.this, "Layernumber set to:" + progressChangedValue,
-                        Toast.LENGTH_SHORT).show();*/
-            }
-        });
-
         String agentName = getIntent().getStringExtra("agentname");
-        genButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
+        String[] agentNameSplit1 = agentName.split("_");
+        String[] agentNameSplit2 = agentNameSplit1[1].split("-");
+        int ballNumber = Integer.parseInt(agentNameSplit2[0])/4;
 
-                globals.getGameVariables().myPlayerNumber = 0;
-                globals.getSettingsVariables().gameMode = "training";
-                globals.getSettingsVariables().playerNames.add("test1");
-                globals.getSettingsVariables().playerNames.add("test2");
+        agentNameTextView.setText("Training of " + agentNameSplit1[0]);
 
-                globals.getGameVariables().numberOfBalls = ballsSeekBar.getProgress();
-                globals.getGameVariables().numberOfPlayers = 2;
-                globals.getGameVariables().setBalls(true);
-                globals.getGameVariables().setBats();
+        List<String> dataList = new ArrayList<>();
+        List<String> dataNameList = new ArrayList<>();
+        File dataDir = new File(getApplication().getFilesDir().getAbsolutePath() + File.separator + "data");
+        String[] dataFiles = dataDir.list();
+        for(int i = 0; i<dataFiles.length;i++) {
+            String[] tempSplit1 = dataFiles[i].split("\\.");
+            String[] tempSplit2 = tempSplit1[0].split("_");//name_balls_players.ds
 
-                globals.getGameVariables().aiState = false;
-                globals.getGameVariables().gravityState = true;
-
-                globals.getGameVariables().inputs.clear();
-                globals.getGameVariables().outputs.clear();
-
-                Intent startGame = new Intent(getApplicationContext(), GDXGameLauncher.class);
-                startGame.putExtra("agentname",agentName);
-                startActivity(startGame);
+            if(tempSplit2[1].equals(Integer.toString(ballNumber))) {
+                dataList.add(tempSplit1[0]);
+                dataNameList.add(tempSplit2[0] + " (" + tempSplit2[1] + ";" + tempSplit2[2] + ")");
             }
-        });
+        }
+
+        ArrayAdapter<String> dataAdapter =
+                new ArrayAdapter<>(
+                        getApplication(), // Die aktuelle Umgebung (diese Activity)
+                        android.R.layout.simple_list_item_multiple_choice,// , // ID der XML-Layout Datei
+                        dataNameList); // Beispieldaten in einer ArrayList
+
+        trainingDataListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+        trainingDataListView.setAdapter(dataAdapter);
 
         trainButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
 
-                globals.getAI().loadData(agentName);
+                List<DataSet> checkedDataSetList = new ArrayList<>();
+                SparseBooleanArray checkedItemPositions = trainingDataListView.getCheckedItemPositions();
+                for(int i=0;i<dataList.size();i++) {
+                    if(checkedItemPositions.get(i)){
+                        checkedDataSetList.add(globals.getAI().loadData(dataList.get(i)));
+                        System.out.println("dataset " + i + " size " + checkedDataSetList.get(i).numExamples());
+                    }
+                }
+
+                DataSet combinedDataSet = DataSet.merge(checkedDataSetList);
+                System.out.println("combined dataset size " + combinedDataSet.numExamples());
+
+
 
                 if(resumeCheckBox.isChecked()) {
                     globals.getAI().loadModel(agentName);
                 } else {
-                    int[] n_units = new int[layersSeekBar.getProgress()+2];
-                    n_units[0] = globals.getAI().dataSet.numInputs(); //inputs dimension
-                    n_units[1] = 10; //units per ball from convolution
-                    n_units[n_units.length-1] = globals.getAI().dataSet.numOutcomes();
-                    for(int l=2;l<n_units.length-1;l++) {
-                        n_units[l] = 10; //hidden units
-                    }
-                    System.out.println("Input size " + n_units[0]);
-                    globals.getAI().buildModel(agentName,n_units);
+                    globals.getAI().buildModel(agentName);
                 }
 
-                globals.getAI().train(10000,true);
+                globals.getAI().train(combinedDataSet,10000,true);
                 //model.save();
             }
         });
@@ -143,7 +124,7 @@ public class TrainingActivity extends AppCompatActivity {
                 globals.getSettingsVariables().playerNames.add("test1");
                 globals.getSettingsVariables().playerNames.add("test2");
 
-                globals.getGameVariables().numberOfBalls = ballsSeekBar.getProgress();
+                globals.getGameVariables().numberOfBalls = ballNumber;
                 globals.getGameVariables().numberOfPlayers = 2;
                 globals.getGameVariables().setBalls(true);
                 globals.getGameVariables().setBats();

@@ -275,7 +275,7 @@ public class ServerActivity extends AppCompatActivity{
         protected void onPreExecute() {
             ListView serverListView = (ListView) findViewById(R.id.serverListView);
             serverListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
-            serverListViewAdapter = new MiscClasses.PlayerArrayAdapter(ServerActivity.this,R.layout.serverlistview_row,R.id.connectionCheckedTextView,globalVariables.getSettingsVariables().playerList);
+            serverListViewAdapter = new MiscClasses.PlayerArrayAdapter(ServerActivity.this,R.layout.item_choice_multiple,R.id.choiceMultipleTextView,globalVariables.getSettingsVariables().playerList);
             //serverListViewAdapter = new ClientPlayerArrayAdapter(ServerActivity.this, R.layout.serverlistview_row, R.id.connectionCheckedTextView,globalVariables.getSettingsVariables().discoveryIpAdresses);
             serverListView.setAdapter(serverListViewAdapter);
 

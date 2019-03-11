@@ -108,16 +108,23 @@ public class Globals extends Application implements IGlobals{
 
 
 
-        void buildModel(String name, int[] n_units_) {
+        void buildModel(String name) {
             this.nameModel = name;
-            this.n_units = n_units_;
+            String[] split = name.split("_")[1].split("-");
+            this.n_units = new int[split.length];
+            for(int i =0;i<split.length;i++) {
+                this.n_units[i] = Integer.parseInt(split[i]);
+            }
+            System.out.println("nunits " + this.n_units);
 
             AI.BuildTask buildTask = new AI.BuildTask(this, true, this.infoTextView);
             buildTask.execute();
+
+            this.saveModel();
         }
 
-        void train(Integer n_iterations, boolean showInfo) {
-
+        void train(DataSet trainingDataSet,Integer n_iterations, boolean showInfo) {
+            this.dataSet = trainingDataSet;
             System.out.println("training neural network started");
             System.out.println("set size "+this.dataSet.numExamples());
 
@@ -181,21 +188,23 @@ public class Globals extends Application implements IGlobals{
             }
         }
 
-        void loadData(String name) {
+        DataSet loadData(String name) {
             this.nameDataSet = name;
-            this.dataSet = new DataSet();
+            DataSet tempDataSet = new DataSet();
             try {
                 //System.out.println(Arrays.toString(getApplicationContext().fileList()));
                 FileInputStream fis = new FileInputStream(new File(getFilesDir(),"")+File.separator+"data"+File.separator+this.nameDataSet+".ds");
                 /*ObjectInputStream is = new ObjectInputStream(fis);
                 this.dataSet = (DataSet) is.readObject();
                 is.close();*/
-                this.dataSet.load(fis);
+                tempDataSet.load(fis);
                 fis.close();
-                System.out.println("dataset loaded size "+this.dataSet.numExamples());
+                System.out.println("dataset loaded size "+tempDataSet.numExamples());
+                this.dataSet = tempDataSet;
             } catch (Exception e) {
                 e.printStackTrace();
             }
+            return(tempDataSet);
         }
 
         private class BuildTask extends AsyncTask<Integer, String, String> {
