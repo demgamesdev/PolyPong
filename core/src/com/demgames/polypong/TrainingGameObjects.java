@@ -307,6 +307,11 @@ public class TrainingGameObjects {
 
                 //Gdx.app.debug("ClassicGame", "ball "+Integer.toString(this.ballNumber)+" computed");
                 if (gameLogicStates.get("attractionState")) {
+                    if(miscObjects.touches.isTouched[0] && !miscObjects.touches.isTouched[1]) {
+                        Vector2 sub = miscObjects.touches.touchPos[0];
+                        sub.sub(this.ballBody.getPosition());
+                        this.ballBody.applyForceToCenter(sub.scl(1e-6f), true);
+                    }
                     //attraction
 
                 }

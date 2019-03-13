@@ -24,6 +24,8 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.w3c.dom.Text;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -56,7 +58,7 @@ public class TrainingActivity extends AppCompatActivity {
         String agentName = getIntent().getStringExtra("agentname");
         String[] agentNameSplit1 = agentName.split("_");
         String[] agentNameSplit2 = agentNameSplit1[1].split("-");
-        int ballNumber = Integer.parseInt(agentNameSplit2[0])/4;
+        int ballNumber = Integer.parseInt(agentNameSplit1[2]);
 
         agentNameTextView.setText("Training of " + agentNameSplit1[0]);
 
@@ -68,7 +70,7 @@ public class TrainingActivity extends AppCompatActivity {
             String[] tempSplit1 = dataFiles[i].split("\\.");
             String[] tempSplit2 = tempSplit1[0].split("_");//name_balls_players.ds
 
-            if(tempSplit2[1].equals(Integer.toString(ballNumber))) {
+            if(tempSplit2[2].equals(Integer.toString(ballNumber))) {
                 dataList.add(tempSplit1[0]);
                 dataNameList.add(tempSplit2[0] + " (" + tempSplit2[1] + ";" + tempSplit2[2] + ")");
             }
@@ -91,24 +93,37 @@ public class TrainingActivity extends AppCompatActivity {
                 SparseBooleanArray checkedItemPositions = trainingDataListView.getCheckedItemPositions();
                 for(int i=0;i<dataList.size();i++) {
                     if(checkedItemPositions.get(i)){
-                        checkedDataSetList.add(globals.getAI().loadData(dataList.get(i)));
-                        System.out.println("dataset " + i + " size " + checkedDataSetList.get(i).numExamples());
+                        DataSet tempDataSet = globals.getAI().loadData(dataList.get(i));
+                        checkedDataSetList.add(tempDataSet);
+                        System.out.println("dataset " + i + " size " + tempDataSet.numExamples());
                     }
                 }
 
-                DataSet combinedDataSet = DataSet.merge(checkedDataSetList);
-                System.out.println("combined dataset size " + combinedDataSet.numExamples());
+                if(checkedDataSetList.size()>0) {
+                    DataSet combinedDataSet = DataSet.merge(checkedDataSetList);
+                    System.out.println("combined dataset size " + combinedDataSet.numExamples());
+
+                    /*try {
+                        FileOutputStream fos = new FileOutputStream(new File(getFilesDir(),"")+File.separator+"traindataset.ds");
+                        combinedDataSet.save(fos);
+                        fos.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }*/
 
 
+                    if (resumeCheckBox.isChecked()) {
+                        globals.getAI().loadModel(agentName);
+                    } else {
+                        globals.getAI().buildModel(agentName);
+                    }
 
-                if(resumeCheckBox.isChecked()) {
-                    globals.getAI().loadModel(agentName);
+                    globals.getAI().train(combinedDataSet, 5000, true);
+                    //model.save();
                 } else {
-                    globals.getAI().buildModel(agentName);
+                    Toast.makeText(getApplication(), "Select at least one dataset",
+                            Toast.LENGTH_LONG).show();
                 }
-
-                globals.getAI().train(combinedDataSet,10000,true);
-                //model.save();
             }
         });
 
@@ -131,6 +146,7 @@ public class TrainingActivity extends AppCompatActivity {
 
                 globals.getGameVariables().aiState = true;
                 globals.getGameVariables().gravityState = true;
+                globals.getGameVariables().attractionState = true;
                 Intent startGame = new Intent(getApplicationContext(), GDXGameLauncher.class);
                 startActivity(startGame);
 
@@ -149,6 +165,8 @@ public class TrainingActivity extends AppCompatActivity {
 
         try{
             globals.getAI().trainingTask.cancel(true);
+            Toast.makeText(getApplication(), "Training canceled",
+                    Toast.LENGTH_LONG).show();
         } catch(Exception e) {
             e.printStackTrace();
         }

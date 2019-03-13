@@ -89,8 +89,8 @@ public class TrainingGame extends ApplicationAdapter{
         this.spriteBatch = new SpriteBatch();
         this.polygonSpriteBatch = new PolygonSpriteBatch();
 
-        this.globals.getGameVariables().inputs = new ArrayList<double[]>();
-        this.globals.getGameVariables().outputs = new ArrayList<double[]>();
+        this.globals.getGameVariables().inputs.clear();
+        this.globals.getGameVariables().outputs.clear();
 
     }
 

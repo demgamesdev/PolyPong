@@ -99,6 +99,13 @@ public class ManageActivity extends AppCompatActivity {
          * The fragment argument representing the section number for this
          * fragment.
          */
+        List<String> agentsList = new ArrayList<>();
+        List<String> agentsNameList = new ArrayList<>();
+        List<String> dataList = new ArrayList<>();
+        List<String> dataNameList = new ArrayList<>();
+        ArrayAdapter<String> agentsAdapter;
+        ArrayAdapter<String> dataAdapter;
+
         private static final String ARG_SECTION_NUMBER = "section_number";
 
         public PlaceholderFragment() {
@@ -117,32 +124,56 @@ public class ManageActivity extends AppCompatActivity {
         }
 
         @Override
+        public void setUserVisibleHint(boolean isVisibleToUser) {
+            super.setUserVisibleHint(isVisibleToUser);
+            if (isVisibleToUser) {
+
+            }
+        }
+
+        void updateAgentListView() {
+            agentsList.clear();
+            agentsNameList.clear();
+            File agentsDir = new File(getActivity().getFilesDir().getAbsolutePath() + File.separator + "agents");
+            String[] agentFiles = agentsDir.list();
+            for(int i = 0; i<agentFiles.length;i++) {
+                String[] tempSplit1 = agentFiles[i].split("\\.");
+                agentsList.add(tempSplit1[0]);
+                String[] tempSplit2 = tempSplit1[0].split("_");
+
+                agentsNameList.add(tempSplit2[0]+" (" + tempSplit2[3]+")");
+            }
+            agentsAdapter.notifyDataSetChanged();
+        }
+
+        void updateDataListView() {
+            dataList.clear();
+            dataNameList.clear();
+            File dataDir = new File(getActivity().getFilesDir().getAbsolutePath() + File.separator + "data");
+            String[] dataFiles = dataDir.list();
+            for(int i = 0; i<dataFiles.length;i++) {
+                String[] tempSplit1 = dataFiles[i].split("\\.");
+                dataList.add(tempSplit1[0]);
+                String[] tempSplit2 = tempSplit1[0].split("_");//name_balls_players.ds
+
+                dataNameList.add(tempSplit2[0]+" (" + tempSplit2[1]+";" + tempSplit2[2]+")");
+            }
+            dataAdapter.notifyDataSetChanged();
+        }
+
+        @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                  Bundle savedInstanceState) {
             View rootView = null;
             final Globals globals = (Globals) getActivity().getApplicationContext();
-            List<String> agentsList = new ArrayList<>();
-            List<String> agentsNameList = new ArrayList<>();
-            List<String> dataList = new ArrayList<>();
-            List<String> dataNameList = new ArrayList<>();
+
 
             switch (getArguments().getInt(ARG_SECTION_NUMBER)) {
                 case 1:
                     rootView = inflater.inflate(R.layout.fragment_manage_agents, container, false);
                     ListView agentsListView = (ListView) rootView.findViewById(R.id.agentsListView);
 
-                    File agentsDir = new File(getActivity().getFilesDir().getAbsolutePath() + File.separator + "agents");
-                    String[] agentFiles = agentsDir.list();
-                    for(int i = 0; i<agentFiles.length;i++) {
-                        String[] tempSplit1 = agentFiles[i].split("\\.");
-                        agentsList.add(tempSplit1[0]);
-                        String[] tempSplit2 = tempSplit1[0].split("_");
-
-                        agentsNameList.add(tempSplit2[0]+" (" + tempSplit2[1]+")");
-                    }
-
-
-                    ArrayAdapter<String> agentsAdapter =
+                    agentsAdapter =
                             new ArrayAdapter<>(
                                     getActivity(), // Die aktuelle Umgebung (diese Activity)
                                     R.layout.item_textview, // ID der XML-Layout Datei
@@ -151,6 +182,8 @@ public class ManageActivity extends AppCompatActivity {
 
 
                     agentsListView.setAdapter(agentsAdapter);
+
+                    updateAgentListView();
 
                     agentsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                         @Override
@@ -167,6 +200,7 @@ public class ManageActivity extends AppCompatActivity {
                     agentsFAB.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
+
                             Log.d("ManageActivity","agentsFAB pressed");
                             AlertDialog.Builder makeDialog = new AlertDialog.Builder(getActivity());
                             View mView = getLayoutInflater().inflate(R.layout.dialog_create_agent,null);
@@ -175,9 +209,12 @@ public class ManageActivity extends AppCompatActivity {
                             SeekBar ballsSeekBar = (SeekBar) mView.findViewById(R.id.ballsSeekBar);
                             TextView layersTextView = (TextView) mView.findViewById(R.id.layersTextView);
                             SeekBar layersSeekBar = (SeekBar) mView.findViewById(R.id.layersSeekBar);
+                            TextView unitsTextView = (TextView) mView.findViewById(R.id.unitsTextView);
+                            SeekBar unitsSeekBar = (SeekBar) mView.findViewById(R.id.unitsSeekBar);
 
                             ballsTextView.setText("Balls set to "+ ballsSeekBar.getProgress());
                             layersTextView.setText("Layers set to "+ layersSeekBar.getProgress());
+                            unitsTextView.setText("Units of first layer set to "+ unitsSeekBar.getProgress());
 
                             ballsSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -203,6 +240,18 @@ public class ManageActivity extends AppCompatActivity {
                                 public void onStopTrackingTouch(SeekBar seekBar) {
                                 }
                             });
+                            unitsSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                                    unitsTextView.setText("Units of first layer set to "+ progress);
+                                }
+
+                                public void onStartTrackingTouch(SeekBar seekBar) {
+                                    // TODO Auto-generated method stub
+                                }
+
+                                public void onStopTrackingTouch(SeekBar seekBar) {
+                                }
+                            });
 
 
 
@@ -211,23 +260,28 @@ public class ManageActivity extends AppCompatActivity {
                                 public void onClick(DialogInterface dialog, int which) {
                                     if(!agentNameEditText.getText().toString().isEmpty()) {
 
+                                        int numberOfPlayers = 2;
+                                        int numberOfBalls = ballsSeekBar.getProgress();
                                         int[] n_units = new int[layersSeekBar.getProgress()+2];
-                                        n_units[0] = ballsSeekBar.getProgress()*4; //inputs dimension
-                                        n_units[1] = 20; //units per ball from convolution
+                                        n_units[0] = 4; //inputs dimension
+                                        n_units[1] = unitsSeekBar.getProgress();
                                         n_units[n_units.length-1] = 2;
                                         String tempUnits = Integer.toString(n_units[0]) +"-" + Integer.toString(n_units[1]);
                                         for(int l=2;l<n_units.length-1;l++) {
-                                            n_units[l] = 20; //hidden units
+                                            n_units[l] = 32; //hidden units
                                             tempUnits+="-" + Integer.toString(n_units[l]);
                                         }
                                         tempUnits+="-" + Integer.toString(n_units[n_units.length-1]);
 
-                                        String agentName = agentNameEditText.getText().toString() + "_" + tempUnits;
+                                        String agentName = agentNameEditText.getText().toString()+ "_"+ Integer.toString(numberOfPlayers) + "_" + Integer.toString(numberOfBalls) + "_" + tempUnits;
+
+                                        globals.getAI().buildModel(agentName);
 
                                         Intent intent = new Intent(getActivity(),TrainingActivity.class);
                                         intent.putExtra("agentname",agentName);
                                         //based on item add info to intent
                                         startActivity(intent);
+                                        updateAgentListView();
                                     }
                                 }
                             });
@@ -236,6 +290,7 @@ public class ManageActivity extends AppCompatActivity {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
                                     dialog.cancel();
+                                    updateAgentListView();
                                 }
                             });
 
@@ -254,17 +309,7 @@ public class ManageActivity extends AppCompatActivity {
 
                     ListView dataListView = (ListView) rootView.findViewById(R.id.dataListView);
 
-                    File dataDir = new File(getActivity().getFilesDir().getAbsolutePath() + File.separator + "data");
-                    String[] dataFiles = dataDir.list();
-                    for(int i = 0; i<dataFiles.length;i++) {
-                        String[] tempSplit1 = dataFiles[i].split("\\.");
-                        dataList.add(tempSplit1[0]);
-                        String[] tempSplit2 = tempSplit1[0].split("_");//name_balls_players.ds
-
-                        dataNameList.add(tempSplit2[0]+" (" + tempSplit2[1]+";" + tempSplit2[2]+")");
-                    }
-
-                    ArrayAdapter<String> dataAdapter =
+                    dataAdapter =
                             new ArrayAdapter<>(
                                     getActivity(), // Die aktuelle Umgebung (diese Activity)
                                     R.layout.item_textview, // ID der XML-Layout Datei
@@ -273,6 +318,7 @@ public class ManageActivity extends AppCompatActivity {
 
 
                     dataListView.setAdapter(dataAdapter);
+                    updateDataListView();
 
                     FloatingActionButton dataFab = (FloatingActionButton) rootView.findViewById(R.id.dataFAB);
                     dataFab.setOnClickListener(new View.OnClickListener() {
@@ -306,8 +352,8 @@ public class ManageActivity extends AppCompatActivity {
                                 public void onClick(DialogInterface dialog, int which) {
                                     if(!dataNameEditText.getText().toString().isEmpty()) {
 
-
-                                        String dataName = dataNameEditText.getText().toString() + "_" + ballsSeekBar.getProgress() + "_" + "2";
+                                        int numberOfPlayers = 2;
+                                        String dataName = dataNameEditText.getText().toString()+ "_" + Integer.toString(numberOfPlayers) + "_" + ballsSeekBar.getProgress() ;
 
                                         globals.getGameVariables().myPlayerNumber = 0;
                                         globals.getSettingsVariables().gameMode = "training";
@@ -321,13 +367,18 @@ public class ManageActivity extends AppCompatActivity {
 
                                         globals.getGameVariables().aiState = false;
                                         globals.getGameVariables().gravityState = true;
+                                        globals.getGameVariables().attractionState = false;
 
                                         globals.getGameVariables().inputs.clear();
                                         globals.getGameVariables().outputs.clear();
 
+                                        globals.getAI().initDataSet(dataName);
+                                        globals.getAI().saveData();
+
                                         Intent startGame = new Intent(getActivity(), GDXGameLauncher.class);
                                         startGame.putExtra("dataname",dataName);
                                         startActivity(startGame);
+                                        updateDataListView();
                                     }
                                 }
                             });
@@ -351,6 +402,7 @@ public class ManageActivity extends AppCompatActivity {
 
 
             return rootView;
+
         }
     }
 

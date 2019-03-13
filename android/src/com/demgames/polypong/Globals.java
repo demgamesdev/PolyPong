@@ -16,6 +16,7 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -25,6 +26,8 @@ import com.demgames.polypong.network.ServerListener;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.datasets.iterator.INDArrayDataSetIterator;
+import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
+import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -35,13 +38,23 @@ import org.deeplearning4j.nn.conf.layers.Convolution1D;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.Pooling1D;
+import org.deeplearning4j.nn.conf.layers.Pooling2D;
+import org.deeplearning4j.nn.conf.layers.PoolingType;
+import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.ExistingMiniBatchDataSetIterator;
+import org.nd4j.linalg.dataset.MiniBatchFileDataSetIterator;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -102,6 +115,7 @@ public class Globals extends Application implements IGlobals{
         public MultiLayerNetwork model;
         public DataSet dataSet;
         int[] n_units;
+        int numberOfBalls, numberOfPlayers;
         public AI.TrainTask trainingTask;
         public TextView infoTextView;
         private Random random = new Random();
@@ -110,10 +124,13 @@ public class Globals extends Application implements IGlobals{
 
         void buildModel(String name) {
             this.nameModel = name;
-            String[] split = name.split("_")[1].split("-");
-            this.n_units = new int[split.length];
-            for(int i =0;i<split.length;i++) {
-                this.n_units[i] = Integer.parseInt(split[i]);
+            String[] split1 = name.split("_");
+            this.numberOfPlayers = Integer.parseInt(split1[1]);
+            this.numberOfBalls = Integer.parseInt(split1[2]);
+            String[] split2 = split1[3].split("-");
+            this.n_units = new int[split2.length];
+            for(int i =0;i<split2.length;i++) {
+                this.n_units[i] = Integer.parseInt(split2[i]);
             }
             System.out.println("nunits " + this.n_units);
 
@@ -165,6 +182,11 @@ public class Globals extends Application implements IGlobals{
                 tempDatset.addRow(this.dataSet.get(random.nextInt(this.dataSet.numExamples())),0);
             }
             return(tempDatset);
+        }
+
+        void initDataSet(String name) {
+            this.nameDataSet = name;
+            this.dataSet = new DataSet();
         }
 
         void createDataSet(String name,List<double[]> inputList, List<double[]> outputList) {
@@ -224,7 +246,7 @@ public class Globals extends Application implements IGlobals{
             @Override
             protected void onPreExecute() {
                 super.onPreExecute();
-                this.infoTextView.setText("Building model");
+                //this.infoTextView.setText("Building model");
 
             }
 
@@ -240,31 +262,37 @@ public class Globals extends Application implements IGlobals{
                         .updater(new RmsProp(0.01))
                         //.updater(new Adam(0.01))
                         //.updater(new Nesterovs(0.9))
-                        .l2(0)
+                        .l2(1e-5)
+                        .miniBatch(true)
                         .list(); // regularize learning model
 
                 /*builder.layer(new DenseLayer.Builder().nIn(this.ai.n_units[0]).nOut(this.ai.n_units[1]).weightInit(WeightInit.XAVIER)
                         .activation(Activation.RELU)
                         .build());*/
-                builder.layer(new ConvolutionLayer.Builder().nIn(1).nOut(this.ai.n_units[1]).weightInit(WeightInit.XAVIER)
+                builder.layer(new ConvolutionLayer.Builder().nIn(1).nOut(this.ai.n_units[1])
                         .activation(Activation.RELU)
-                        .kernelSize(4,1)
-                        .stride(4,1)
+                        .kernelSize(1,4)
+                        .stride(1,4)
                         .build());
-                builder.layer(new DenseLayer.Builder().nOut(this.ai.n_units[2]).weightInit(WeightInit.XAVIER)
+                builder.layer(new SubsamplingLayer.Builder(PoolingType.MAX)
+                        .kernelSize(this.ai.numberOfBalls,1)
+                        .stride(this.ai.numberOfBalls,1)
+                        .build());
+                builder.layer(new DenseLayer.Builder().nIn(this.ai.n_units[1]).nOut(this.ai.n_units[2])
                         .activation(Activation.RELU)
                         .build());
+
                 for(int l=2;l<this.ai.n_units.length-2;l++){
-                    builder.layer(new DenseLayer.Builder().nOut(this.ai.n_units[l+1]).weightInit(WeightInit.XAVIER)
+                    builder.layer(new DenseLayer.Builder().nOut(this.ai.n_units[l+1])
                             .activation(Activation.RELU)
                             .build());
                 }
-                builder.layer(new OutputLayer.Builder().nOut(this.ai.n_units[this.ai.n_units.length - 1]).weightInit(WeightInit.XAVIER)
-                        .activation(Activation.HARDTANH).lossFunction(LossFunctions.LossFunction.SQUARED_LOSS)
+                builder.layer(new OutputLayer.Builder().nOut(this.ai.n_units[this.ai.n_units.length - 1])
+                        .activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE)
                         .build());
-                builder.setInputType(InputType.convolutionalFlat(this.ai.n_units[0],1,1));
-                //builder.trainingWorkspaceMode(WorkspaceMode.ENABLED);
-                //builder.inferenceWorkspaceMode(WorkspaceMode.ENABLED);
+                builder.setInputType(InputType.convolutionalFlat(this.ai.numberOfBalls,this.ai.n_units[0],1));
+                builder.trainingWorkspaceMode(WorkspaceMode.ENABLED);
+                builder.inferenceWorkspaceMode(WorkspaceMode.ENABLED);
 
                 this.ai.model = new MultiLayerNetwork(builder.build());
                 this.ai.model.init();
@@ -278,7 +306,7 @@ public class Globals extends Application implements IGlobals{
             @Override
             protected void onPostExecute(String values) {
                 super.onPostExecute(values);
-                this.infoTextView.setText("Building model finished");
+                //this.infoTextView.setText("Building model finished");
                 //Handle results and update UI here.
             }
 
@@ -305,29 +333,52 @@ public class Globals extends Application implements IGlobals{
             @Override
             //Runs on background thread, this is where we will initiate the Workspace
             protected INDArray doInBackground(Integer... params) {
-                RandomDataSetIterator rdsi = new RandomDataSetIterator(this.ai.dataSet,params[1]);
-                RegressionEvaluation evaluation = new RegressionEvaluation(this.ai.dataSet.numOutcomes());
-                double predictionError;
-                String infoText;
-                for (int i = 0; i < params[0]; i++) {
-                    this.ai.model.fit(this.ai.dataSet);
-                    if(i% 10 ==0 && this.showInfo) {
-                        evaluation.eval(this.ai.dataSet.getLabels(), this.ai.model.output(this.ai.dataSet.getFeatures(), false));
-                        predictionError = evaluation.averageMeanSquaredError();
-                        infoText = "Epoch " + i + "/"+params[0] +" error " + Math.round(predictionError*10000.0)/10000.0;
-                        publishProgress(infoText);
-                        System.out.println(infoText);
-                    }
+                WorkspaceConfiguration initialConfig = WorkspaceConfiguration.builder()
+                        .initialSize(10 * 1024L * 1024L)
+                        .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                        .policyLearning(LearningPolicy.NONE)
+                        .build();
 
-                    if(this.isCancelled()){
-                        System.out.println("training canceled");
-                        break;
+                System.out.println("Training workspace config: " + this.ai.model.getLayerWiseConfigurations().getTrainingWorkspaceMode());
+                try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(initialConfig, "TrainingWorkSpace")) {
+                    DataSet trainDataSet = this.ai.dataSet;
+                    /*FileInputStream fis = new FileInputStream(new File(getFilesDir(),"")+File.separator+"traindataset.ds");
+                    trainDataSet.load(fis);
+                    fis.close();*/
+
+                    ExistingDataSetIterator testIterator;
+                    RegressionEvaluation evaluation = new RegressionEvaluation(trainDataSet.numOutcomes());
+                    DataSet miniBatch;
+                    double predictionError = 0;
+                    String infoText;
+
+                    Nd4j.getMemoryManager().setAutoGcWindow(5000);
+                    for (int i = 0; i < params[0]; i++) {
+                        miniBatch = trainDataSet.sample(10);
+                        this.ai.model.fit(miniBatch);
+                        //this.ai.model.fit(miniBatch);
+                        if (i % 10 == 0 && this.showInfo) {
+                            //evaluation.eval(this.ai.dataSet.getLabels(), this.ai.model.output(this.ai.dataSet.getFeatures(), false));
+                            testIterator = new ExistingDataSetIterator(miniBatch);
+                            this.ai.model.doEvaluation(testIterator,evaluation);
+                            predictionError = evaluation.averagerootMeanSquaredError();
+                            infoText = "Epoch " + i + "/" + params[0] + " error " + Math.round(predictionError * 10000.0) / 10000.0;
+                            publishProgress(infoText);
+                            System.out.println(infoText);
+                        }
+                        //System.out.println("Epoch " + i + "/" + params[0]);
+
+                        if (this.isCancelled()) {
+                            System.out.println("training canceled");
+                            break;
+                        }
                     }
-                }
+                }catch(Exception e){e.printStackTrace();}
 
                 System.out.println("training neural network finished");
 
                 this.ai.saveModel();
+
                 return(this.ai.model.output(this.ai.dataSet.getFeatures()));
             }
 
@@ -346,33 +397,6 @@ public class Globals extends Application implements IGlobals{
 
 
 
-        }
-
-        private class RandomDataSetIterator {
-            private DataSet dataSet;
-            private INDArray inputs,labels,dsInputs,dsLabels;
-            private int[] indices;
-            private INDArray nind;
-
-            public RandomDataSetIterator(DataSet dataSet_, int numSamples) {
-                this.inputs = dataSet_.getFeatures();
-                this.labels = dataSet_.getLabels();
-                this.dataSet = dataSet_;
-                this.indices = new int[numSamples];
-                this.nind = Nd4j.zeros(numSamples);
-                //this.dataSet.shuffle();
-
-            }
-
-            public DataSet next() {
-                for (int i = 0; i < this.indices.length; i++) {
-                    //this.indices[i] = random.nextInt(this.indices.length);
-                    this.nind.putScalar(random.nextInt(this.indices.length),i);
-                }
-                //nind = Nd4j.create(this.indices,new int[]{this.indices.length} );
-
-                return (new DataSet(this.inputs.get(nind),this.labels.get(nind)));
-            }
         }
 
     }
