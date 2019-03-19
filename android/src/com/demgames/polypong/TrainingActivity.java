@@ -77,10 +77,7 @@ public class TrainingActivity extends AppCompatActivity {
         }
 
         ArrayAdapter<String> dataAdapter =
-                new ArrayAdapter<>(
-                        getApplication(), // Die aktuelle Umgebung (diese Activity)
-                        android.R.layout.simple_list_item_multiple_choice,// , // ID der XML-Layout Datei
-                        dataNameList); // Beispieldaten in einer ArrayList
+                new ArrayAdapter<>(getApplication(), R.layout.item_choice_multiple,R.id.choiceMultipleTextView,dataNameList); // Beispieldaten in einer ArrayList
 
         trainingDataListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         trainingDataListView.setAdapter(dataAdapter);
