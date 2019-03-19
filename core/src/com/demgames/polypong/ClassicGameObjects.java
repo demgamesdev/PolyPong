@@ -27,6 +27,9 @@ import com.badlogic.gdx.physics.box2d.CircleShape;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +53,9 @@ public class ClassicGameObjects {
     int[] scores;
     private ConcurrentHashMap<Integer, Integer> ballDisplayStatesMap;
     boolean allBallsDestroyedState;
+    private boolean agentmode;
 
+    double [] agentInput;
     private MiscObjects miscObjects;
 
     private Map<String, Texture> texturesMap;
@@ -71,7 +76,12 @@ public class ClassicGameObjects {
     final short MASK_BAT = CATEGORY_BORDER | CATEGORY_BALL | CATEGORY_BAT | CATEGORY_FIELDLINE;
     final short MASK_FIELDLINE  = CATEGORY_BAT;
 
-    ClassicGameObjects (int myPlayerNumber_, int numberOfPlayers_, String[] playerNames_, int numberOfBalls_, IGlobals.Ball[] balls_, float width_, float height_, float screenWidth_, float screenHeight_, MiscObjects miscObjects_, Boolean gravityState_, Boolean attractionState_) {
+    private IGlobals globals;
+
+    ClassicGameObjects (IGlobals globals_,int myPlayerNumber_, int numberOfPlayers_, String[] playerNames_, int numberOfBalls_, IGlobals.Ball[] balls_,
+                        float width_, float height_, float screenWidth_, float screenHeight_, MiscObjects miscObjects_, Boolean gravityState_,
+                        Boolean attractionState_, boolean agentmode_) {
+        this.globals = globals_;
         this.myPlayerNumber = myPlayerNumber_;
         this.numberOfBalls = numberOfBalls_;
         this.numberOfPlayers= numberOfPlayers_;
@@ -79,6 +89,7 @@ public class ClassicGameObjects {
         this.width = width_;
         this.height = height_;
         this.miscObjects = miscObjects_;
+        this.agentmode = agentmode_;
 
         this.metersToPixels = 1f/1080f;
         this.allBallsDestroyedState = false;
@@ -156,6 +167,8 @@ public class ClassicGameObjects {
             this.scores[i] = 0;
             this.bats[i]=new Bat(i);
         }
+
+        this.agentInput = new double[4*this.numberOfBalls];
     }
 
 
@@ -165,7 +178,13 @@ public class ClassicGameObjects {
         synchronized (globals.getSettingsVariables().receiveThreadLock) {
             for (int i = 0; i < this.balls.length; i++) {
                 if (this.balls[i].ballDisplayState == 1) {
+                    this.agentInput[0 + 4 * i] = this.balls[i].ballBody.getPosition().x;
+                    this.agentInput[1 + 4 * i] = this.balls[i].ballBody.getPosition().y;
+                    this.agentInput[2 + 4 * i] = this.balls[i].ballBody.getLinearVelocity().x;
+                    this.agentInput[3 + 4 * i] = this.balls[i].ballBody.getLinearVelocity().y;
+
                     if (globals.getGameVariables().ballUpdateStates[i]) {
+
                         this.balls[i].ballDisplayState = globals.getGameVariables().balls[i].ballDisplayState;
                         if (this.balls[i].ballDisplayState == 1 && this.balls[i].tempPlayerField != myPlayerNumber) {
                             this.balls[i].playerField = globals.getGameVariables().ballPlayerFields[i];
@@ -513,7 +532,7 @@ public class ClassicGameObjects {
         private int batPlayerField;
         private float batWidth = width/4;
         private float batHeight = height/40;
-        private Vector2 newPos;
+        private Vector2 newPos,tempPos;
 
         private Sprite batSprite;
         Bat(int batPlayerField_) {
@@ -542,6 +561,8 @@ public class ClassicGameObjects {
             this.batSprite = new Sprite(texturesMap.get("bat_"+this.batPlayerField));
             this.batSprite.setOrigin(this.batWidth/2,this.batHeight/2);
             this.batSprite.setSize(this.batWidth,this.batHeight);
+            this.newPos = new Vector2(0,0);
+            this.tempPos = new Vector2(0,0);
         }
 
         void doPhysics() {
@@ -549,9 +570,18 @@ public class ClassicGameObjects {
             float orientation=0;
             if(this.batPlayerField ==myPlayerNumber) {
                 //update new position if touch inside my field
-                if(gameField.movementPolygon.contains(miscObjects.touches.touchPos[0])) {
-                    if(miscObjects.touches.isTouched[0] && !miscObjects.touches.isTouched[1]) {
-                        this.newPos.set(miscObjects.touches.touchPos[0]);
+                if(agentmode) {
+                    INDArray output = globals.getGameVariables().model.output(Nd4j.create(new double[][]{agentInput}));
+                    this.tempPos.set(output.getFloat(0) * width,output.getFloat(1) * height);
+                    System.out.println("output " + output + output.getFloat(0));
+                    if(gameField.movementPolygon.contains(this.tempPos)) {
+                        this.newPos.set(this.tempPos);
+                    }
+                } else {
+                    if (gameField.movementPolygon.contains(miscObjects.touches.touchPos[0])) {
+                        if (miscObjects.touches.isTouched[0] && !miscObjects.touches.isTouched[1]) {
+                            this.newPos.set(miscObjects.touches.touchPos[0]);
+                        }
                     }
                 }
                 //force to physically move to touched position
@@ -961,8 +991,8 @@ public class ClassicGameObjects {
 
     private Sprite createLineSprite(Vector2 startPosition, Vector2 endPosition,float lineWidth, Texture texture) {
         Vector2 distanceVector = new Vector2(endPosition).sub(startPosition);
-        Gdx.app.debug("ClassicGameObjects","line angle " + distanceVector.angle());
-        Gdx.app.debug("ClassicGameObjects","startpos " + startPosition.x + startPosition.y);
+        //Gdx.app.debug("ClassicGameObjects","line angle " + distanceVector.angle());
+        //Gdx.app.debug("ClassicGameObjects","startpos " + startPosition.x + startPosition.y);
         Sprite lineSprite = new Sprite(texture);
         lineSprite.setSize(distanceVector.len(),lineWidth);
         lineSprite.setOrigin(0,lineWidth/2f);

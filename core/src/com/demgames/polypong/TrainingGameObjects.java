@@ -474,8 +474,16 @@ public class TrainingGameObjects {
                 //update new position if touch inside my field
                 /*System.out.println("bat x " + globals.getGameVariables().bats[this.batPlayerField].batPosition.x +
                         " bat y " + globals.getGameVariables().bats[this.batPlayerField].batPosition.y);*/
-                if(gameField.movementPolygon.contains(globals.getGameVariables().bats[this.batPlayerField].batPosition)) {
-                    this.newPos.set(globals.getGameVariables().bats[this.batPlayerField].batPosition);
+                if(globals.getGameVariables().aiState) {
+                    if(gameField.movementPolygon.contains(globals.getGameVariables().bats[this.batPlayerField].batPosition)) {
+                        this.newPos.set(globals.getGameVariables().bats[this.batPlayerField].batPosition);
+                    }
+                } else {
+                    if (gameField.movementPolygon.contains(miscObjects.touches.touchPos[0])) {
+                        if (miscObjects.touches.isTouched[0] && !miscObjects.touches.isTouched[1]) {
+                            this.newPos.set(miscObjects.touches.touchPos[0]);
+                        }
+                    }
                 }
                 //force to physically move to touched position
                 Vector2 subVector = new Vector2(this.newPos).sub(this.batBody.getPosition());

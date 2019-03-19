@@ -1,5 +1,6 @@
 package com.demgames.polypong;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.net.wifi.WifiManager;
@@ -8,10 +9,12 @@ import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckedTextView;
 import android.widget.ListView;
@@ -20,12 +23,14 @@ import android.view.KeyEvent;
 import android.widget.Toast;
 import android.os.Vibrator;
 
+import java.io.File;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 
 public class ServerActivity extends AppCompatActivity{
@@ -97,7 +102,7 @@ public class ServerActivity extends AppCompatActivity{
                     globalVariables.getSettingsVariables().numberOfPlayers = globalVariables.getSettingsVariables().ipAdresses.size();
                     globalVariables.getGameVariables().numberOfPlayers = globalVariables.getSettingsVariables().numberOfPlayers;
 
-                    globalVariables.getGameVariables().numberOfBalls = globalVariables.getGameVariables().perPlayerBalls * globalVariables.getGameVariables().numberOfPlayers;
+                    //globalVariables.getGameVariables().numberOfBalls = globalVariables.getGameVariables().perPlayerBalls * globalVariables.getGameVariables().numberOfPlayers;
 
                     globalVariables.getGameVariables().setBalls(true);
                     globalVariables.getGameVariables().setBats();
@@ -208,7 +213,78 @@ public class ServerActivity extends AppCompatActivity{
         //ArrayAdapter<String> serverListViewAdapter;
         MiscClasses.PlayerArrayAdapter serverListViewAdapter;
         final TextView myIpTextView = (TextView) findViewById(R.id.IPtextView);
+        final AlertDialog.Builder makeDialog = new AlertDialog.Builder(ServerActivity.this);
+        final View mView = getLayoutInflater().inflate(R.layout.dialog_choose_agent,null,false);
+        final ListView availableAgentsListView = (ListView) mView.findViewById(R.id.availableAgentsListView);
+        final Button selfPlayButton = (Button) mView.findViewById(R.id.selfPlayButton);
+        List<String> agentsList = new ArrayList<>();
+        List<String> agentsNameList = new ArrayList<>();
+        ArrayAdapter agentsAdapter =
+                new ArrayAdapter<>(getApplication(),R.layout.item_textview, R.id.listViewtextView,agentsNameList);
+        AlertDialog alertDialog;
 
+        final UpdateTask updateTask = this;
+
+        @Override
+        protected void onPreExecute() {
+            ListView serverListView = (ListView) findViewById(R.id.serverListView);
+            serverListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+            serverListViewAdapter = new MiscClasses.PlayerArrayAdapter(ServerActivity.this,R.layout.item_choice_multiple,R.id.choiceMultipleTextView,globalVariables.getSettingsVariables().playerList);
+            //serverListViewAdapter = new ClientPlayerArrayAdapter(ServerActivity.this, R.layout.serverlistview_row, R.id.connectionCheckedTextView,globalVariables.getSettingsVariables().discoveryIpAdresses);
+
+            serverListView.setAdapter(serverListViewAdapter);
+            availableAgentsListView.setAdapter(agentsAdapter);
+            makeDialog.setView(mView);
+            alertDialog = makeDialog.create();
+
+
+            selfPlayButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent intent = new Intent(getApplication(),GDXGameLauncher.class);
+                    intent.putExtra("mode","normal");
+                    intent.putExtra("agentmode",false);
+                    alertDialog.dismiss();
+                    startActivity(intent);
+                    updateTask.cancel(true);
+                    finish();
+                }
+
+            });
+
+            availableAgentsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+
+                    Intent intent = new Intent(getApplication(),GDXGameLauncher.class);
+                    intent.putExtra("mode","normal");
+                    intent.putExtra("agentmode",true);
+                    intent.putExtra("agentname",agentsList.get(i));
+                    alertDialog.dismiss();
+                    startActivity(intent);
+                    updateTask.cancel(true);
+                    finish();
+
+
+                }
+            });
+
+            //globalVariables.setSearchConnecState(true);
+
+
+            serverListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                    Log.d(TAG, "onItemClick: " + Integer.toString(i));
+                    Log.d(TAG, "onItemClick: " + globalVariables.getSettingsVariables().discoveryIpAdresses.get(i));
+                    CheckedTextView checkedTextView = (CheckedTextView) view;
+                    globalVariables.getSettingsVariables().discoveryIsChecked.set(i,checkedTextView.isChecked());
+
+                }
+            });
+
+
+        }
 
         @Override
         protected Void doInBackground(Void... voids) {
@@ -259,41 +335,34 @@ public class ServerActivity extends AppCompatActivity{
             globalVariables.getSettingsVariables().clientConnectionStates[globalVariables.getSettingsVariables().myPlayerNumber] =3;
 
             if(!isCancelled()) {
-                startActivity(new Intent(getApplicationContext(), GDXGameLauncher.class));
+                File agentsDir = new File(getApplication().getFilesDir().getAbsolutePath() + File.separator + "agents");
+                String[] agentFiles = agentsDir.list();
+                for(int i = 0; i<agentFiles.length;i++) {
+                    String[] tempSplit1 = agentFiles[i].split("\\.");
+
+                    String[] tempSplit2 = tempSplit1[0].split("_");
+                    if(tempSplit2[2].equals(Integer.toString(globalVariables.getGameVariables().numberOfBalls))) {
+                        agentsList.add(tempSplit1[0]);
+                        agentsNameList.add(tempSplit2[0]+" (" + tempSplit2[3]+")");
+                    }
+
+                }
+                agentsAdapter.notifyDataSetChanged();
+
+
+                //serverListUpdateTask.cancel(true);
+
+
+                //startActivity(new Intent(getApplicationContext(), GDXGameLauncher.class));
                 //globalVariables.myThread.stop();
-                serverListUpdateTask.cancel(true);
-                finish();
+
+                //finish();
 
                 Log.d(TAG, "Game started");
             } else {
                 Log.d(TAG,"skipped do in background due to cancelling");
             }
             return null;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            ListView serverListView = (ListView) findViewById(R.id.serverListView);
-            serverListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
-            serverListViewAdapter = new MiscClasses.PlayerArrayAdapter(ServerActivity.this,R.layout.item_choice_multiple,R.id.choiceMultipleTextView,globalVariables.getSettingsVariables().playerList);
-            //serverListViewAdapter = new ClientPlayerArrayAdapter(ServerActivity.this, R.layout.serverlistview_row, R.id.connectionCheckedTextView,globalVariables.getSettingsVariables().discoveryIpAdresses);
-
-            serverListView.setAdapter(serverListViewAdapter);
-
-
-            //globalVariables.setSearchConnecState(true);
-
-
-            serverListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                @Override
-                public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    Log.d(TAG, "onItemClick: " + Integer.toString(i));
-                    Log.d(TAG, "onItemClick: " + globalVariables.getSettingsVariables().discoveryIpAdresses.get(i));
-                    CheckedTextView checkedTextView = (CheckedTextView) view;
-                    globalVariables.getSettingsVariables().discoveryIsChecked.set(i,checkedTextView.isChecked());
-
-                }
-            });
         }
 
         @Override
@@ -313,7 +382,7 @@ public class ServerActivity extends AppCompatActivity{
 
         @Override
         protected void onPostExecute(Void Void) {
-
+            alertDialog.show();
 
             Log.d(TAG, "onPostExecute:  UpdateTask Abgeschlossen");
 

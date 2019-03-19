@@ -2,6 +2,7 @@ package com.demgames.polypong;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -41,10 +42,14 @@ public class GDXGameLauncher extends AndroidApplication {
         globals.getGameVariables().playerScores=new int[globals.getSettingsVariables().numberOfPlayers];
 
         if(globals.getSettingsVariables().gameMode.equals("classic")) {
-            ClassicGame game = new ClassicGame(globals);
+            ClassicGame game = new ClassicGame(globals, getIntent().getStringExtra("mode"),getIntent().getBooleanExtra("agentmode",false));
+            if(getIntent().getBooleanExtra("agentmode",false)) {
+                globals.getAI().loadModel(getIntent().getStringExtra("agentname"));
+                globals.getGameVariables().model = globals.getAI().model;
+            }
             initialize(game, config);
         } else if(globals.getSettingsVariables().gameMode.equals("pong")) {
-            ClassicGame game = new ClassicGame(globals);
+            ClassicGame game = new ClassicGame(globals,getIntent().getStringExtra("mode"),getIntent().getBooleanExtra("agentmode",false));
             initialize(game, config);
         } else if(globals.getSettingsVariables().gameMode.equals("training") || globals.getSettingsVariables().gameMode.equals("testing")) {
             TrainingGame game = new TrainingGame(globals);

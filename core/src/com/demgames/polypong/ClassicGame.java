@@ -11,6 +11,9 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -19,10 +22,14 @@ public class ClassicGame extends ApplicationAdapter{
     private static final String TAG = "ClassicGame";
     //use of private etc is not consistently done
     private IGlobals globals;
+    private String mode;
+    private boolean agentmode;
 
     //setup global variables
-    public ClassicGame(IGlobals globals_ ) {
+    public ClassicGame(IGlobals globals_ ,String mode_, boolean agentmode_) {
         this.globals =globals_;
+        this.mode =mode_;
+        this.agentmode =agentmode_;
     }
 
     //declare renderer and world related stuff
@@ -66,9 +73,9 @@ public class ClassicGame extends ApplicationAdapter{
         //setup gameobjects
         this.miscObjects = new MiscObjects(globals,this.myPlayerNumber,this.width,this.height);
 
-        this.gameObjects = new ClassicGameObjects(this.myPlayerNumber,this.numberOfPlayers,
+        this.gameObjects = new ClassicGameObjects(this.globals,this.myPlayerNumber,this.numberOfPlayers,
                 globals.getSettingsVariables().playerNames.toArray(new String[0]), globals.getGameVariables().numberOfBalls, globals.getGameVariables().balls,width,height, globals.getGameVariables().width, globals.getGameVariables().height, miscObjects,
-                globals.getGameVariables().gravityState, globals.getGameVariables().attractionState);
+                globals.getGameVariables().gravityState, globals.getGameVariables().attractionState,this.agentmode);
 
         this.miscObjects.setMaxZoom(this.gameObjects.gameField.gameFieldPolygon.getBoundingRectangle(),this.width);
         //set fov of camera to displayGame
@@ -120,7 +127,8 @@ public class ClassicGame extends ApplicationAdapter{
 
             }
         });
-        this.miscObjects.touches.checkTouches(true,gameObjects.gameField.offset,camera,gameObjects.fixedPoint);
+
+        this.miscObjects.touches.checkTouches(gameObjects.gameField.offset,camera,gameObjects.fixedPoint);
         this.miscObjects.touches.checkZoomGesture();
 
         this.allPlayersReady = globals.getSettingsVariables().checkAllClientConnectionStates(4);

@@ -139,7 +139,7 @@ public class TrainingGame extends ApplicationAdapter{
                 this.globals.getGameVariables().outputs.add(new double[]{gameObjects.bats[0].batBody.getPosition().x/width,gameObjects.bats[0].batBody.getPosition().y/height});
             }
         }
-        this.miscObjects.touches.checkTouches(!globals.getGameVariables().aiState,gameObjects.gameField.offset,camera,gameObjects.fixedPoint);
+        this.miscObjects.touches.checkTouches(gameObjects.gameField.offset,camera,gameObjects.fixedPoint);
         this.miscObjects.touches.checkZoomGesture();
 
         if(!gameObjects.allBallsDestroyedState) {
