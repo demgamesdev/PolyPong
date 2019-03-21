@@ -6,7 +6,6 @@ import android.os.Bundle;
 import android.content.Intent;
 import android.os.PowerManager;
 import android.os.StrictMode;
-import android.util.DisplayMetrics;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -39,10 +38,6 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
     }
 
-    String myPlayerName;
-    String file_name = "name_file";
-    EditText myPlayerNameEditText;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -57,8 +52,6 @@ public class MainActivity extends AppCompatActivity {
         this.mWakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "polypong:mywakelocktag");
         this.mWakeLock.acquire();
 
-        /*requestWindowFeature(Window.FEATURE_NO_TITLE);
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,WindowManager.LayoutParams.FLAG_FULLSCREEN);*/
         setContentView(R.layout.activity_main);
 
 
@@ -68,16 +61,17 @@ public class MainActivity extends AppCompatActivity {
         final Button startHostButton = (Button) findViewById(R.id.startHostButton);
         final Button startClientButton = (Button) findViewById(R.id.startClientButton);
         final Button manageButton = (Button) findViewById(R.id.manageButton);
-        
+        final EditText myPlayerNameEditText = (EditText) findViewById(R.id.nameEditText);
+
         Typeface typeface = Typeface.createFromAsset(getAssets(), "fonts/Quicksand-Regular.ttf");
         startHostButton.setTypeface(typeface);
         startClientButton.setTypeface(typeface);
         manageButton.setTypeface(typeface);
-
-        myPlayerNameEditText = (EditText) findViewById(R.id.nameEditText);
         myPlayerNameEditText.setTypeface(typeface);
 
-        readName();
+        String fileName = "myplayername";
+
+        readNameToEditText(fileName,myPlayerNameEditText);
 
         //create data folders
         String [] directoryNames = new String[]{"agents","data"};
@@ -91,9 +85,12 @@ public class MainActivity extends AppCompatActivity {
         startHostButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (getMyPlayerName()) {
-                    Intent startHost = new Intent(getApplicationContext(), OptionsActivity.class);
-                    startActivity(startHost);
+                String myPlayerName = getMyPlayerName(myPlayerNameEditText);
+                if (myPlayerName != null) {
+                    writeName(fileName,myPlayerName);
+                    Intent startOptions = new Intent(getApplicationContext(), OptionsActivity.class);
+                    startOptions.putExtra("myplayername",myPlayerName);
+                    startActivity(startOptions);
                 }
             }
 
@@ -102,8 +99,11 @@ public class MainActivity extends AppCompatActivity {
         startClientButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (getMyPlayerName()) {
+                String myPlayerName = getMyPlayerName(myPlayerNameEditText);
+                if (myPlayerName != null) {
+                    writeName(fileName,myPlayerName);
                     Intent startClient = new Intent(getApplicationContext(), ClientActivity.class);
+                    startClient.putExtra("myplayername",myPlayerName);
                     startActivity(startClient);
                     //myThread.stop();
                 }
@@ -117,9 +117,12 @@ public class MainActivity extends AppCompatActivity {
         manageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (getMyPlayerName()) {
-                    Intent manage = new Intent(getApplicationContext(), ManageActivity.class);
-                    startActivity(manage);
+                String myPlayerName = getMyPlayerName(myPlayerNameEditText);
+                if (myPlayerName != null) {
+                    writeName(fileName,myPlayerName);
+                    Intent startManage = new Intent(getApplicationContext(), ManageActivity.class);
+                    startManage.putExtra("myplayername",myPlayerName);
+                    startActivity(startManage);
                     //myThread.stop();
                 }
 
@@ -130,37 +133,29 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    boolean getMyPlayerName(){
-        Globals globalVariables = (Globals) getApplicationContext();
-        myPlayerName = myPlayerNameEditText.getText().toString();
+    String getMyPlayerName(EditText editText){
+        String myPlayerName = editText.getText().toString();
         if (myPlayerName.matches("")){
-            Context context = getApplicationContext();
-            CharSequence text = "myPlayerName ist ungültig!";
-            int duration = Toast.LENGTH_SHORT;
-
-            Toast toast = Toast.makeText(context, text, duration);
+            CharSequence message = "myPlayerName ist ungültig!";
+            Toast toast = Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT);
             toast.show();
-            Log.e(TAG, "myPlayerName: Kein name eingegeben");
-            return false;
+            Log.e(TAG, "myPlayerName not okay");
+
+            return null;
         }
         else{
-            globalVariables.getSettingsVariables().setMyPlayerName(myPlayerName);
 
-            writeName();
-
-            Log.d(TAG, "myPlayerName: "+ globalVariables.getSettingsVariables().myPlayerName);
-            return true;
+            Log.d(TAG, "myPlayerName okay");
+            return myPlayerName;
         }
-
-
     }
 
 
     //Saves latest myPlayerName entry onto internal Storage
-    public void writeName(){
+    public void writeName(String fileName, String name){
         try {
-            FileOutputStream fileOutputStream = openFileOutput(file_name, MODE_PRIVATE);
-            fileOutputStream.write(myPlayerName.getBytes());
+            FileOutputStream fileOutputStream = openFileOutput(fileName, MODE_PRIVATE);
+            fileOutputStream.write(name.getBytes());
             fileOutputStream.close();
 
         } catch (FileNotFoundException e) {
@@ -172,11 +167,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //Loads latest myPlayerName entry from internal Storage
-    public void readName(){
+    public void readNameToEditText(String fileName, EditText editText){
         try {
             String Message;
-            EditText YourName = (EditText) findViewById(R.id.nameEditText);
-            FileInputStream fileInputStream = openFileInput(file_name);
+            FileInputStream fileInputStream = openFileInput(fileName);
             InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream);
             BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
             StringBuffer stringBuffer = new StringBuffer();
@@ -185,7 +179,7 @@ public class MainActivity extends AppCompatActivity {
                 stringBuffer.append(Message);
             }
 
-            YourName.setText(stringBuffer.toString());
+            editText.setText(stringBuffer.toString());
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
