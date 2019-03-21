@@ -29,7 +29,6 @@ public interface IGlobals {
         public int perPlayerBalls;
         public int numberOfBalls;
 
-        public float width, height;
         public int gameState;
 
         public Ball[] balls;

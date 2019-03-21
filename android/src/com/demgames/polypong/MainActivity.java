@@ -63,17 +63,12 @@ public class MainActivity extends AppCompatActivity {
 
 
         final Globals globalVariables = (Globals) getApplicationContext();
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-        globalVariables.getGameVariables().height= displayMetrics.heightPixels;
-        globalVariables.getGameVariables().width = displayMetrics.widthPixels;
-
-        Log.d(TAG, "screen width "+globalVariables.getGameVariables().width + " height "+globalVariables.getGameVariables().height);
 
 
         final Button startHostButton = (Button) findViewById(R.id.startHostButton);
         final Button startClientButton = (Button) findViewById(R.id.startClientButton);
         final Button manageButton = (Button) findViewById(R.id.manageButton);
+        
         Typeface typeface = Typeface.createFromAsset(getAssets(), "fonts/Quicksand-Regular.ttf");
         startHostButton.setTypeface(typeface);
         startClientButton.setTypeface(typeface);

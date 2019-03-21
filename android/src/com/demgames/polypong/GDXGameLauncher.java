@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
 
@@ -41,15 +42,18 @@ public class GDXGameLauncher extends AndroidApplication {
 
         globals.getGameVariables().playerScores=new int[globals.getSettingsVariables().numberOfPlayers];
 
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+
         if(globals.getSettingsVariables().gameMode.equals("classic")) {
-            ClassicGame game = new ClassicGame(globals, getIntent().getStringExtra("mode"),getIntent().getBooleanExtra("agentmode",false));
+            ClassicGame game = new ClassicGame(globals, getIntent().getStringExtra("mode"),getIntent().getBooleanExtra("agentmode",false),displayMetrics.heightPixels,displayMetrics.widthPixels);
             if(getIntent().getBooleanExtra("agentmode",false)) {
                 globals.getAI().loadModel(getIntent().getStringExtra("agentname"));
                 globals.getGameVariables().model = globals.getAI().model;
             }
             initialize(game, config);
         } else if(globals.getSettingsVariables().gameMode.equals("pong")) {
-            ClassicGame game = new ClassicGame(globals,getIntent().getStringExtra("mode"),getIntent().getBooleanExtra("agentmode",false));
+            ClassicGame game = new ClassicGame(globals,getIntent().getStringExtra("mode"),getIntent().getBooleanExtra("agentmode",false),displayMetrics.heightPixels,displayMetrics.widthPixels);
             initialize(game, config);
         } else if(globals.getSettingsVariables().gameMode.equals("training") || globals.getSettingsVariables().gameMode.equals("testing")) {
             TrainingGame game = new TrainingGame(globals);
