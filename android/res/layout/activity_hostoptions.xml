@@ -5,15 +5,15 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/backgroundColor"
-    tools:context="com.demgames.polypong.OptionsActivity">
+    tools:context="com.demgames.polypong.HostOptionsActivity">
 
     <Button
-        android:id="@+id/button12"
+        android:id="@+id/hostOptionsSubmitButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="16dp"
         android:text="@string/confirm"
         android:textColor="@color/BtnTColor"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -21,7 +21,7 @@
         app:layout_constraintStart_toStartOf="parent" />
 
     <TextView
-        android:id="@+id/überschriftClienttextView"
+        android:id="@+id/hostOptionsHeaderTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="8dp"
@@ -35,19 +35,20 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <SeekBar
-        android:id="@+id/seekBar2"
+        android:id="@+id/hostOptionsBallsSeekBar"
         android:layout_width="343dp"
         android:layout_height="32dp"
         android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
         android:max="44"
+        android:min="1"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/ballll" />
+        app:layout_constraintTop_toBottomOf="@+id/hostOptionsBallsTextView" />
 
     <TextView
-        android:id="@+id/ballll"
+        android:id="@+id/hostOptionsBallsTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="8dp"
@@ -105,7 +106,7 @@
         android:textColor="@color/TColor"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/seekBar2" />
+        app:layout_constraintTop_toBottomOf="@+id/hostOptionsBallsSeekBar" />
 
     <Spinner
         android:id="@+id/gamemodeSpinner"
@@ -133,5 +134,5 @@
         android:textColor="@color/TColor"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/überschriftClienttextView" />
+        app:layout_constraintTop_toBottomOf="@+id/hostOptionsHeaderTextView" />
 </android.support.constraint.ConstraintLayout>

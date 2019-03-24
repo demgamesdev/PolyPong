@@ -9,7 +9,6 @@ import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -33,9 +32,9 @@ import java.util.Arrays;
 import java.util.List;
 
 
-public class ServerActivity extends AppCompatActivity{
+public class HostActivity extends AppCompatActivity{
 
-    private static final String TAG = "ServerActivity";
+    private static final String TAG = "HostActivity";
     private UpdateTask serverListUpdateTask;
 
     @Override
@@ -56,22 +55,19 @@ public class ServerActivity extends AppCompatActivity{
         //Vollbildmodus
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-
-        setContentView(R.layout.activity_server);
+        setContentView(R.layout.activity_host);
 
         /***Decklarationen***/
 
         final Globals globalVariables = (Globals) getApplicationContext();
+        final Button startGameButton= (Button) findViewById(R.id.startGameButton);
+        final Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+
         globalVariables.getSettingsVariables().setupConnectionState =0;
-
         globalVariables.getSettingsVariables().resetArrayLists();
-
         globalVariables.getSettingsVariables().startServerThread();
-
         globalVariables.setListeners(getApplicationContext());
         globalVariables.getSettingsVariables().serverThread.getServer().addListener(globalVariables.getServerListener());
-
-
         globalVariables.getSettingsVariables().myPlayerNumber =0;
         globalVariables.getGameVariables().myPlayerNumber =globalVariables.getSettingsVariables().myPlayerNumber;
 
@@ -80,8 +76,7 @@ public class ServerActivity extends AppCompatActivity{
         serverListUpdateTask = new UpdateTask();
         serverListUpdateTask.execute();
 
-        Button startGameButton= (Button) findViewById(R.id.startGameButton);
-        final Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+
         startGameButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -108,7 +103,7 @@ public class ServerActivity extends AppCompatActivity{
                     globalVariables.getGameVariables().setBats();
 
                     vibrator.vibrate(50);
-                    Toast.makeText(ServerActivity.this, "Verbindung zu" + Integer.toString(globalVariables.getSettingsVariables().numberOfPlayers - 1)
+                    Toast.makeText(HostActivity.this, "Verbindung zu" + Integer.toString(globalVariables.getSettingsVariables().numberOfPlayers - 1)
                             + " Spielern wird hergestellt", Toast.LENGTH_SHORT).show();
 
                     if(globalVariables.getSettingsVariables().setupConnectionState<2) {
@@ -213,7 +208,7 @@ public class ServerActivity extends AppCompatActivity{
         //ArrayAdapter<String> serverListViewAdapter;
         MiscClasses.PlayerArrayAdapter serverListViewAdapter;
         final TextView myIpTextView = (TextView) findViewById(R.id.IPtextView);
-        final AlertDialog.Builder makeDialog = new AlertDialog.Builder(ServerActivity.this);
+        final AlertDialog.Builder makeDialog = new AlertDialog.Builder(HostActivity.this);
         final View mView = getLayoutInflater().inflate(R.layout.dialog_choose_agent,null,false);
         final ListView availableAgentsListView = (ListView) mView.findViewById(R.id.availableAgentsListView);
         final Button selfPlayButton = (Button) mView.findViewById(R.id.selfPlayButton);
@@ -229,8 +224,8 @@ public class ServerActivity extends AppCompatActivity{
         protected void onPreExecute() {
             ListView serverListView = (ListView) findViewById(R.id.serverListView);
             serverListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
-            serverListViewAdapter = new MiscClasses.PlayerArrayAdapter(ServerActivity.this,R.layout.item_choice_multiple,R.id.choiceMultipleTextView,globalVariables.getSettingsVariables().playerList);
-            //serverListViewAdapter = new ClientPlayerArrayAdapter(ServerActivity.this, R.layout.serverlistview_row, R.id.connectionCheckedTextView,globalVariables.getSettingsVariables().discoveryIpAdresses);
+            serverListViewAdapter = new MiscClasses.PlayerArrayAdapter(HostActivity.this,R.layout.item_choice_multiple,R.id.choiceMultipleTextView,globalVariables.getSettingsVariables().playerList);
+            //serverListViewAdapter = new ClientPlayerArrayAdapter(HostActivity.this, R.layout.serverlistview_row, R.id.connectionCheckedTextView,globalVariables.getSettingsVariables().discoveryIpAdresses);
 
             serverListView.setAdapter(serverListViewAdapter);
             availableAgentsListView.setAdapter(agentsAdapter);
@@ -387,7 +382,7 @@ public class ServerActivity extends AppCompatActivity{
             Log.d(TAG, "onPostExecute:  UpdateTask Abgeschlossen");
 
         }
-        ServerActivity m_activity = null;
+        HostActivity m_activity = null;
     }
 
 

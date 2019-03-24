@@ -42,11 +42,11 @@
             android:configChanges="orientation"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".ServerActivity"
+            android:name=".HostActivity"
             android:configChanges="orientation"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".OptionsActivity"
+            android:name=".HostOptionsActivity"
             android:configChanges="orientation"
             android:screenOrientation="portrait" />
         <activity

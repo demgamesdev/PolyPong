@@ -21,10 +21,17 @@ public class TrainingGame extends ApplicationAdapter{
     private static final String TAG = "ClassicGame";
     //use of private etc is not consistently done
     private IGlobals globals;
+    private String mode;
+    private boolean agentmode;
+    private int screenHeight, screenWidth;
 
     //setup global variables
-    public TrainingGame(IGlobals globals_ ) {
+    public TrainingGame(IGlobals globals_ ,String mode_, boolean agentmode_, int screenHeight_, int screenWidth_) {
         this.globals =globals_;
+        this.mode =mode_;
+        this.agentmode =agentmode_;
+        this.screenHeight = screenHeight_;
+        this.screenWidth = screenWidth_;
     }
 
     //declare renderer and world related stuff
@@ -66,15 +73,15 @@ public class TrainingGame extends ApplicationAdapter{
         this.allPlayersReady = false;
         this.notReadyPlayerList = new ArrayList<String>();
         //setup gameobjects
-        this.miscObjects = new MiscObjects(globals,this.myPlayerNumber,this.width,this.height);
+        this.miscObjects = new MiscObjects(globals,this.myPlayerNumber,this.width,this.height,this.screenHeight,this.screenWidth);
 
         this.gameObjects = new TrainingGameObjects(globals,this.myPlayerNumber,this.numberOfPlayers,
-                globals.getSettingsVariables().playerNames.toArray(new String[0]), globals.getGameVariables().numberOfBalls, globals.getGameVariables().balls,width,height, globals.getGameVariables().width, globals.getGameVariables().height, miscObjects,
+                globals.getSettingsVariables().playerNames.toArray(new String[0]), globals.getGameVariables().numberOfBalls, globals.getGameVariables().balls,width,height, this.screenWidth, this.screenWidth, miscObjects,
                 globals.getGameVariables().gravityState, globals.getGameVariables().attractionState);
 
         this.miscObjects.setMaxZoom(this.gameObjects.gameField.gameFieldPolygon.getBoundingRectangle(),this.width);
         //set fov of camera to displayGame
-        this.camera = new OrthographicCamera(this.width, globals.getGameVariables().height/ globals.getGameVariables().width*width);
+        this.camera = new OrthographicCamera(this.width, this.screenHeight/ this.screenWidth*width);
 
         //set position to middle of normal screen
         this.camera.position.set(0, -this.height/2+gameObjects.gameField.offset.y, 0);

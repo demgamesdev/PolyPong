@@ -18,8 +18,8 @@ public class MiscObjects {
 
     //global sendclasses
 
-    private int myPlayerNumber;
-    private float screenWidth, screenHeight,width, height;
+    private int myPlayerNumber,screenWidth, screenHeight;
+    private float width, height;
     Vector2 zoomPoint;
     float zoomLevel;
     float maxZoomLevel;
@@ -28,15 +28,15 @@ public class MiscObjects {
 
     public Touches touches;
 
-    MiscObjects(IGlobals globals_ , int myPlayerNumber_, float width_, float height_) {
+    MiscObjects(IGlobals globals_ , int myPlayerNumber_, float width_, float height_, int screenHeight_, int screenWidth_) {
         this.globals = globals_;
         this.myPlayerNumber = myPlayerNumber_;
         this.width = width_;
         this.height = height_;
+        this.screenHeight = screenHeight_;
+        this.screenWidth = screenWidth_;
         this.touches=new Touches(2);
 
-        this.screenWidth = globals.getGameVariables().width;
-        this.screenHeight = globals.getGameVariables().height;
 
         this.zoomLevel = 1f;
         this.zoomPoint = new Vector2(0,-this.height/2);
@@ -45,10 +45,10 @@ public class MiscObjects {
     /********* OTHER FUNCTIONS *********/
     //adjust camera for zooming
     void setMaxZoom(Rectangle rectangle, float width) {
-        Gdx.app.debug(TAG,"camera height " +Float.toString(width*this.globals.getGameVariables().height/this.globals.getGameVariables().width));
+        Gdx.app.debug(TAG,"camera height " +Float.toString(width*this.screenHeight/this.screenWidth));
         Gdx.app.debug(TAG,"game rect height " +Float.toString(rectangle.height));
-        if(rectangle.height/(width*this.globals.getGameVariables().height/this.globals.getGameVariables().width)>rectangle.width/width) {
-            this.maxZoomLevel = rectangle.height/(width*this.globals.getGameVariables().height/this.globals.getGameVariables().width);
+        if(rectangle.height/(width*this.screenHeight/this.screenWidth)>rectangle.width/width) {
+            this.maxZoomLevel = rectangle.height/(width*this.screenHeight/this.screenWidth);
         } else {
             this.maxZoomLevel = rectangle.width/width;
         }

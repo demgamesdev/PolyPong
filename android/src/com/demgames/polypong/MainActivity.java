@@ -45,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
         //Vollbildmodus
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        setContentView(R.layout.activity_main);
 
 
          /* will make the screen be always on until this Activity gets destroyed. */
@@ -52,10 +53,6 @@ public class MainActivity extends AppCompatActivity {
         this.mWakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "polypong:mywakelocktag");
         this.mWakeLock.acquire();
 
-        setContentView(R.layout.activity_main);
-
-
-        final Globals globalVariables = (Globals) getApplicationContext();
 
 
         final Button startHostButton = (Button) findViewById(R.id.startHostButton);
@@ -88,9 +85,10 @@ public class MainActivity extends AppCompatActivity {
                 String myPlayerName = getMyPlayerName(myPlayerNameEditText);
                 if (myPlayerName != null) {
                     writeName(fileName,myPlayerName);
-                    Intent startOptions = new Intent(getApplicationContext(), OptionsActivity.class);
-                    startOptions.putExtra("myplayername",myPlayerName);
-                    startActivity(startOptions);
+                    Intent startHostOptionsActivity = new Intent(getApplicationContext(), HostOptionsActivity.class);
+                    startHostOptionsActivity.putExtra("myplayername",myPlayerName);
+                    startHostOptionsActivity.putExtra("networkmode","host");
+                    startActivity(startHostOptionsActivity);
                 }
             }
 
@@ -102,9 +100,10 @@ public class MainActivity extends AppCompatActivity {
                 String myPlayerName = getMyPlayerName(myPlayerNameEditText);
                 if (myPlayerName != null) {
                     writeName(fileName,myPlayerName);
-                    Intent startClient = new Intent(getApplicationContext(), ClientActivity.class);
-                    startClient.putExtra("myplayername",myPlayerName);
-                    startActivity(startClient);
+                    Intent startClientActivity = new Intent(getApplicationContext(), ClientActivity.class);
+                    startClientActivity.putExtra("myplayername",myPlayerName);
+                    startClientActivity.putExtra("networkmode","client");
+                    startActivity(startClientActivity);
                     //myThread.stop();
                 }
 
@@ -120,9 +119,9 @@ public class MainActivity extends AppCompatActivity {
                 String myPlayerName = getMyPlayerName(myPlayerNameEditText);
                 if (myPlayerName != null) {
                     writeName(fileName,myPlayerName);
-                    Intent startManage = new Intent(getApplicationContext(), ManageActivity.class);
-                    startManage.putExtra("myplayername",myPlayerName);
-                    startActivity(startManage);
+                    Intent startManageActivity = new Intent(getApplicationContext(), ManageActivity.class);
+                    startManageActivity.putExtra("myplayername",myPlayerName);
+                    startActivity(startManageActivity);
                     //myThread.stop();
                 }
 

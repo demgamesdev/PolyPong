@@ -56,7 +56,7 @@ public class GDXGameLauncher extends AndroidApplication {
             ClassicGame game = new ClassicGame(globals,getIntent().getStringExtra("mode"),getIntent().getBooleanExtra("agentmode",false),displayMetrics.heightPixels,displayMetrics.widthPixels);
             initialize(game, config);
         } else if(globals.getSettingsVariables().gameMode.equals("training") || globals.getSettingsVariables().gameMode.equals("testing")) {
-            TrainingGame game = new TrainingGame(globals);
+            TrainingGame game = new TrainingGame(globals,getIntent().getStringExtra("mode"),getIntent().getBooleanExtra("agentmode",false),displayMetrics.heightPixels,displayMetrics.widthPixels);
             initialize(game, config);
         }
 	}

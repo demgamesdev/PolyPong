@@ -26,7 +26,6 @@ public interface IGlobals {
 
     class GameVariables {
 
-        public int perPlayerBalls;
         public int numberOfBalls;
 
         public int gameState;

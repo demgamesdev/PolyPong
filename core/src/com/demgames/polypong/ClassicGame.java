@@ -24,7 +24,7 @@ public class ClassicGame extends ApplicationAdapter{
     private IGlobals globals;
     private String mode;
     private boolean agentmode;
-    int screenHeight, screenWidth;
+    private int screenHeight, screenWidth;
 
     //setup global variables
     public ClassicGame(IGlobals globals_ ,String mode_, boolean agentmode_, int screenHeight_, int screenWidth_) {
@@ -74,7 +74,7 @@ public class ClassicGame extends ApplicationAdapter{
         this.allPlayersReady = false;
         this.notReadyPlayerList = new ArrayList<String>();
         //setup gameobjects
-        this.miscObjects = new MiscObjects(globals,this.myPlayerNumber,this.width,this.height);
+        this.miscObjects = new MiscObjects(globals,this.myPlayerNumber,this.width,this.height,this.screenHeight,this.screenWidth);
 
         this.gameObjects = new ClassicGameObjects(this.globals,this.myPlayerNumber,this.numberOfPlayers,
                 globals.getSettingsVariables().playerNames.toArray(new String[0]), globals.getGameVariables().numberOfBalls, globals.getGameVariables().balls,width,height, this.screenWidth, this.screenHeight, miscObjects,
