@@ -25,6 +25,7 @@ import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.Shape;
 import com.badlogic.gdx.physics.box2d.World;
+import com.demgames.miscclasses.GameObjectClasses;
 
 import java.util.HashMap;
 import java.util.List;
@@ -72,7 +73,9 @@ public class TrainingGameObjects {
 
     private IGlobals globals;
 
-    TrainingGameObjects(IGlobals globals_,int myPlayerNumber_, int numberOfPlayers_, String[] playerNames_, int numberOfBalls_, IGlobals.Ball[] balls_, float width_, float height_, float screenWidth_, float screenHeight_, MiscObjects miscObjects_, Boolean gravityState_, Boolean attractionState_) {
+    TrainingGameObjects (IGlobals globals_,int myPlayerNumber_, int numberOfPlayers_, String[] playerNames_, int numberOfBalls_, GameObjectClasses.Ball[] balls_,
+                        float width_, float height_, float screenWidth_, float screenHeight_, MiscObjects miscObjects_, Boolean gravityState_,
+                        Boolean attractionState_, boolean agentmode_) {
         this.globals = globals_;
         this.myPlayerNumber = myPlayerNumber_;
         this.numberOfBalls = numberOfBalls_;
@@ -99,8 +102,9 @@ public class TrainingGameObjects {
         this.scores = new int[numberOfPlayers];
 
         //load textures to map
-        for(int i=0;i<numberOfPlayers;i++) {
 
+        for(int i=0;i<numberOfPlayers;i++) {
+            Gdx.app.debug(TAG,"playername " + i + " " + this.playerNames[i]);
             if(this.playerNames[i].equals("memes")) {
                 this.texturesMap.put("ball_"+i,new Texture(Gdx.files.internal("balls/ball_memes.png")));
                 this.texturesMap.put("playerfield_"+i,new Texture(Gdx.files.internal("field/playerfield_memes.png")));
@@ -248,7 +252,7 @@ public class TrainingGameObjects {
 
             this.ballPositionArrayList = new MiscObjects.BoundedArrayList(ballPositionArrayListLength_);
 
-            //set bodytype
+            //setReceived bodytype
             BodyDef ballBodyDef= new BodyDef();
             ballBodyDef.type = BodyDef.BodyType.DynamicBody;
             ballBodyDef.bullet=true;
@@ -474,9 +478,9 @@ public class TrainingGameObjects {
                 //update new position if touch inside my field
                 /*System.out.println("bat x " + globals.getGameVariables().bats[this.batPlayerField].batPosition.x +
                         " bat y " + globals.getGameVariables().bats[this.batPlayerField].batPosition.y);*/
-                if(globals.getGameVariables().aiState) {
-                    if(gameField.movementPolygon.contains(globals.getGameVariables().bats[this.batPlayerField].batPosition)) {
-                        this.newPos.set(globals.getGameVariables().bats[this.batPlayerField].batPosition);
+                if(true) {
+                    if(gameField.movementPolygon.contains(globals.getComm().bats[this.batPlayerField].batPosition)) {
+                        this.newPos.set(globals.getComm().bats[this.batPlayerField].batPosition);
                     }
                 } else {
                     if (gameField.movementPolygon.contains(miscObjects.touches.touchPos[0])) {
@@ -488,7 +492,7 @@ public class TrainingGameObjects {
                 //force to physically move to touched position
                 Vector2 subVector = new Vector2(this.newPos).sub(this.batBody.getPosition());
                 Vector2 forceVector = subVector.scl((500f+(float)Math.pow(subVector.len()*10f,3)));
-                //torque to set orientation
+                //torque to setReceived orientation
                 float torque = -(this.batBody.getAngle()-orientation)*(10f+Math.abs((this.batBody.getAngle()-orientation)));
                 //forceVector.scl(1/forceVector.len());
                 this.batBody.applyForceToCenter(forceVector,true);
@@ -890,7 +894,7 @@ public class TrainingGameObjects {
         }
     }
 
-    //TODO replace by set
+    //TODO replace by setReceived
     private Sprite createLineSprite(Vector2 startPosition, Vector2 endPosition,float lineWidth, Texture texture) {
         Vector2 distanceVector = new Vector2(endPosition).sub(startPosition);
         //Gdx.app.debug("ClassicGameObjects","line angle " + distanceVector.angle());

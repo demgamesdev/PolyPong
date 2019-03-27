@@ -1,5 +1,8 @@
 package com.demgames.polypong.network;
 
+import com.demgames.miscclasses.GameObjectClasses.*;
+import com.demgames.miscclasses.SendClasses.*;
+
 import android.content.Context;
 import android.util.Log;
 
@@ -11,10 +14,14 @@ import com.esotericsoftware.kryonet.Listener;
 
 public class ClientListener extends Listener{
 
-    Globals globals;
+    private Globals globals;
+    private String myPlayerName;
+    private String networkMode;
 
-    public ClientListener(Context myContext) {
-        globals =(Globals)myContext;
+    public ClientListener(Context context, String myPlayerName_, String networkMode_) {
+        this.globals =(Globals)context;
+        this.myPlayerName = myPlayerName_;
+        this.networkMode = networkMode_;
     }
 
     private static final String TAG = "ClientListener";
@@ -22,7 +29,7 @@ public class ClientListener extends Listener{
     @Override
     public void connected(Connection connection) {
         try {
-            synchronized (globals.getSettingsVariables().connectionThreadLock) {
+            synchronized (globals.getComm().connectionThreadLock) {
                 String tempIpAdress=connection.getRemoteAddressTCP().toString();
                 tempIpAdress=tempIpAdress.substring(1,tempIpAdress.length()).split(":")[0];
                 Log.e(TAG, tempIpAdress+" connected.");
@@ -35,7 +42,7 @@ public class ClientListener extends Listener{
     @Override
     public void disconnected(Connection connection) {
         Log.e(TAG, " disconnected.");
-        synchronized (globals.getSettingsVariables().connectionThreadLock) {
+        synchronized (globals.getComm().connectionThreadLock) {
             if(GDXGameLauncher.GDXGAME!=null) {
                 GDXGameLauncher.GDXGAME.finish();
             }
@@ -45,24 +52,17 @@ public class ClientListener extends Listener{
     @Override
     public void received(Connection connection,Object object) {
         Log.d(TAG, "Package received.");
-        if(object instanceof Globals.SendVariables.SendDiscoveryResponse) {
+        if(object instanceof SendDiscoveryResponse) {
             try {
-                synchronized (globals.getSettingsVariables().receiveThreadLock) {
-                    synchronized (globals.getSettingsVariables().connectionThreadLock) {
-                        Globals.SendVariables.SendDiscoveryResponse discoveryResponse = (Globals.SendVariables.SendDiscoveryResponse) object;
+                synchronized (globals.getComm().receiveThreadLock) {
+                    synchronized (globals.getComm().connectionThreadLock) {
+                        SendDiscoveryResponse discoveryResponse = (SendDiscoveryResponse) object;
 
                         String tempIpAdress = connection.getRemoteAddressTCP().toString();
                         tempIpAdress = tempIpAdress.substring(1, tempIpAdress.length()).split(":")[0];
                         Log.e(TAG, tempIpAdress + " discoveryresponse of " + discoveryResponse.myPlayerName);
-                        IGlobals.Player tempPlayer = new IGlobals.Player();
-                        tempPlayer.ipAdress = tempIpAdress;
-                        tempPlayer.name = discoveryResponse.myPlayerName;
 
-                        if (globals.getSettingsVariables().addPlayerToList(tempPlayer)) {
-                            globals.getSettingsVariables().updateListViewState = true;
-                        } else {
-                            Log.e(TAG, tempIpAdress + " already in playerlist");
-                        }
+                        globals.getComm().addDiscoveryPlayer(discoveryResponse.myPlayerName,tempIpAdress);
                     }
                 }
             } catch (NullPointerException e) {

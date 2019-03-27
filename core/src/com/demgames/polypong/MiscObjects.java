@@ -154,7 +154,8 @@ public class MiscObjects {
             for(int i=0;i<this.maxTouchCount;i++) {
                 if (Gdx.input.isTouched(i)) {
                     this.isTouched[i] = true;
-                    this.touchPos[i]=transformZoom((Gdx.input.getX(i)/screenWidth-0.5f) *camera.viewportWidth,(-Gdx.input.getY(i)/screenHeight+0.5f) *camera.viewportHeight,camera, fixedPoint);
+                    this.touchPos[i]=transformZoom(((float)Gdx.input.getX(i)/screenWidth-0.5f) *camera.viewportWidth,(-(float)Gdx.input.getY(i)/screenHeight+0.5f) *camera.viewportHeight,camera, fixedPoint);
+                    Gdx.app.debug(TAG,"touchpos is "+ this.touchPos[0].x + " " + this.touchPos[0].y);
                 } else {
                     this.isTouched[i] = false;
                 }

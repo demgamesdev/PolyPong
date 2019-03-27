@@ -1,0 +1,18 @@
+apply plugin: 'java-library'
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'com.esotericsoftware:kryonet:2.22.0-RC1'
+    implementation "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
+    implementation 'com.google.guava:guava:27.0.1-android'
+
+    implementation (group: 'org.deeplearning4j', name: 'deeplearning4j-nn', version: '1.0.0-SNAPSHOT'){
+        exclude group: 'org.bytedeco.javacpp-presets', module: 'opencv-platform'
+        exclude group: 'org.bytedeco.javacpp-presets', module: 'leptonica-platform'
+        exclude group: 'org.bytedeco.javacpp-presets', module: 'hdf5-platform'
+        exclude group: 'org.nd4j', module: 'nd4j-base64'
+    }
+}
+
+sourceCompatibility = "8"
+targetCompatibility = "8"

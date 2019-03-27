@@ -56,11 +56,13 @@ public class HostOptionsActivity extends AppCompatActivity implements AdapterVie
             @Override
             public void onClick(View view) {
                 Intent startHostActivity = new Intent(getApplicationContext(), HostActivity.class);
+                startHostActivity.putExtra("myplayername",getIntent().getStringExtra("myplayername"));
                 startHostActivity.putExtra("numberofballs",ballsSeekBar.getProgress());
                 startHostActivity.putExtra("friction",frictionSeekBar.getProgress());
                 startHostActivity.putExtra("gravitystate",gravityCheckBox.isChecked());
                 startHostActivity.putExtra("attractionstate",attractionCheckBox.isChecked());
                 startHostActivity.putExtra("gamemode",gameMode);
+                startHostActivity.putExtra("networkmode","host");
                 startActivity(startHostActivity);
 
             }

@@ -26,6 +26,8 @@ import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.demgames.miscclasses.GameObjectClasses;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -212,13 +214,13 @@ public class ManageActivity extends AppCompatActivity {
                             TextView unitsTextView = (TextView) mView.findViewById(R.id.unitsTextView);
                             SeekBar unitsSeekBar = (SeekBar) mView.findViewById(R.id.unitsSeekBar);
 
-                            ballsTextView.setText("Balls set to "+ ballsSeekBar.getProgress());
-                            layersTextView.setText("Layers set to "+ layersSeekBar.getProgress());
-                            unitsTextView.setText("Units of first layer set to "+ unitsSeekBar.getProgress());
+                            ballsTextView.setText("Balls setReceived to "+ ballsSeekBar.getProgress());
+                            layersTextView.setText("Layers setReceived to "+ layersSeekBar.getProgress());
+                            unitsTextView.setText("Units of first layer setReceived to "+ unitsSeekBar.getProgress());
 
                             ballsSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                                    ballsTextView.setText("Balls set to " + progress);
+                                    ballsTextView.setText("Balls setReceived to " + progress);
                                 }
 
                                 public void onStartTrackingTouch(SeekBar seekBar) {
@@ -230,7 +232,7 @@ public class ManageActivity extends AppCompatActivity {
                             });
                             layersSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                                    layersTextView.setText("Layers set to " + progress);
+                                    layersTextView.setText("Layers setReceived to " + progress);
                                 }
 
                                 public void onStartTrackingTouch(SeekBar seekBar) {
@@ -242,7 +244,7 @@ public class ManageActivity extends AppCompatActivity {
                             });
                             unitsSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                                    unitsTextView.setText("Units of first layer set to "+ progress);
+                                    unitsTextView.setText("Units of first layer setReceived to "+ progress);
                                 }
 
                                 public void onStartTrackingTouch(SeekBar seekBar) {
@@ -275,12 +277,13 @@ public class ManageActivity extends AppCompatActivity {
 
                                         String agentName = agentNameEditText.getText().toString()+ "_"+ Integer.toString(numberOfPlayers) + "_" + Integer.toString(numberOfBalls) + "_" + tempUnits;
 
-                                        globals.getAI().buildModel(agentName);
+                                        globals.getNeuralNetwork().buildModel(agentName);
 
-                                        Intent intent = new Intent(getActivity(),TrainingActivity.class);
-                                        intent.putExtra("agentname",agentName);
+                                        Intent startTraining = new Intent(getActivity(),TrainingActivity.class);
+                                        startTraining.putExtra("agentname",agentName);
+                                        startTraining.putExtra("myplayername",getActivity().getIntent().getStringExtra("myplayernumber"));
                                         //based on item add info to intent
-                                        startActivity(intent);
+                                        startActivity(startTraining);
                                         updateAgentListView();
                                     }
                                 }
@@ -331,11 +334,11 @@ public class ManageActivity extends AppCompatActivity {
                             TextView ballsTextView = (TextView) mView.findViewById(R.id.ballsTextView);
                             SeekBar ballsSeekBar = (SeekBar) mView.findViewById(R.id.ballsSeekBar);
 
-                            ballsTextView.setText("Balls set to "+ ballsSeekBar.getProgress());
+                            ballsTextView.setText("Balls setReceived to "+ ballsSeekBar.getProgress());
 
                             ballsSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                                    ballsTextView.setText("Balls set to " + progress);
+                                    ballsTextView.setText("Balls setReceived to " + progress);
                                 }
 
                                 public void onStartTrackingTouch(SeekBar seekBar) {
@@ -355,29 +358,34 @@ public class ManageActivity extends AppCompatActivity {
                                         int numberOfPlayers = 2;
                                         String dataName = dataNameEditText.getText().toString()+ "_" + Integer.toString(numberOfPlayers) + "_" + ballsSeekBar.getProgress() ;
 
-                                        globals.getGameVariables().myPlayerNumber = 0;
-                                        globals.getSettingsVariables().gameMode = "training";
-                                        globals.getSettingsVariables().playerNames.add("test1");
-                                        globals.getSettingsVariables().playerNames.add("test2");
 
-                                        globals.getGameVariables().numberOfBalls = ballsSeekBar.getProgress();
-                                        globals.getGameVariables().numberOfPlayers = 2;
-                                        globals.getGameVariables().setBalls(true);
-                                        globals.getGameVariables().setBats();
 
-                                        globals.getGameVariables().aiState = false;
-                                        globals.getGameVariables().gravityState = true;
-                                        globals.getGameVariables().attractionState = false;
 
-                                        globals.getGameVariables().inputs.clear();
-                                        globals.getGameVariables().outputs.clear();
 
-                                        globals.getAI().initDataSet(dataName);
-                                        globals.getAI().saveData();
+                                        globals.getAgent().inputs.clear();
+                                        globals.getAgent().outputs.clear();
+                                        globals.setupNeuralNetwork(getContext());
+                                        globals.getNeuralNetwork().initDataSet(dataName);
+                                        globals.getNeuralNetwork().saveData();
 
-                                        Intent startGame = new Intent(getActivity(), GDXGameLauncher.class);
-                                        startGame.putExtra("dataname",dataName);
-                                        startActivity(startGame);
+                                        globals.getComm().initGame(0,ballsSeekBar.getProgress(),2,"normal",true,false,true);
+                                        globals.getComm().resetPlayerMap();
+                                        globals.getComm().playerMap.put(0,new GameObjectClasses.Player("Dummy","0.0.0.0"));
+                                        globals.getComm().playerMap.put(1,new GameObjectClasses.Player("Dummy","0.0.0.0"));
+
+                                        Intent startGDXGameLauncher = new Intent(getActivity(), GDXGameLauncher.class);
+
+                                        startGDXGameLauncher.putExtra("dataname",dataName);
+                                        startGDXGameLauncher.putExtra("myplayername",getActivity().getIntent().getStringExtra("myplayername"));
+                                        startGDXGameLauncher.putExtra("myplayernumber",0);
+                                        startGDXGameLauncher.putExtra("numberofplayers",globals.getComm().playerMap.size());
+                                        startGDXGameLauncher.putExtra("numberofballs",ballsSeekBar.getProgress());
+                                        startGDXGameLauncher.putExtra("gravitystate",true);
+                                        startGDXGameLauncher.putExtra("attractionstate",false);
+                                        startGDXGameLauncher.putExtra("gamemode","training");
+                                        startGDXGameLauncher.putExtra("mode","normal");
+                                        startGDXGameLauncher.putExtra("agentmode",false);
+                                        startActivity(startGDXGameLauncher);
                                         updateDataListView();
                                     }
                                 }

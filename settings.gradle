@@ -1,1 +1,2 @@
+include ':networkthreads', ':customclasses', ':MiscClasses'
 include 'desktop', 'android', 'html', 'core'

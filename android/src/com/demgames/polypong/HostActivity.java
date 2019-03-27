@@ -9,6 +9,7 @@ import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.SparseBooleanArray;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -21,6 +22,11 @@ import android.widget.TextView;
 import android.view.KeyEvent;
 import android.widget.Toast;
 import android.os.Vibrator;
+
+import com.demgames.miscclasses.GameObjectClasses.*;
+import com.demgames.miscclasses.SendClasses.*;
+import com.demgames.polypong.network.ClientListener;
+import com.demgames.polypong.network.ServerListener;
 
 import java.io.File;
 import java.math.BigInteger;
@@ -35,7 +41,9 @@ import java.util.List;
 public class HostActivity extends AppCompatActivity{
 
     private static final String TAG = "HostActivity";
-    private UpdateTask serverListUpdateTask;
+    private UpdateTask searchClientsUpdateTask;
+    private String myIpAdress;
+    private ListView serverListView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,84 +67,76 @@ public class HostActivity extends AppCompatActivity{
 
         /***Decklarationen***/
 
-        final Globals globalVariables = (Globals) getApplicationContext();
-        final Button startGameButton= (Button) findViewById(R.id.startGameButton);
+        final Globals globals = (Globals) getApplicationContext();
+        final Button startGameButton= (Button) findViewById(R.id.hostStartGameButton);
         final Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 
-        globalVariables.getSettingsVariables().setupConnectionState =0;
-        globalVariables.getSettingsVariables().resetArrayLists();
-        globalVariables.getSettingsVariables().startServerThread();
-        globalVariables.setListeners(getApplicationContext());
-        globalVariables.getSettingsVariables().serverThread.getServer().addListener(globalVariables.getServerListener());
-        globalVariables.getSettingsVariables().myPlayerNumber =0;
-        globalVariables.getGameVariables().myPlayerNumber =globalVariables.getSettingsVariables().myPlayerNumber;
+        globals.getComm().setSetupConnectionState(0);
+        globals.getComm().resetLists();
+        globals.getComm().startServerThread(new ServerListener(getApplicationContext(),getIntent().getStringExtra("myplayername"),getIntent().getStringExtra("networkmode")));
 
 
         //IP Suche
-        serverListUpdateTask = new UpdateTask();
-        serverListUpdateTask.execute();
+        searchClientsUpdateTask = new UpdateTask();
+        searchClientsUpdateTask.execute();
 
 
         startGameButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                globalVariables.getSettingsVariables().ipAdresses= new ArrayList<String>(Arrays.asList(new String[] {}));
-                globalVariables.getSettingsVariables().playerNames= new ArrayList<String>(Arrays.asList(new String[] {}));
-                globalVariables.getSettingsVariables().ipAdresses.add(globalVariables.getSettingsVariables().myIpAdress);
-                globalVariables.getSettingsVariables().playerNames.add(globalVariables.getSettingsVariables().myPlayerName);
+                globals.getComm().resetPlayerMap();
+                globals.getComm().playerMap.put(0,new Player(getIntent().getStringExtra("myplayername"),myIpAdress));
 
-                for(int i=0; i<globalVariables.getSettingsVariables().discoveryIpAdresses.size();i++) {
-                    if(globalVariables.getSettingsVariables().discoveryIsChecked.get(i)){
-                        globalVariables.getSettingsVariables().ipAdresses.add(globalVariables.getSettingsVariables().discoveryIpAdresses.get(i));
-                        globalVariables.getSettingsVariables().playerNames.add(globalVariables.getSettingsVariables().discoveryPlayerNames.get(i));
+                /** add checked clients to player map*/
+                SparseBooleanArray checkedClientsIndices = serverListView.getCheckedItemPositions();
+                int playerIndex =1; //starting with 0 for host
+                for(int i=0; i<globals.getComm().discoveryPlayers.size();i++) {
+                    if(checkedClientsIndices.get(i)){
+                        globals.getComm().playerMap.put(playerIndex,new Player(globals.getComm().discoveryPlayers.get(i)));
+                        playerIndex++;
                     }
                 }
 
-                if(globalVariables.getSettingsVariables().ipAdresses.size()>1) {
 
-                    globalVariables.getSettingsVariables().numberOfPlayers = globalVariables.getSettingsVariables().ipAdresses.size();
-                    globalVariables.getGameVariables().numberOfPlayers = globalVariables.getSettingsVariables().numberOfPlayers;
-
-                    //globalVariables.getGameVariables().numberOfBalls = globalVariables.getGameVariables().perPlayerBalls * globalVariables.getGameVariables().numberOfPlayers;
-
-                    globalVariables.getGameVariables().setBalls(true);
-                    globalVariables.getGameVariables().setBats();
-
+                if(globals.getComm().playerMap.size()>1) {
                     vibrator.vibrate(50);
-                    Toast.makeText(HostActivity.this, "Verbindung zu" + Integer.toString(globalVariables.getSettingsVariables().numberOfPlayers - 1)
-                            + " Spielern wird hergestellt", Toast.LENGTH_SHORT).show();
 
-                    if(globalVariables.getSettingsVariables().setupConnectionState<2) {
-                        globalVariables.getSettingsVariables().startAllClientThreads();
-                        globalVariables.getSettingsVariables().setAllClientListeners(globalVariables.getClientListener());
+                    globals.getComm().initGame(0,getIntent().getIntExtra("numberofballs",1),globals.getComm().playerMap.size(),
+                            getIntent().getStringExtra("gamemode"),getIntent().getBooleanExtra("gravitystate",false),
+                            getIntent().getBooleanExtra("attractionstate", false),true);
+
+
+                    Toast.makeText(HostActivity.this, "Connecting to " + Integer.toString(globals.getComm().playerMap.size()- 1)
+                            + " players", Toast.LENGTH_SHORT).show();
+
+                    /**i.e. not yet pressed on start game*/
+                    if(globals.getComm().setupConnectionState<2) {
+                        globals.getComm().startAllClientThreads(0,globals.getComm().playerMap.size(),new ClientListener(getApplicationContext(),getIntent().getStringExtra("myplayername"),
+                                getIntent().getStringExtra("networkmode")));
                     }
-                    globalVariables.getSettingsVariables().connectAllClients();
-                    Log.d(TAG, "Connected to all clients.");
+                    globals.getComm().connectAllClients(globals.getComm().playerMap,myIpAdress);
+                    /**connected to all clients*/
+                    Log.d(TAG, "Connecting to all clients.");
 
-                    IGlobals.Ball[] tempBalls = new IGlobals.Ball[globalVariables.getGameVariables().numberOfBalls];
+                    /**prepare base settings*/
+                    SendSettings sendSettings = new SendSettings();
+                    sendSettings = new SendSettings();
+                    sendSettings.yourPlayerNumber = 0;
+                    sendSettings.numberOfPlayers = globals.getComm().playerMap.size();
+                    sendSettings.playerMap = globals.getComm().playerMap;
+                    sendSettings.balls = globals.getComm().balls;
+                    sendSettings.gameMode = getIntent().getStringExtra("gamemode");
+                    sendSettings.gravityState = getIntent().getBooleanExtra("gravitystate",false);
+                    sendSettings.attractionState = getIntent().getBooleanExtra("attractionstate",false);
 
-                    for (int i = 0; i < globalVariables.getGameVariables().numberOfBalls; i++) {
-                        tempBalls[i] = globalVariables.getGameVariables().balls[i];
+
+                    for (int i = 1; i < globals.getComm().playerMap.size(); i++) {
+                        globals.getComm().sendObjectToClient(new SendSettings(sendSettings,i), "tcp",i);
                     }
 
-                    for (int i = 1; i < globalVariables.getSettingsVariables().numberOfPlayers; i++) {
-                        Globals.SendVariables.SendSettings settings = new Globals.SendVariables.SendSettings();
-                        settings.yourPlayerNumber = i;
-                        settings.numberOfPlayers = globalVariables.getSettingsVariables().numberOfPlayers;
-                        settings.ipAdresses = globalVariables.getSettingsVariables().ipAdresses.toArray(new String[0]);
-                        settings.playerNames = globalVariables.getSettingsVariables().playerNames.toArray(new String[0]);
+                    globals.getComm().clientConnectionStatesMap.put(0,2);
+                    globals.getComm().setupConnectionState = 2;
 
-                        settings.balls = tempBalls;
-
-                        settings.gameMode = globalVariables.getSettingsVariables().gameMode;
-                        settings.gravityState = globalVariables.getGameVariables().gravityState;
-                        settings.attractionState = globalVariables.getGameVariables().attractionState;
-
-                        globalVariables.getSettingsVariables().clientThreads[i].addObjectToProtocolSendList(settings, "tcp");
-                    }
-
-                    globalVariables.getSettingsVariables().setupConnectionState = 2;
-                    globalVariables.getSettingsVariables().clientConnectionStates[globalVariables.getSettingsVariables().myPlayerNumber] = 2;
                 }
             }
         });
@@ -145,7 +145,7 @@ public class HostActivity extends AppCompatActivity{
     @Override
     protected void onDestroy() {
 
-        serverListUpdateTask.cancel(true);
+        searchClientsUpdateTask.cancel(true);
         Log.d(TAG, "onDestroy: UpdateTask canceled");
         final Globals globalVariables=(Globals) getApplication();
         Log.d(TAG, "onDestroy: updatethread interrupted");
@@ -153,47 +153,13 @@ public class HostActivity extends AppCompatActivity{
         super.onDestroy();
     }
 
-    /********* OTHER FUNCTIONS *********/
-
-
-    protected String wifiIpAddress(Context context) {
-        WifiManager wifiManager = (WifiManager) context.getSystemService(WIFI_SERVICE);
-        int ipAddress = wifiManager.getConnectionInfo().getIpAddress();
-
-        // Convert little-endian to big-endian if needed
-        if (ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN)) {
-            ipAddress = Integer.reverseBytes(ipAddress);
-        }
-
-        byte[] ipByteArray = BigInteger.valueOf(ipAddress).toByteArray();
-        String ipAddressString;
-        try {
-            ipAddressString = InetAddress.getByAddress(ipByteArray).getHostAddress();
-        } catch (UnknownHostException ex) {
-            Log.e("WIFIIP", "Unable to get host address.");
-            //ipAddressString = null;
-            ipAddressString = "192.168.43.1";
-        }
-        return ipAddressString;
-    }
-
-    boolean checkIfIp(String teststring) {
-        if(teststring != null) {
-            String[] parts = teststring.split("\\.");
-            if (parts.length == 4) {
-                return (true);
-            }
-        }
-        return (false);
-    }
-
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if ((keyCode == KeyEvent.KEYCODE_BACK)) {
             Log.d(this.getClass().getName(), "back button pressed");
             Globals globalVariables = (Globals) getApplicationContext();
-            globalVariables.getSettingsVariables().serverThread.shutdownServer();
-            globalVariables.getSettingsVariables().shutdownAllClients();
+            globalVariables.getComm().shutdownServer();
+            globalVariables.getComm().shutdownAllClients();
 
         }
         return super.onKeyDown(keyCode, event);
@@ -201,31 +167,33 @@ public class HostActivity extends AppCompatActivity{
 
 
     /********* Thread Function - Searching IP and displaying *********/
-    //Zeigt die IP Adresse an während dem Suchen
     class UpdateTask extends AsyncTask<Void,Void,Void>{
 
-        Globals globalVariables = (Globals) getApplicationContext();
+        Globals globals = (Globals) getApplicationContext();
         //ArrayAdapter<String> serverListViewAdapter;
-        MiscClasses.PlayerArrayAdapter serverListViewAdapter;
-        final TextView myIpTextView = (TextView) findViewById(R.id.IPtextView);
-        final AlertDialog.Builder makeDialog = new AlertDialog.Builder(HostActivity.this);
+        CustomAdapters.PlayerArrayAdapter serverListViewAdapter;
+
+        final TextView myIpTextView = (TextView) findViewById(R.id.HostIpTextView);
         final View mView = getLayoutInflater().inflate(R.layout.dialog_choose_agent,null,false);
         final ListView availableAgentsListView = (ListView) mView.findViewById(R.id.availableAgentsListView);
         final Button selfPlayButton = (Button) mView.findViewById(R.id.selfPlayButton);
+
+        final AlertDialog.Builder makeDialog = new AlertDialog.Builder(HostActivity.this);
+        AlertDialog alertDialog;
+
         List<String> agentsList = new ArrayList<>();
         List<String> agentsNameList = new ArrayList<>();
-        ArrayAdapter agentsAdapter =
-                new ArrayAdapter<>(getApplication(),R.layout.item_textview, R.id.listViewtextView,agentsNameList);
-        AlertDialog alertDialog;
+        ArrayAdapter agentsAdapter = new ArrayAdapter<>(getApplication(),R.layout.item_textview, R.id.listViewtextView,agentsNameList);
+
 
         final UpdateTask updateTask = this;
 
         @Override
         protected void onPreExecute() {
-            ListView serverListView = (ListView) findViewById(R.id.serverListView);
+            serverListView = (ListView) findViewById(R.id.hostFoundClientsListView);
             serverListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
-            serverListViewAdapter = new MiscClasses.PlayerArrayAdapter(HostActivity.this,R.layout.item_choice_multiple,R.id.choiceMultipleTextView,globalVariables.getSettingsVariables().playerList);
-            //serverListViewAdapter = new ClientPlayerArrayAdapter(HostActivity.this, R.layout.serverlistview_row, R.id.connectionCheckedTextView,globalVariables.getSettingsVariables().discoveryIpAdresses);
+            serverListViewAdapter = new CustomAdapters.PlayerArrayAdapter(HostActivity.this,R.layout.item_choice_multiple,R.id.choiceMultipleTextView, globals.getComm().discoveryPlayers);
+            //serverListViewAdapter = new ClientPlayerArrayAdapter(HostActivity.this, R.layout.serverlistview_row, R.id.connectionCheckedTextView,globals.getSettingsVariables().discoveryIpAdresses);
 
             serverListView.setAdapter(serverListViewAdapter);
             availableAgentsListView.setAdapter(agentsAdapter);
@@ -236,11 +204,18 @@ public class HostActivity extends AppCompatActivity{
             selfPlayButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    Intent intent = new Intent(getApplication(),GDXGameLauncher.class);
-                    intent.putExtra("mode","normal");
-                    intent.putExtra("agentmode",false);
+                    Intent startGDXGameLauncher = new Intent(getApplication(),GDXGameLauncher.class);
+                    startGDXGameLauncher.putExtra("myplayername",getIntent().getStringExtra("myplayername"));
+                    startGDXGameLauncher.putExtra("myplayernumber",0);
+                    startGDXGameLauncher.putExtra("numberofplayers",globals.getComm().playerMap.size());
+                    startGDXGameLauncher.putExtra("numberofballs",getIntent().getIntExtra("numberofballs",1));
+                    startGDXGameLauncher.putExtra("gravitystate",getIntent().getBooleanExtra("gravitystate",false));
+                    startGDXGameLauncher.putExtra("attractionstate",getIntent().getBooleanExtra("attractionstate",false));
+                    startGDXGameLauncher.putExtra("gamemode",getIntent().getStringExtra("gamemode"));
+                    startGDXGameLauncher.putExtra("mode","normal");
+                    startGDXGameLauncher.putExtra("agentmode",false);
                     alertDialog.dismiss();
-                    startActivity(intent);
+                    startActivity(startGDXGameLauncher);
                     updateTask.cancel(true);
                     finish();
                 }
@@ -250,13 +225,20 @@ public class HostActivity extends AppCompatActivity{
             availableAgentsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-
-                    Intent intent = new Intent(getApplication(),GDXGameLauncher.class);
-                    intent.putExtra("mode","normal");
-                    intent.putExtra("agentmode",true);
-                    intent.putExtra("agentname",agentsList.get(i));
+                    globals.setupNeuralNetwork(getApplicationContext());
+                    Intent startGDXGameLauncher = new Intent(getApplication(),GDXGameLauncher.class);
+                    startGDXGameLauncher.putExtra("myplayername",getIntent().getStringExtra("myplayername"));
+                    startGDXGameLauncher.putExtra("myplayernumber",0);
+                    startGDXGameLauncher.putExtra("numberofplayers",globals.getComm().playerMap.size());
+                    startGDXGameLauncher.putExtra("numberofballs",getIntent().getIntExtra("numberofballs",1));
+                    startGDXGameLauncher.putExtra("gravitystate",getIntent().getBooleanExtra("gravitystate",false));
+                    startGDXGameLauncher.putExtra("attractionstate",getIntent().getBooleanExtra("attractionstate",false));
+                    startGDXGameLauncher.putExtra("gamemode",getIntent().getStringExtra("gamemode"));
+                    startGDXGameLauncher.putExtra("mode","normal");
+                    startGDXGameLauncher.putExtra("agentmode",true);
+                    startGDXGameLauncher.putExtra("agentname",agentsList.get(i));
                     alertDialog.dismiss();
-                    startActivity(intent);
+                    startActivity(startGDXGameLauncher);
                     updateTask.cancel(true);
                     finish();
 
@@ -264,19 +246,19 @@ public class HostActivity extends AppCompatActivity{
                 }
             });
 
-            //globalVariables.setSearchConnecState(true);
+            //globals.setSearchConnecState(true);
 
 
-            serverListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            /*serverListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                     Log.d(TAG, "onItemClick: " + Integer.toString(i));
-                    Log.d(TAG, "onItemClick: " + globalVariables.getSettingsVariables().discoveryIpAdresses.get(i));
+                    Log.d(TAG, "onItemClick: " + globals.getComm().discoveryPlayers.get(i).ipAdress);
                     CheckedTextView checkedTextView = (CheckedTextView) view;
-                    globalVariables.getSettingsVariables().discoveryIsChecked.set(i,checkedTextView.isChecked());
+                    globals.getSettingsVariables().discoveryIsChecked.setReceived(i,checkedTextView.isChecked());
 
                 }
-            });
+            });*/
 
 
         }
@@ -288,46 +270,31 @@ public class HostActivity extends AppCompatActivity{
 
             Log.d(TAG, "doInBackground: Anfang Suche");
 
-            while(globalVariables.getSettingsVariables().setupConnectionState ==0 && !isCancelled()){
+            /** waiting for connection request*/
+            while(globals.getComm().setupConnectionState ==0 && !isCancelled()){
                 //sendHostConnect();
-                publishProgress();
+
                 try {
                     Thread.currentThread().sleep(30);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                globalVariables.getSettingsVariables().myIpAdress=wifiIpAddress(getApplicationContext());
-
-                myIpTextView.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (checkIfIp(globalVariables.getSettingsVariables().myIpAdress)) {
-                            myIpTextView.setText("Deine IP-Adresse lautet: " + globalVariables.getSettingsVariables().myIpAdress);
-                        }
-                        else {
-                            myIpTextView.setText("Unable to get Ip-Adress");
-                        }
-                    }
-                });
+                myIpAdress=getMyIpAdress(getApplicationContext());
+                publishProgress();
             }
 
 
-            Log.d(TAG, "doInBackground: Ende Suche");
+            Log.d(TAG, "doInBackground: discovery ended");
 
-            while(globalVariables.getSettingsVariables().setupConnectionState ==1 && !isCancelled()) {
-
+            /**wait for all clients to receive settings*/
+            while(!globals.getComm().checkAllClientConnectionStates(2) && !isCancelled()) {
+                Log.d(TAG, "doInBackground: not all clients in state 2");
             }
 
-            while(!globalVariables.getSettingsVariables().checkAllClientConnectionStates(2) && !isCancelled()) {
+            /**send ready for game*/
+            globals.getComm().sendObjectToAllClients(new SendConnectionState(0,3),"tcp");
 
-            }
-
-            IGlobals.SendVariables.SendConnectionState sendConnectionState=new IGlobals.SendVariables.SendConnectionState();
-            sendConnectionState.myPlayerNumber=globalVariables.getSettingsVariables().myPlayerNumber;
-            sendConnectionState.connectionState=3;
-            globalVariables.getSettingsVariables().sendObjectToAllClients(sendConnectionState,"tcp");
-
-            globalVariables.getSettingsVariables().clientConnectionStates[globalVariables.getSettingsVariables().myPlayerNumber] =3;
+            globals.getComm().clientConnectionStatesMap.put(0,3);
 
             if(!isCancelled()) {
                 File agentsDir = new File(getApplication().getFilesDir().getAbsolutePath() + File.separator + "agents");
@@ -336,22 +303,13 @@ public class HostActivity extends AppCompatActivity{
                     String[] tempSplit1 = agentFiles[i].split("\\.");
 
                     String[] tempSplit2 = tempSplit1[0].split("_");
-                    if(tempSplit2[2].equals(Integer.toString(globalVariables.getGameVariables().numberOfBalls))) {
+                    if(tempSplit2[2].equals(Integer.toString(getIntent().getIntExtra("numberofballs",1)))) {
                         agentsList.add(tempSplit1[0]);
                         agentsNameList.add(tempSplit2[0]+" (" + tempSplit2[3]+")");
                     }
 
                 }
                 agentsAdapter.notifyDataSetChanged();
-
-
-                //serverListUpdateTask.cancel(true);
-
-
-                //startActivity(new Intent(getApplicationContext(), GDXGameLauncher.class));
-                //globalVariables.myThread.stop();
-
-                //finish();
 
                 Log.d(TAG, "Game started");
             } else {
@@ -362,11 +320,21 @@ public class HostActivity extends AppCompatActivity{
 
         @Override
         protected void onProgressUpdate(Void... values) {
-            if(globalVariables.getSettingsVariables().updateListViewState) {
-                serverListViewAdapter.notifyDataSetChanged();
-                globalVariables.getSettingsVariables().updateListViewState=false;
-                //
+            serverListViewAdapter.notifyDataSetChanged();
+
+            if (checkIfIp(myIpAdress)) {
+                myIpTextView.setText("Deine IP-Adresse lautet: " + myIpAdress);
             }
+            else {
+                myIpTextView.setText("Unable to get Ip-Adress");
+            }
+
+            myIpTextView.post(new Runnable() {
+                @Override
+                public void run() {
+
+                }
+            });
         }
 
         @Override
@@ -382,7 +350,41 @@ public class HostActivity extends AppCompatActivity{
             Log.d(TAG, "onPostExecute:  UpdateTask Abgeschlossen");
 
         }
-        HostActivity m_activity = null;
+    }
+
+    /********* OTHER FUNCTIONS *********/
+
+    protected String getMyIpAdress(Context context) {
+        WifiManager wifiManager = (WifiManager) context.getSystemService(WIFI_SERVICE);
+        int ipAdress = wifiManager.getConnectionInfo().getIpAddress();
+
+        // Convert little-endian to big-endian if needed
+        if (ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN)) {
+            ipAdress = Integer.reverseBytes(ipAdress);
+        }
+
+        byte[] ipByteArray = BigInteger.valueOf(ipAdress).toByteArray();
+        String ipAddressString;
+        try {
+            ipAddressString = InetAddress.getByAddress(ipByteArray).getHostAddress();
+        } catch (UnknownHostException ex) {
+            Log.e("WIFIIP", "Unable to get host address.");
+            //ipAddressString = null;
+            ipAddressString = "192.168.43.1";
+        }
+        return ipAddressString;
+    }
+
+    boolean checkIfIp(String string) {
+        if(string != null) {
+            String[] parts = string.split("\\."); //String wird bei jedem Punkt gesplittet
+            if (parts.length == 4) {                        //String muss aus 4 Teilen bestehen
+                return (true);
+            }
+        }
+
+        return (false);
+
     }
 
 

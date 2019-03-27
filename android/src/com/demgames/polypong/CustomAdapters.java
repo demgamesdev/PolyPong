@@ -7,23 +7,21 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
+import com.demgames.miscclasses.GameObjectClasses.*;
+
 import java.util.List;
 
-public class MiscClasses {
+public class CustomAdapters {
 
-    MiscClasses() {
-
-    }
-
-    static class ClientPlayerArrayAdapter extends ArrayAdapter<IGlobals.Player> {
-        public ClientPlayerArrayAdapter(Context context, int resource, List<IGlobals.Player> players) {
+    static class ClientPlayerArrayAdapter extends ArrayAdapter<Player> {
+        public ClientPlayerArrayAdapter(Context context, int resource, List<Player> players) {
             super(context, resource, players);
         }
 
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
             // Get the data item for this position
-            IGlobals.Player player = getItem(position);
+            Player player = getItem(position);
             // Check if an existing view is being reused, otherwise inflate the view
             if (convertView == null) {
                 convertView = LayoutInflater.from(getContext()).inflate(R.layout.item_choice_multiple, parent, false);
@@ -39,15 +37,15 @@ public class MiscClasses {
         }
     }
 
-    static class ServerArrayAdapter extends ArrayAdapter<IGlobals.Player> {
-        public ServerArrayAdapter(Context context, List<IGlobals.Player> players) {
+    static class ServerArrayAdapter extends ArrayAdapter<Player> {
+        public ServerArrayAdapter(Context context, List<Player> players) {
             super(context, 0, players);
         }
 
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
             // Get the data item for this position
-            IGlobals.Player player = getItem(position);
+            Player player = getItem(position);
             // Check if an existing view is being reused, otherwise inflate the view
             if (convertView == null) {
                 convertView = LayoutInflater.from(getContext()).inflate(R.layout.item_choice_multiple, parent, false);
@@ -63,10 +61,10 @@ public class MiscClasses {
         }
     }
 
-    static class PlayerArrayAdapter extends ArrayAdapter<IGlobals.Player> {
+    static class PlayerArrayAdapter extends ArrayAdapter<Player> {
         private int layoutRes;
         private int idRes;
-        public PlayerArrayAdapter(Context context, int layoutRes_, int idRes_,  List<IGlobals.Player> players) {
+        public PlayerArrayAdapter(Context context, int layoutRes_, int idRes_,  List<Player> players) {
             super(context, 0, players);
             this.layoutRes = layoutRes_;
             this.idRes = idRes_;
@@ -75,7 +73,7 @@ public class MiscClasses {
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
             // Get the data item for this position
-            IGlobals.Player player = getItem(position);
+            Player player = getItem(position);
             // Check if an existing view is being reused, otherwise inflate the view
             if (convertView == null) {
                 convertView = LayoutInflater.from(getContext()).inflate(this.layoutRes, parent, false);

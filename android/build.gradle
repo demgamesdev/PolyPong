@@ -87,6 +87,8 @@ dependencies {
     implementation group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.3.5-1.4.4', classifier: "android-arm64"
     implementation group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.3.5-1.4.4', classifier: "android-x86"
     implementation group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.3.5-1.4.4', classifier: "android-x86_64"
+
+    implementation project(':MiscClasses')
 }
 
 

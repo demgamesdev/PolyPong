@@ -1,31 +1,24 @@
 package com.demgames.polypong;
 
-import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
-import android.service.autofill.Dataset;
-import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.util.SparseBooleanArray;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.ListView;
-import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.demgames.miscclasses.GameObjectClasses;
+
 import org.nd4j.linalg.dataset.DataSet;
-import org.w3c.dom.Text;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,7 +46,6 @@ public class TrainingActivity extends AppCompatActivity {
         final TextView agentNameTextView = (TextView) findViewById(R.id.agentNameTextView);
         final CheckBox resumeCheckBox = (CheckBox) findViewById(R.id.resumeCheckBox);
         final ListView trainingDataListView = (ListView) findViewById(R.id.trainingDataListView);
-        globals.getAI().infoTextView = infoTextView;
 
         String agentName = getIntent().getStringExtra("agentname");
         String[] agentNameSplit1 = agentName.split("_");
@@ -90,7 +82,7 @@ public class TrainingActivity extends AppCompatActivity {
                 SparseBooleanArray checkedItemPositions = trainingDataListView.getCheckedItemPositions();
                 for(int i=0;i<dataList.size();i++) {
                     if(checkedItemPositions.get(i)){
-                        DataSet tempDataSet = globals.getAI().loadData(dataList.get(i));
+                        DataSet tempDataSet = globals.getNeuralNetwork().loadData(dataList.get(i));
                         checkedDataSetList.add(tempDataSet);
                         System.out.println("dataset " + i + " size " + tempDataSet.numExamples());
                     }
@@ -100,22 +92,13 @@ public class TrainingActivity extends AppCompatActivity {
                     DataSet combinedDataSet = DataSet.merge(checkedDataSetList);
                     System.out.println("combined dataset size " + combinedDataSet.numExamples());
 
-                    /*try {
-                        FileOutputStream fos = new FileOutputStream(new File(getFilesDir(),"")+File.separator+"traindataset.ds");
-                        combinedDataSet.save(fos);
-                        fos.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }*/
-
-
                     if (resumeCheckBox.isChecked()) {
-                        globals.getAI().loadModel(agentName);
+                        globals.getNeuralNetwork().loadModel(agentName);
                     } else {
-                        globals.getAI().buildModel(agentName);
+                        globals.getNeuralNetwork().buildModel(agentName);
                     }
 
-                    globals.getAI().train(combinedDataSet, 5000, true);
+                    globals.getNeuralNetwork().train(combinedDataSet, 5000, true);
                     //model.save();
                 } else {
                     Toast.makeText(getApplication(), "Select at least one dataset",
@@ -127,25 +110,28 @@ public class TrainingActivity extends AppCompatActivity {
         testButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                globals.getAI().loadModel(agentName);
-                globals.getGameVariables().model = globals.getAI().model;
+                globals.setupNeuralNetwork(getApplicationContext());
+                globals.getNeuralNetwork().loadModel(agentName);
                 //model.test(trainingSet.dataSet);
 
-                globals.getGameVariables().myPlayerNumber = 0;
-                globals.getSettingsVariables().gameMode = "testing";
-                globals.getSettingsVariables().playerNames.add("test1");
-                globals.getSettingsVariables().playerNames.add("test2");
+                globals.getComm().initGame(0,ballNumber,2,"normal",true,false,true);
+                globals.getComm().resetPlayerMap();
+                globals.getComm().playerMap.put(0,new GameObjectClasses.Player("Dummy","0.0.0.0"));
+                globals.getComm().playerMap.put(1,new GameObjectClasses.Player("Dummy","0.0.0.0"));
 
-                globals.getGameVariables().numberOfBalls = ballNumber;
-                globals.getGameVariables().numberOfPlayers = 2;
-                globals.getGameVariables().setBalls(true);
-                globals.getGameVariables().setBats();
 
-                globals.getGameVariables().aiState = true;
-                globals.getGameVariables().gravityState = true;
-                globals.getGameVariables().attractionState = true;
-                Intent startGame = new Intent(getApplicationContext(), GDXGameLauncher.class);
-                startActivity(startGame);
+                Intent startGDXGameLauncher = new Intent(getApplicationContext(), GDXGameLauncher.class);
+
+                startGDXGameLauncher.putExtra("myplayername",getIntent().getStringExtra("myplayername"));
+                startGDXGameLauncher.putExtra("myplayernumber",0);
+                startGDXGameLauncher.putExtra("numberofplayers",globals.getComm().playerMap.size());
+                startGDXGameLauncher.putExtra("numberofballs",ballNumber);
+                startGDXGameLauncher.putExtra("gravitystate",true);
+                startGDXGameLauncher.putExtra("attractionstate",false);
+                startGDXGameLauncher.putExtra("gamemode","testing");
+                startGDXGameLauncher.putExtra("mode","normal");
+                startGDXGameLauncher.putExtra("agentmode",true);
+                startActivity(startGDXGameLauncher);
 
             }
         });
@@ -161,7 +147,7 @@ public class TrainingActivity extends AppCompatActivity {
         Globals globals = (Globals) getApplicationContext();
 
         try{
-            globals.getAI().trainingTask.cancel(true);
+            globals.getNeuralNetwork().cancelTraining();
             Toast.makeText(getApplication(), "Training canceled",
                     Toast.LENGTH_LONG).show();
         } catch(Exception e) {

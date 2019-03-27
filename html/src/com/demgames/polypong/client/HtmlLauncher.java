@@ -15,7 +15,7 @@ public class HtmlLauncher extends GwtApplication {
         // END CODE FOR FIXED SIZE APPLICATION
 
         // UNCOMMENT THIS CODE FOR A RESIZABLE APPLICATION
-        // PADDING is to avoid scrolling in iframes, set to 20 if you have problems
+        // PADDING is to avoid scrolling in iframes, setReceived to 20 if you have problems
         // private static final int PADDING = 0;
         // private GwtApplicationConfiguration cfg;
         //

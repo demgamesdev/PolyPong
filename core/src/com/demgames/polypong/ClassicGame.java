@@ -1,5 +1,7 @@
 package com.demgames.polypong;
 
+import com.demgames.miscclasses.SendClasses.*;
+
 import com.badlogic.gdx.Application;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
@@ -23,12 +25,20 @@ public class ClassicGame extends ApplicationAdapter{
     //use of private etc is not consistently done
     private IGlobals globals;
     private String mode;
-    private boolean agentmode;
-    private int screenHeight, screenWidth;
+    private boolean gravityState,attractionState,agentmode;
+    private int myPlayerNumber,numberOfPlayers,numberOfBalls,screenHeight, screenWidth;
+
+    private String[] playerNames;
 
     //setup global variables
-    public ClassicGame(IGlobals globals_ ,String mode_, boolean agentmode_, int screenHeight_, int screenWidth_) {
+    public ClassicGame(IGlobals globals_ , int myPlayerNumber_, int numberOfPlayers_, int numberOfBalls_, boolean gravityState_,
+                       boolean attractionState_,String mode_, boolean agentmode_, int screenHeight_, int screenWidth_) {
         this.globals =globals_;
+        this.myPlayerNumber = myPlayerNumber_;
+        this.numberOfPlayers = numberOfPlayers_;
+        this.numberOfBalls = numberOfBalls_;
+        this.gravityState = gravityState_;
+        this.attractionState = attractionState_;
         this.mode =mode_;
         this.agentmode =agentmode_;
         this.screenHeight = screenHeight_;
@@ -44,8 +54,6 @@ public class ClassicGame extends ApplicationAdapter{
     private Matrix4 debugMatrix;
     private OrthographicCamera camera;
 
-    private int myPlayerNumber;
-    private int numberOfPlayers;
     private boolean allPlayersReady;
 
     List<String> notReadyPlayerList;
@@ -67,24 +75,26 @@ public class ClassicGame extends ApplicationAdapter{
         this.width = 1f;
         this.height = 2f;
 
-        //Gdx.app.debug("ClassicGame", " has focus " + globals.getSettingsVariables().hasFocus);
+        //Gdx.app.debug("ClassicGame", " has focus " + globals.getSettingsVariables().gameHasFocus);
 
-        this.myPlayerNumber = globals.getSettingsVariables().myPlayerNumber;
-        this.numberOfPlayers = globals.getSettingsVariables().numberOfPlayers;
         this.allPlayersReady = false;
         this.notReadyPlayerList = new ArrayList<String>();
-        //setup gameobjects
+        this.playerNames = new String[this.numberOfPlayers];
+        for(int i=0;i<this.numberOfPlayers;i++) {
+            this.playerNames[i] = globals.getComm().playerMap.get(i).name;
+        }
+
         this.miscObjects = new MiscObjects(globals,this.myPlayerNumber,this.width,this.height,this.screenHeight,this.screenWidth);
 
         this.gameObjects = new ClassicGameObjects(this.globals,this.myPlayerNumber,this.numberOfPlayers,
-                globals.getSettingsVariables().playerNames.toArray(new String[0]), globals.getGameVariables().numberOfBalls, globals.getGameVariables().balls,width,height, this.screenWidth, this.screenHeight, miscObjects,
-                globals.getGameVariables().gravityState, globals.getGameVariables().attractionState,this.agentmode);
+                this.playerNames, this.numberOfBalls, globals.getComm().balls,width,height, this.screenWidth, this.screenHeight, this.miscObjects,
+                this.gravityState, this.attractionState,this.agentmode);
 
         this.miscObjects.setMaxZoom(this.gameObjects.gameField.gameFieldPolygon.getBoundingRectangle(),this.width);
-        //set fov of camera to displayGame
-        this.camera = new OrthographicCamera(this.width, this.screenHeight/ this.screenWidth*width);
+        //setReceived fov of camera to displayGame
+        this.camera = new OrthographicCamera(this.width, (float)this.screenHeight/ this.screenWidth*width);
 
-        //set position to middle of normal screen
+        //setReceived position to middle of normal screen
         this.camera.position.set(0, -this.height/2+gameObjects.gameField.offset.y, 0);
         this.camera.update();
 
@@ -93,7 +103,7 @@ public class ClassicGame extends ApplicationAdapter{
         this.debugRenderer=new Box2DDebugRenderer();
         //shaperenderer for rendering shapes duuh
         this.shapeRenderer = new ShapeRenderer();
-        //set font and spriteBatch for drawing fonts and textures
+        //setReceived font and spriteBatch for drawing fonts and textures
         this.spriteBatch = new SpriteBatch();
         this.polygonSpriteBatch = new PolygonSpriteBatch();
 
@@ -101,13 +111,10 @@ public class ClassicGame extends ApplicationAdapter{
             globals.getGameVariables().bats[i].batPosition = miscObjects.touches.touchPos[0];
         }*/
 
-        globals.getSettingsVariables().clientConnectionStates[globals.getSettingsVariables().myPlayerNumber] =4;
-        IGlobals.SendVariables.SendConnectionState sendConnectionState = new IGlobals.SendVariables.SendConnectionState();
-        sendConnectionState.myPlayerNumber = globals.getSettingsVariables().myPlayerNumber;
-        sendConnectionState.connectionState = 4;
-        globals.getSettingsVariables().sendObjectToAllClients(sendConnectionState, "tcp");
+        globals.getComm().sendObjectToAllClients(new SendConnectionState(this.myPlayerNumber,4), "tcp");
+        globals.getComm().clientConnectionStatesMap.put(this.myPlayerNumber,4);
 
-        globals.getGameVariables().gameState =1;
+        globals.getComm().setGameState(1);
 
     }
 
@@ -123,7 +130,7 @@ public class ClassicGame extends ApplicationAdapter{
 
     @Override
     public void render() {
-        //Gdx.app.debug("ClassicGame", " has focus " + globals.getSettingsVariables().hasFocus);
+        //Gdx.app.debug("ClassicGame", " has focus " + globals.getSettingsVariables().gameHasFocus);
         Gdx.app.postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -134,10 +141,10 @@ public class ClassicGame extends ApplicationAdapter{
         this.miscObjects.touches.checkTouches(gameObjects.gameField.offset,camera,gameObjects.fixedPoint);
         this.miscObjects.touches.checkZoomGesture();
 
-        this.allPlayersReady = globals.getSettingsVariables().checkAllClientConnectionStates(4);
+        this.allPlayersReady = globals.getComm().checkAllClientConnectionStates(4);
         //Gdx.app.debug("ClassicGame", " touchPos "+miscObjects.touches.touchPos[0]);
 
-        if(this.allPlayersReady && globals.getGameVariables().gameState == 1) {
+        if(this.allPlayersReady && globals.getComm().gameState == 1) {
 
             //update from globals and update playerfields
 
@@ -153,14 +160,14 @@ public class ClassicGame extends ApplicationAdapter{
         } else if(!gameObjects.allBallsDestroyedState){
             this.notReadyPlayerList = new ArrayList(Arrays.asList(new String[]{}));
             for(int i=0; i<this.numberOfPlayers;i++) {
-                if(globals.getSettingsVariables().clientConnectionStates[i]!=4) {
-                    this.notReadyPlayerList.add(globals.getSettingsVariables().playerNames.get(i));
+                if(globals.getComm().clientConnectionStatesMap.get(i)!=4) {
+                    this.notReadyPlayerList.add(globals.getComm().playerMap.get(i).name);
                 }
             }
 
             Gdx.app.debug("ClassicGame", " not all players ready");
             for(int i=0; i<this.numberOfPlayers;i++){
-                Gdx.app.debug("ClassicGame", " state of player "+i + " : " + globals.getSettingsVariables().clientConnectionStates[i]);
+                Gdx.app.debug("ClassicGame", " state of player "+i + " : " + globals.getComm().clientConnectionStatesMap.get(i));
             }
         }
         this.drawScreen();
@@ -180,7 +187,7 @@ public class ClassicGame extends ApplicationAdapter{
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         //Gdx.gl.glDisable(GL20.GL_BLEND);
         camera.zoom= miscObjects.zoomLevel;
-        //camera.position.set(0,-height+height/2*miscObjects.zoomLevel+gameObjects.gameField.offset.y,0);
+        //camera.position.setReceived(0,-height+height/2*miscObjects.zoomLevel+gameObjects.gameField.offset.y,0);
         camera.position.set(0,gameObjects.fixedPoint.y+miscObjects.zoomLevel*camera.viewportHeight/2,0);
         //Gdx.app.debug(TAG,Float.toString(gameObjects.fixedPoint.y));
         //Gdx.app.debug(TAG,Float.toString(camera.viewportHeight));
