@@ -77,12 +77,14 @@ public class TrainingActivity extends AppCompatActivity {
         trainButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                globals.setupAgent(getApplicationContext());
 
                 List<DataSet> checkedDataSetList = new ArrayList<>();
                 SparseBooleanArray checkedItemPositions = trainingDataListView.getCheckedItemPositions();
+
                 for(int i=0;i<dataList.size();i++) {
                     if(checkedItemPositions.get(i)){
-                        DataSet tempDataSet = globals.getNeuralNetwork().loadData(dataList.get(i));
+                        DataSet tempDataSet = globals.getAgent().loadData(dataList.get(i));
                         checkedDataSetList.add(tempDataSet);
                         System.out.println("dataset " + i + " size " + tempDataSet.numExamples());
                     }
@@ -93,12 +95,12 @@ public class TrainingActivity extends AppCompatActivity {
                     System.out.println("combined dataset size " + combinedDataSet.numExamples());
 
                     if (resumeCheckBox.isChecked()) {
-                        globals.getNeuralNetwork().loadModel(agentName);
+                        globals.getAgent().loadModel(agentName);
                     } else {
-                        globals.getNeuralNetwork().buildModel(agentName);
+                        globals.getAgent().buildModel(agentName);
                     }
 
-                    globals.getNeuralNetwork().train(combinedDataSet, 5000, true);
+                    globals.getAgent().train(combinedDataSet, 5000, true);
                     //model.save();
                 } else {
                     Toast.makeText(getApplication(), "Select at least one dataset",
@@ -110,8 +112,8 @@ public class TrainingActivity extends AppCompatActivity {
         testButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                globals.setupNeuralNetwork(getApplicationContext());
-                globals.getNeuralNetwork().loadModel(agentName);
+                globals.setupAgent(getApplicationContext());
+                globals.getAgent().loadModel(agentName);
                 //model.test(trainingSet.dataSet);
 
                 globals.getComm().initGame(0,ballNumber,2,"normal",true,false,true);
@@ -147,7 +149,7 @@ public class TrainingActivity extends AppCompatActivity {
         Globals globals = (Globals) getApplicationContext();
 
         try{
-            globals.getNeuralNetwork().cancelTraining();
+            globals.getAgent().cancelTraining();
             Toast.makeText(getApplication(), "Training canceled",
                     Toast.LENGTH_LONG).show();
         } catch(Exception e) {

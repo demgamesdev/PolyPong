@@ -30,8 +30,7 @@ public class Globals extends Application implements IGlobals{
     List<InetAddress> hostsList;
 
     private CommunicationClass comm = new CommunicationClass();
-    private Agent agent = new Agent();
-    private Agent.NeuralNetwork neuralNetwork;
+    private Agent agent;
 
 
     @Override
@@ -39,12 +38,8 @@ public class Globals extends Application implements IGlobals{
     @Override
     public synchronized Agent getAgent() {return (this.agent);}
 
-    @Override
-    public Agent.NeuralNetwork getNeuralNetwork(){
-        return(this.neuralNetwork);
-    }
-    public void setupNeuralNetwork(Context context) {
-        this.neuralNetwork = new Agent.NeuralNetwork(context.getFilesDir());
+    public void setupAgent(Context context) {
+        this.agent = new Agent(context.getFilesDir());
     }
 
 }

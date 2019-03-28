@@ -145,9 +145,9 @@ public class TrainingGame extends ApplicationAdapter{
 
 
         if(this.agentmode) {
-            INDArray output = globals.getNeuralNetwork().model.output(Nd4j.create(new double[][]{gameInput}));
-            System.out.println("output " + output + output.getFloat(0));
-            globals.getComm().bats[this.myPlayerNumber].batPosition.set(output.getFloat(0)*width,output.getFloat(1)*height);
+            float[] prediction = globals.getAgent().predict(gameInput);
+            System.out.println(TAG + " prediction " +prediction[0] + ", " + prediction[1]);
+            globals.getComm().bats[this.myPlayerNumber].batPosition.set(prediction[0]*width,prediction[1]*height);
         } else {
             if (frameNumber%4 == 0) {
 

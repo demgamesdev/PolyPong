@@ -10,6 +10,4 @@ public interface IGlobals {
 
     CommunicationClass getComm();
     Agent getAgent();
-    Agent.NeuralNetwork getNeuralNetwork();
-
 }

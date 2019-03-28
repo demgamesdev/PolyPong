@@ -277,7 +277,8 @@ public class ManageActivity extends AppCompatActivity {
 
                                         String agentName = agentNameEditText.getText().toString()+ "_"+ Integer.toString(numberOfPlayers) + "_" + Integer.toString(numberOfBalls) + "_" + tempUnits;
 
-                                        globals.getNeuralNetwork().buildModel(agentName);
+                                        globals.setupAgent(getActivity().getApplicationContext());
+                                        globals.getAgent().buildModel(agentName);
 
                                         Intent startTraining = new Intent(getActivity(),TrainingActivity.class);
                                         startTraining.putExtra("agentname",agentName);
@@ -361,12 +362,11 @@ public class ManageActivity extends AppCompatActivity {
 
 
 
-
+                                        globals.setupAgent(getActivity().getApplicationContext());
                                         globals.getAgent().inputs.clear();
                                         globals.getAgent().outputs.clear();
-                                        globals.setupNeuralNetwork(getContext());
-                                        globals.getNeuralNetwork().initDataSet(dataName);
-                                        globals.getNeuralNetwork().saveData();
+                                        globals.getAgent().initDataSet(dataName);
+                                        globals.getAgent().saveData();
 
                                         globals.getComm().initGame(0,ballsSeekBar.getProgress(),2,"normal",true,false,true);
                                         globals.getComm().resetPlayerMap();

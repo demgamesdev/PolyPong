@@ -225,7 +225,7 @@ public class HostActivity extends AppCompatActivity{
             availableAgentsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    globals.setupNeuralNetwork(getApplicationContext());
+                    globals.setupAgent(getApplicationContext());
                     Intent startGDXGameLauncher = new Intent(getApplication(),GDXGameLauncher.class);
                     startGDXGameLauncher.putExtra("myplayername",getIntent().getStringExtra("myplayername"));
                     startGDXGameLauncher.putExtra("myplayernumber",0);

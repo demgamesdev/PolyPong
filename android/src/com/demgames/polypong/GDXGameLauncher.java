@@ -35,7 +35,7 @@ public class GDXGameLauncher extends AndroidApplication {
                     getIntent().getBooleanExtra("attractionstate",false),getIntent().getStringExtra("mode"),
                     getIntent().getBooleanExtra("agentmode",false),displayMetrics.heightPixels,displayMetrics.widthPixels);
             if(getIntent().getBooleanExtra("agentmode",false)) {
-                globals.getNeuralNetwork().loadModel(getIntent().getStringExtra("agentname"));
+                globals.getAgent().loadModel(getIntent().getStringExtra("agentname"));
                 //globals.getGameVariables().model = globals.getNeuralNetwork().model;
             }
             initialize(game, config);
@@ -68,8 +68,8 @@ public class GDXGameLauncher extends AndroidApplication {
             Log.d(TAG, "input length "+globals.getAgent().inputs.size());
             //System.out.println(globals.getGameVariables().inputs);
 
-            globals.getNeuralNetwork().createDataSet(getIntent().getStringExtra("dataname"),globals.getAgent().inputs,globals.getAgent().outputs);
-            globals.getNeuralNetwork().saveData();
+            globals.getAgent().createDataSet(getIntent().getStringExtra("dataname"),globals.getAgent().inputs,globals.getAgent().outputs);
+            globals.getAgent().saveData();
         }
 
 

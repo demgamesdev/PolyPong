@@ -215,9 +215,8 @@ public class ClassicGameObjects {
                     this.scores[i] = globals.getComm().playerScores[i];
                 } else {
                     if(this.agentmode) {
-                        INDArray output = globals.getNeuralNetwork().model.output(Nd4j.create(new double[][]{this.agentInput}));
-                        System.out.println("output " + output + output.getFloat(0));
-                        this.bats[i].updatePos(output.getFloat(0) * width,output.getFloat(1) * height);
+                        float[] prediction = globals.getAgent().predict(this.agentInput);
+                        this.bats[i].updatePos(prediction[0] * width,prediction[1] * height);
                     } else {
                         if (miscObjects.touches.isTouched[0] && !miscObjects.touches.isTouched[1]) {
                             this.bats[i].updatePos(miscObjects.touches.touchPos[0]);
