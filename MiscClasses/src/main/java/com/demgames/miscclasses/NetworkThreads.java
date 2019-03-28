@@ -93,7 +93,6 @@ public class NetworkThreads {
         private SendGameInfo sendGameInfo;
         private SendDiscoveryRequest sendDiscoveryRequest;
 
-        private Multimap<String,Object> sendMultiMap;
         private Map<String,Object> sendInfoMap;
 
         private final Object connectionThreadLock = new Object();
@@ -118,7 +117,7 @@ public class NetworkThreads {
 
             this.connectionTimer = 0;
             this.discoveryTimer = 50;
-            this.sendGameInfoTimer = 50;
+            this.sendGameInfoTimer = 0;
 
             this.tcpPendingObjects = new ArrayList<Object>();
             this.udpPendingObjects = new ArrayList<Object>();
@@ -135,7 +134,6 @@ public class NetworkThreads {
             this.sendDiscoveryRequest = new SendDiscoveryRequest();
             this.sendGameInfo.gameInfoMap = new ConcurrentHashMap<String, Object>();
 
-            this.sendMultiMap = Multimaps.synchronizedMultimap(HashMultimap.<String, Object>create());
             this.sendInfoMap = new ConcurrentHashMap<String, Object>();
 
         }
