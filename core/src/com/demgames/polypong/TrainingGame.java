@@ -134,29 +134,10 @@ public class TrainingGame extends ApplicationAdapter{
         /*this.gameInput = new double[]{gameObjects.bats[this.myPlayerNumber].batBody.getPosition().x,gameObjects.bats[this.myPlayerNumber].batBody.getPosition().y,
                 gameObjects.bats[this.myPlayerNumber].batBody.getLinearVelocity().x,gameObjects.bats[this.myPlayerNumber].batBody.getLinearVelocity().y,gameObjects.balls[0].ballBody.getPosition().x,gameObjects.balls[0].ballBody.getPosition().y,
                 gameObjects.balls[0].ballBody.getLinearVelocity().x,gameObjects.balls[0].ballBody.getLinearVelocity().y};*/
-
-        double [] gameInput = new double[4*gameObjects.balls.length];
-        for(int i=0;i<gameObjects.balls.length;i++) {
-            gameInput[0+4*i] = gameObjects.balls[i].ballBody.getPosition().x;
-            gameInput[1+4*i] = gameObjects.balls[i].ballBody.getPosition().y;
-            gameInput[2+4*i] = gameObjects.balls[i].ballBody.getLinearVelocity().x;
-            gameInput[3+4*i] = gameObjects.balls[i].ballBody.getLinearVelocity().y;
-        }
-
-
-        if(this.agentmode) {
-            float[] prediction = globals.getAgent().predict(gameInput);
-            System.out.println(TAG + " prediction " +prediction[0] + ", " + prediction[1]);
-            globals.getComm().bats[this.myPlayerNumber].batPosition.set(prediction[0]*width,prediction[1]*height);
-        } else {
-            if (frameNumber%4 == 0) {
-
-                this.globals.getAgent().inputs.add(gameInput);
-                this.globals.getAgent().outputs.add(new double[]{gameObjects.bats[0].batBody.getPosition().x/width,gameObjects.bats[0].batBody.getPosition().y/height});
-            }
-        }
         this.miscObjects.touches.checkTouches(gameObjects.gameField.offset,camera,gameObjects.fixedPoint);
         this.miscObjects.touches.checkZoomGesture();
+
+        this.gameObjects.update();
 
         if(!gameObjects.allBallsDestroyedState) {
             gameObjects.doPhysics();

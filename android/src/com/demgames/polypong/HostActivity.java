@@ -345,7 +345,9 @@ public class HostActivity extends AppCompatActivity{
 
         @Override
         protected void onPostExecute(Void Void) {
-            alertDialog.show();
+            if (!isCancelled()) {
+                alertDialog.show();
+            }
 
             Log.d(TAG, "onPostExecute:  UpdateTask Abgeschlossen");
 

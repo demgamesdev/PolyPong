@@ -365,8 +365,8 @@ public class ManageActivity extends AppCompatActivity {
                                         globals.setupAgent(getActivity().getApplicationContext());
                                         globals.getAgent().inputs.clear();
                                         globals.getAgent().outputs.clear();
-                                        globals.getAgent().initDataSet(dataName);
-                                        globals.getAgent().saveData();
+                                        globals.getAgent().initDataSet();
+                                        globals.getAgent().saveDataSet(dataName);
 
                                         globals.getComm().initGame(0,ballsSeekBar.getProgress(),2,"normal",true,false,true);
                                         globals.getComm().resetPlayerMap();

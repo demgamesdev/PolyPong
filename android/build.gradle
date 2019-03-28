@@ -70,7 +70,7 @@ dependencies {
     natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-x86"
     natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-x86_64"
 
-    implementation (group: 'org.deeplearning4j', name: 'deeplearning4j-nn', version: '1.0.0-SNAPSHOT'){
+    implementation (group: 'org.deeplearning4j', name: 'deeplearning4j-nn', version: '1.0.0-beta3'){
         exclude group: 'org.bytedeco.javacpp-presets', module: 'opencv-platform'
         exclude group: 'org.bytedeco.javacpp-presets', module: 'leptonica-platform'
         exclude group: 'org.bytedeco.javacpp-presets', module: 'hdf5-platform'
@@ -97,7 +97,7 @@ dependencies {
 // the natives configuration, and extracts them to the proper libs/ folders
 // so they get packed with the APK.
 task copyAndroidNatives() { 
-    /*file("libs/armeabi/").mkdirs();
+    file("libs/armeabi/").mkdirs();
     file("libs/armeabi-v7a/").mkdirs();
     file("libs/arm64-v8a/").mkdirs();
     file("libs/x86_64/").mkdirs();
@@ -117,8 +117,8 @@ task copyAndroidNatives() {
                 include "*.so"
             }
         }
-    }*/
-    file("lib/native/").mkdirs();
+    }
+    /*file("lib/native/").mkdirs();
     configurations.natives.files.each { jar ->
         def outputDir = null
         if(jar.name.endsWith("natives-arm64-v8a.jar")) outputDir = file("libs/native")
@@ -133,7 +133,7 @@ task copyAndroidNatives() {
                 include "*.so"
             }
         }
-    }
+    }*/
 }
 
 task run(type: Exec) {

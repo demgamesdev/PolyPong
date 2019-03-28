@@ -1,6 +1,7 @@
 package com.demgames.polypong;
 
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.SparseBooleanArray;
@@ -15,6 +16,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.demgames.miscclasses.GameObjectClasses;
+import com.google.common.util.concurrent.AtomicDouble;
 
 import org.nd4j.linalg.dataset.DataSet;
 
@@ -25,7 +27,8 @@ import java.util.List;
 
 public class TrainingActivity extends AppCompatActivity {
 
-    private static final String TAG = "trainingActivity";
+    private static final String TAG = "TrainingActivity";
+    private TextView infoTextView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,7 +45,7 @@ public class TrainingActivity extends AppCompatActivity {
         final Button trainButton = (Button) findViewById(R.id.trainButton);
         final Button testButton = (Button) findViewById(R.id.testButton);
 
-        final TextView infoTextView = (TextView) findViewById(R.id.trainingTextView);
+        this.infoTextView = (TextView) findViewById(R.id.trainingTextView);
         final TextView agentNameTextView = (TextView) findViewById(R.id.agentNameTextView);
         final CheckBox resumeCheckBox = (CheckBox) findViewById(R.id.resumeCheckBox);
         final ListView trainingDataListView = (ListView) findViewById(R.id.trainingDataListView);
@@ -74,6 +77,8 @@ public class TrainingActivity extends AppCompatActivity {
         trainingDataListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         trainingDataListView.setAdapter(dataAdapter);
 
+
+
         trainButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -84,7 +89,7 @@ public class TrainingActivity extends AppCompatActivity {
 
                 for(int i=0;i<dataList.size();i++) {
                     if(checkedItemPositions.get(i)){
-                        DataSet tempDataSet = globals.getAgent().loadData(dataList.get(i));
+                        DataSet tempDataSet = globals.getAgent().loadDataSet(dataList.get(i));
                         checkedDataSetList.add(tempDataSet);
                         System.out.println("dataset " + i + " size " + tempDataSet.numExamples());
                     }
@@ -94,13 +99,11 @@ public class TrainingActivity extends AppCompatActivity {
                     DataSet combinedDataSet = DataSet.merge(checkedDataSetList);
                     System.out.println("combined dataset size " + combinedDataSet.numExamples());
 
-                    if (resumeCheckBox.isChecked()) {
-                        globals.getAgent().loadModel(agentName);
-                    } else {
-                        globals.getAgent().buildModel(agentName);
-                    }
+                    int nIterations = 5000;
 
-                    globals.getAgent().train(combinedDataSet, 5000, true);
+                    globals.getAgent().train(combinedDataSet, agentName,nIterations, resumeCheckBox.isChecked(),true);
+                    TrainInfoTask trainingInfoTask = new TrainInfoTask();
+                    trainingInfoTask.execute(nIterations);
                     //model.save();
                 } else {
                     Toast.makeText(getApplication(), "Select at least one dataset",
@@ -139,6 +142,34 @@ public class TrainingActivity extends AppCompatActivity {
         });
     }
 
+    private class TrainInfoTask extends AsyncTask<Integer, Double, Void> {
+        @Override
+        protected Void doInBackground(Integer... params) {
+            Globals globals = (Globals) getApplicationContext();
+            AtomicDouble[] trainingData =globals.getAgent().getTrainingData();
+            while(globals.getAgent().isTrainingRunning()) {
+                trainingData = globals.getAgent().getTrainingData();
+                publishProgress((double)params[0],trainingData[0].get(),trainingData[1].get());
+                try{
+                    Thread.sleep(100);
+                } catch(InterruptedException e){
+                    e.printStackTrace();
+                }
+            }
+            publishProgress((double)params[0],trainingData[0].get(),trainingData[1].get());
+            System.out.println(TAG + " TrainInfoTask ended");
+            return null;
+        }
+
+        @Override
+        protected void onPreExecute() {
+        }
+
+        @Override
+        protected void onProgressUpdate(Double... values) {
+            infoTextView.setText("Episode "+values[1].intValue() + "/"+values[0].intValue() + " error "+String.format("%.4f",values[2]));
+        }
+    }
 
 
 
@@ -149,7 +180,7 @@ public class TrainingActivity extends AppCompatActivity {
         Globals globals = (Globals) getApplicationContext();
 
         try{
-            globals.getAgent().cancelTraining();
+            globals.getAgent().interruptTraining();
             Toast.makeText(getApplication(), "Training canceled",
                     Toast.LENGTH_LONG).show();
         } catch(Exception e) {

@@ -48,8 +48,9 @@ public class TrainingGameObjects {
     Ball[] balls;
     Bat[] bats;
     int[] scores;
+    double [] agentInput;
     private ConcurrentHashMap<Integer, Integer> ballDisplayStatesMap;
-    boolean allBallsDestroyedState;
+    boolean allBallsDestroyedState,agentmode;
 
     private MiscObjects miscObjects;
 
@@ -84,6 +85,7 @@ public class TrainingGameObjects {
         this.width = width_;
         this.height = height_;
         this.miscObjects = miscObjects_;
+        this.agentmode = agentmode_;
 
         this.metersToPixels = 1f/1080f;
         this.allBallsDestroyedState = false;
@@ -162,6 +164,29 @@ public class TrainingGameObjects {
             this.scores[i] = 0;
             this.bats[i]=new Bat(i);
         }
+
+        this.agentInput = new double[4*this.numberOfBalls];
+    }
+
+    void update() {
+        for (int i = 0; i < this.balls.length; i++) {
+            if (this.balls[i].ballDisplayState == 1) {
+                this.agentInput[0 + 4 * i] = this.balls[i].ballBody.getPosition().x;
+                this.agentInput[1 + 4 * i] = this.balls[i].ballBody.getPosition().y;
+                this.agentInput[2 + 4 * i] = this.balls[i].ballBody.getLinearVelocity().x;
+                this.agentInput[3 + 4 * i] = this.balls[i].ballBody.getLinearVelocity().y;
+            }
+        }
+        if(this.agentmode) {
+            float[] prediction = globals.getAgent().predict(this.agentInput);
+            this.bats[0].updatePos(prediction[0] * width,prediction[1] * height);
+        } else {
+            if (miscObjects.touches.isTouched[0] && !miscObjects.touches.isTouched[1]) {
+                this.bats[0].updatePos(miscObjects.touches.touchPos[0]);
+            }
+            this.globals.getAgent().inputs.add(this.agentInput);
+            this.globals.getAgent().outputs.add(new double[]{this.bats[0].batBody.getPosition().x/this.width,this.bats[0].batBody.getPosition().y/this.height});
+        }
     }
 
     void doPhysics() {
@@ -217,230 +242,230 @@ public class TrainingGameObjects {
     /********* CLASSES *********/
 
     //create class Ball
-    class Ball {
-        Body ballBody;
+        class Ball {
+            Body ballBody;
 
-        private float ballRadius,frictionFactor,spinFactor,frictionThreshold;
+            private float ballRadius,frictionFactor,spinFactor,frictionThreshold;
 
-        int ballNumber, playerField, tempPlayerField,tempGoal;
+            int ballNumber, playerField, tempPlayerField,tempGoal;
 
-        //arraylist with max length for balltrace
-        private MiscObjects.BoundedArrayList<Vector2> ballPositionArrayList;
-        private int ballPositionFrameSkip=4;
-        private long ballUpdateCounter=0;
+            //arraylist with max length for balltrace
+            private MiscObjects.BoundedArrayList<Vector2> ballPositionArrayList;
+            private int ballPositionFrameSkip=4;
+            private long ballUpdateCounter=0;
 
-        private Vector2 ballForwardPosition,ballUnitVelocity;
-        private Vector2 destroyPosition;
-        private long destroyTime;
+            private Vector2 ballForwardPosition,ballUnitVelocity;
+            private Vector2 destroyPosition;
+            private long destroyTime;
 
-        private Sprite ballSprite;
-        private Sprite traceSprite;
+            private Sprite ballSprite;
+            private Sprite traceSprite;
 
-        private boolean lostState;
+            private boolean lostState;
 
-        private int lostCounter;
+            private int lostCounter;
 
-        int ballDisplayState;
+            int ballDisplayState;
 
-        //constructor for Ball
-        Ball(int ballNumber_, int ballPlayerField_, float ballRadius_,Vector2 ballPosition_,Vector2 ballVelocity_, float ballAngle_, float ballAngularVelocity_, int ballPositionArrayListLength_) {
+            //constructor for Ball
+            Ball(int ballNumber_, int ballPlayerField_, float ballRadius_,Vector2 ballPosition_,Vector2 ballVelocity_, float ballAngle_, float ballAngularVelocity_, int ballPositionArrayListLength_) {
 
 
-            this.ballRadius =ballRadius_;
-            this.ballNumber=ballNumber_;
-            this.lostState =false;
+                this.ballRadius =ballRadius_;
+                this.ballNumber=ballNumber_;
+                this.lostState =false;
 
-            this.ballPositionArrayList = new MiscObjects.BoundedArrayList(ballPositionArrayListLength_);
+                this.ballPositionArrayList = new MiscObjects.BoundedArrayList(ballPositionArrayListLength_);
 
-            //setReceived bodytype
-            BodyDef ballBodyDef= new BodyDef();
-            ballBodyDef.type = BodyDef.BodyType.DynamicBody;
-            ballBodyDef.bullet=true;
-            ballBodyDef.position.set(ballPosition_);
-            this.ballBody = world.createBody(ballBodyDef);
+                //setReceived bodytype
+                BodyDef ballBodyDef= new BodyDef();
+                ballBodyDef.type = BodyDef.BodyType.DynamicBody;
+                ballBodyDef.bullet=true;
+                ballBodyDef.position.set(ballPosition_);
+                this.ballBody = world.createBody(ballBodyDef);
 
-            CircleShape ballShape = new CircleShape();
-            ballShape.setPosition(new Vector2(0,0));
-            ballShape.setRadius(this.ballRadius);
+                CircleShape ballShape = new CircleShape();
+                ballShape.setPosition(new Vector2(0,0));
+                ballShape.setRadius(this.ballRadius);
 
-            FixtureDef ballFixtureDef = new FixtureDef();
-            ballFixtureDef.shape= ballShape;
-            ballFixtureDef.density=1e-5f;
-            ballFixtureDef.friction = 1000f;
-            ballFixtureDef.filter.categoryBits = CATEGORY_BALL;
-            ballFixtureDef.filter.maskBits = MASK_BALL;
+                FixtureDef ballFixtureDef = new FixtureDef();
+                ballFixtureDef.shape= ballShape;
+                ballFixtureDef.density=1e-5f;
+                ballFixtureDef.friction = 1000f;
+                ballFixtureDef.filter.categoryBits = CATEGORY_BALL;
+                ballFixtureDef.filter.maskBits = MASK_BALL;
 
-            this.ballBody.createFixture(ballFixtureDef);
-            ballShape.dispose();
+                this.ballBody.createFixture(ballFixtureDef);
+                ballShape.dispose();
 
-            this.ballBody.setTransform(gameField.getNewBallStartPosition(ballPlayerField_),ballAngle_);
-            this.ballBody.setLinearVelocity(ballVelocity_);
-            this.ballBody.setAngularVelocity(ballAngularVelocity_);
+                this.ballBody.setTransform(gameField.getNewBallStartPosition(ballPlayerField_),ballAngle_);
+                this.ballBody.setLinearVelocity(ballVelocity_);
+                this.ballBody.setAngularVelocity(ballAngularVelocity_);
 
-            this.ballUnitVelocity = new Vector2(0,0);
-            this.ballForwardPosition = new Vector2(this.ballBody.getPosition());
+                this.ballUnitVelocity = new Vector2(0,0);
+                this.ballForwardPosition = new Vector2(this.ballBody.getPosition());
 
-            this.frictionThreshold = 5f;
+                this.frictionThreshold = 5f;
 
-            //Gdx.app.debug("ClassicGame checkPlayerField", "ballforwardposition x " + Float.toString(this.ballForwardPosition.x) + " y "+ Float.toString(this.ballForwardPosition.y));
-            this.checkPlayerField();
-            this.playerField = this.tempPlayerField;
+                //Gdx.app.debug("ClassicGame checkPlayerField", "ballforwardposition x " + Float.toString(this.ballForwardPosition.x) + " y "+ Float.toString(this.ballForwardPosition.y));
+                this.checkPlayerField();
+                this.playerField = this.tempPlayerField;
 
-            this.ballSprite = new Sprite(texturesMap.get("ball_"+this.playerField));
-            this.ballSprite.setOrigin(this.ballRadius,this.ballRadius);
-            this.ballSprite.setSize(2f*this.ballRadius,2f*this.ballRadius);
+                this.ballSprite = new Sprite(texturesMap.get("ball_"+this.playerField));
+                this.ballSprite.setOrigin(this.ballRadius,this.ballRadius);
+                this.ballSprite.setSize(2f*this.ballRadius,2f*this.ballRadius);
 
-            this.ballDisplayState = 1;
+                this.ballDisplayState = 1;
 
-        }
+            }
 
-        void doPhysics() {
-        //if ball on my screen apply forces etc. else update position and velocity by the ones stored globally and received from other player
-            //Gdx.app.debug("ClassicGame", "ball "+ this. ballNumber+ " globals playerfield "+globalVariables.getGameVariables().ballPlayerFields[this.ballNumber]);
-            if(this.ballBody.getLinearVelocity().len()>0) {
-                this.ballUnitVelocity.set(this.ballBody.getLinearVelocity().x/this.ballBody.getLinearVelocity().len(),this.ballBody.getLinearVelocity().y/this.ballBody.getLinearVelocity().len());
+            void doPhysics() {
+                //if ball on my screen apply forces etc. else update position and velocity by the ones stored globally and received from other player
+                //Gdx.app.debug("ClassicGame", "ball "+ this. ballNumber+ " globals playerfield "+globalVariables.getGameVariables().ballPlayerFields[this.ballNumber]);
+                if(this.ballBody.getLinearVelocity().len()>0) {
+                    this.ballUnitVelocity.set(this.ballBody.getLinearVelocity().x/this.ballBody.getLinearVelocity().len(),this.ballBody.getLinearVelocity().y/this.ballBody.getLinearVelocity().len());
 
-                if(this.ballBody.getLinearVelocity().len()>this.frictionThreshold) {
-                    this.frictionFactor = (1-this.frictionThreshold/this.ballBody.getLinearVelocity().len())*1e-5f;
-                    this.ballBody.applyForceToCenter(-this.ballUnitVelocity.x*this.frictionFactor,
-                            -this.ballUnitVelocity.y*this.frictionFactor,true);
-                }
-
-                this.spinFactor = 1e-2f*this.ballBody.getMass()*this.ballBody.getAngularVelocity();
-                this.ballBody.applyForceToCenter(-this.ballUnitVelocity.y*this.spinFactor,this.ballUnitVelocity.x*this.spinFactor, true);
-
-                //Gdx.app.debug("ClassicGame", "ball "+Integer.toString(this.ballNumber)+" computed");
-                if (gameLogicStates.get("attractionState")) {
-                    if(miscObjects.touches.isTouched[0] && !miscObjects.touches.isTouched[1]) {
-                        Vector2 sub = miscObjects.touches.touchPos[0];
-                        sub.sub(this.ballBody.getPosition());
-                        this.ballBody.applyForceToCenter(sub.scl(1e-6f), true);
+                    if(this.ballBody.getLinearVelocity().len()>this.frictionThreshold) {
+                        this.frictionFactor = (1-this.frictionThreshold/this.ballBody.getLinearVelocity().len())*1e-5f;
+                        this.ballBody.applyForceToCenter(-this.ballUnitVelocity.x*this.frictionFactor,
+                                -this.ballUnitVelocity.y*this.frictionFactor,true);
                     }
-                    //attraction
 
-                }
-            }
+                    this.spinFactor = 1e-2f*this.ballBody.getMass()*this.ballBody.getAngularVelocity();
+                    this.ballBody.applyForceToCenter(-this.ballUnitVelocity.y*this.spinFactor,this.ballUnitVelocity.x*this.spinFactor, true);
 
+                    //Gdx.app.debug("ClassicGame", "ball "+Integer.toString(this.ballNumber)+" computed");
+                    if (gameLogicStates.get("attractionState")) {
+                        if(miscObjects.touches.isTouched[0] && !miscObjects.touches.isTouched[1]) {
+                            Vector2 sub = miscObjects.touches.touchPos[0];
+                            sub.sub(this.ballBody.getPosition());
+                            this.ballBody.applyForceToCenter(sub.scl(1e-6f), true);
+                        }
+                        //attraction
 
-            if (gameLogicStates.get("gravityState")) {
-                //gravity
-                //this.ballBody.applyForceToCenter(new Vector2(this.ballBody.getPosition()).scl(this.ballBody.getMass()*1e-1f/(float)Math.pow(this.ballBody.getPosition().len(),2)), true);//-(this.ballBody.getPosition().y+height/PIXELS_TO_METERS)*1f
-
-                float grav = (float)Math.exp((this.ballBody.getPosition().y+height)*2f)*1e-8f;
-                //System.out.println("grav "+ grav);
-                this.ballBody.applyForceToCenter(0,-grav, true);//-(this.ballBody.getPosition().y+height/PIXELS_TO_METERS)*1f
-            }
-            if(this.ballUpdateCounter%this.ballPositionFrameSkip == 0){
-                this.ballPositionArrayList.addLast(this.ballBody.getPosition().cpy());
-            }
-            this.ballUpdateCounter++;
-        }
-
-        void display(SpriteBatch spriteBatch) {
-            //color depending on playerfield
-            if(this.ballDisplayState == 1) {
-                for (int i=0; i<this.ballPositionArrayList.size();i++) {
-                    if(i!=0){
-                        this.traceSprite = createLineSprite(this.ballPositionArrayList.get(i-1),this.ballPositionArrayList.get(i),0.01f,texturesMap.get("trace"));
-                        this.traceSprite.draw(spriteBatch);
                     }
-                    //this.traceSprite.setTexture(texturesMap.get("ball_normal"));
-                    //this.traceSprite.setPosition((this.ballPositionArrayList.get(i).x-this.ballRadius/4f), (this.ballPositionArrayList.get(i).y-this.ballRadius/4f));
-                    //this.traceSprite.setRotation(this.ballBody.getAngle()/MathUtils.PI*180f+360f/numberOfPlayers*myPlayerNumber);
-
-
-                    //Gdx.app.debug("ClassicGame", "pos x " +Float.toString(this.ballPositionArrayList.get(i).x)+" y "+ Float.toString(this.ballPositionArrayList.get(i).y));
                 }
 
-                //this.ballSprite.setTexture(texturesMap.get("ball_normal"));
-                this.ballSprite.setPosition((this.ballBody.getPosition().x-this.ballRadius), (this.ballBody.getPosition().y-this.ballRadius));
-                this.ballSprite.setRotation(this.ballBody.getAngle()/MathUtils.PI*180f+360f/numberOfPlayers*myPlayerNumber);
-                this.ballSprite.draw(spriteBatch);
-                //spriteBatch.setColor(1,1,1,1);
-                //font.draw(spriteBatch,Integer.toString(this.ballNumber), this.ballBody.getPosition().x * PIXELS_TO_METERS, this.ballBody.getPosition().y * PIXELS_TO_METERS);
-            } else {
-                if(System.currentTimeMillis() - this.destroyTime <100) {
-                    spritesMap.get("boom").setSize(2f*this.ballRadius,2f*this.ballRadius);
-                    spritesMap.get("boom").setPosition(this.destroyPosition.x - spritesMap.get("boom").getWidth() / 2, this.destroyPosition.y - spritesMap.get("boom").getHeight() / 2);
-                    spritesMap.get("boom").draw(spriteBatch);
+
+                if (gameLogicStates.get("gravityState")) {
+                    //gravity
+                    //this.ballBody.applyForceToCenter(new Vector2(this.ballBody.getPosition()).scl(this.ballBody.getMass()*1e-1f/(float)Math.pow(this.ballBody.getPosition().len(),2)), true);//-(this.ballBody.getPosition().y+height/PIXELS_TO_METERS)*1f
+
+                    float grav = (float)Math.exp((this.ballBody.getPosition().y+height)*2f)*1e-8f;
+                    //System.out.println("grav "+ grav);
+                    this.ballBody.applyForceToCenter(0,-grav, true);//-(this.ballBody.getPosition().y+height/PIXELS_TO_METERS)*1f
+                }
+                if(this.ballUpdateCounter%this.ballPositionFrameSkip == 0){
+                    this.ballPositionArrayList.addLast(this.ballBody.getPosition().cpy());
+                }
+                this.ballUpdateCounter++;
+            }
+
+            void display(SpriteBatch spriteBatch) {
+                //color depending on playerfield
+                if(this.ballDisplayState == 1) {
+                    for (int i=0; i<this.ballPositionArrayList.size();i++) {
+                        if(i!=0){
+                            this.traceSprite = createLineSprite(this.ballPositionArrayList.get(i-1),this.ballPositionArrayList.get(i),0.01f,texturesMap.get("trace"));
+                            this.traceSprite.draw(spriteBatch);
+                        }
+                        //this.traceSprite.setTexture(texturesMap.get("ball_normal"));
+                        //this.traceSprite.setPosition((this.ballPositionArrayList.get(i).x-this.ballRadius/4f), (this.ballPositionArrayList.get(i).y-this.ballRadius/4f));
+                        //this.traceSprite.setRotation(this.ballBody.getAngle()/MathUtils.PI*180f+360f/numberOfPlayers*myPlayerNumber);
+
+
+                        //Gdx.app.debug("ClassicGame", "pos x " +Float.toString(this.ballPositionArrayList.get(i).x)+" y "+ Float.toString(this.ballPositionArrayList.get(i).y));
+                    }
+
+                    //this.ballSprite.setTexture(texturesMap.get("ball_normal"));
+                    this.ballSprite.setPosition((this.ballBody.getPosition().x-this.ballRadius), (this.ballBody.getPosition().y-this.ballRadius));
+                    this.ballSprite.setRotation(this.ballBody.getAngle()/MathUtils.PI*180f+360f/numberOfPlayers*myPlayerNumber);
+                    this.ballSprite.draw(spriteBatch);
+                    //spriteBatch.setColor(1,1,1,1);
+                    //font.draw(spriteBatch,Integer.toString(this.ballNumber), this.ballBody.getPosition().x * PIXELS_TO_METERS, this.ballBody.getPosition().y * PIXELS_TO_METERS);
+                } else {
+                    if(System.currentTimeMillis() - this.destroyTime <100) {
+                        spritesMap.get("boom").setSize(2f*this.ballRadius,2f*this.ballRadius);
+                        spritesMap.get("boom").setPosition(this.destroyPosition.x - spritesMap.get("boom").getWidth() / 2, this.destroyPosition.y - spritesMap.get("boom").getHeight() / 2);
+                        spritesMap.get("boom").draw(spriteBatch);
+                    }
                 }
             }
-        }
 
-        boolean checkWrongPlayerField() {
-            if(this.playerField!= myPlayerNumber && gameField.playerFieldPolygons[myPlayerNumber].contains(this.ballBody.getPosition())) {
-                Gdx.app.debug(TAG, "ball " + this.ballNumber + " in my field with wrong playernumber");
-                return(true);
-            } else if(this.playerField== myPlayerNumber && !gameField.playerFieldPolygons[myPlayerNumber].contains(this.ballBody.getPosition())) {
-                Gdx.app.debug(TAG, "ball " + this.ballNumber + " in other field with my playernumber");
-                return(true);
-            }
-            return(false);
-        }
-
-        void checkPlayerField() {
-            this.setBallForwardPosition();
-            if (!gameField.gameFieldPolygon.contains(this.ballBody.getPosition())) {
-                if(this.lostCounter>=5) {
-                    this.ballDisplayState = 0;
-                    Gdx.app.error(TAG, "ball " + this.ballNumber + " lost");
-
+            boolean checkWrongPlayerField() {
+                if(this.playerField!= myPlayerNumber && gameField.playerFieldPolygons[myPlayerNumber].contains(this.ballBody.getPosition())) {
+                    Gdx.app.debug(TAG, "ball " + this.ballNumber + " in my field with wrong playernumber");
+                    return(true);
+                } else if(this.playerField== myPlayerNumber && !gameField.playerFieldPolygons[myPlayerNumber].contains(this.ballBody.getPosition())) {
+                    Gdx.app.debug(TAG, "ball " + this.ballNumber + " in other field with my playernumber");
+                    return(true);
                 }
-                this.lostState = true;
-                Gdx.app.error(TAG, "ball " + this.ballNumber + " outside gamefield " + this.playerField + " for frames " + this.lostCounter + " x " + this.ballBody.getPosition().x + " y " + this.ballBody.getPosition().y);
-                this.tempPlayerField = 999;
-                this.lostCounter++;
-            } else {
-                this.lostCounter=0;
-                for (int i = 0; i < numberOfPlayers; i++) {
-                    if (gameField.playerFieldPolygons[i].contains(this.ballForwardPosition)) {
-                        if (gameField.playerFieldPolygons[i].contains(this.ballBody.getPosition())) {
-                            Gdx.app.debug("ClassicGame", "ball on playerField " + i);
-                            this.tempPlayerField = i;
-                            break;
+                return(false);
+            }
 
+            void checkPlayerField() {
+                this.setBallForwardPosition();
+                if (!gameField.gameFieldPolygon.contains(this.ballBody.getPosition())) {
+                    if(this.lostCounter>=5) {
+                        this.ballDisplayState = 0;
+                        Gdx.app.error(TAG, "ball " + this.ballNumber + " lost");
+
+                    }
+                    this.lostState = true;
+                    Gdx.app.error(TAG, "ball " + this.ballNumber + " outside gamefield " + this.playerField + " for frames " + this.lostCounter + " x " + this.ballBody.getPosition().x + " y " + this.ballBody.getPosition().y);
+                    this.tempPlayerField = 999;
+                    this.lostCounter++;
+                } else {
+                    this.lostCounter=0;
+                    for (int i = 0; i < numberOfPlayers; i++) {
+                        if (gameField.playerFieldPolygons[i].contains(this.ballForwardPosition)) {
+                            if (gameField.playerFieldPolygons[i].contains(this.ballBody.getPosition())) {
+                                Gdx.app.debug("ClassicGame", "ball on playerField " + i);
+                                this.tempPlayerField = i;
+                                break;
+
+                            }
                         }
                     }
                 }
             }
-        }
 
-        void checkGoal() {
-            if (gameField.goalPolygons[myPlayerNumber].contains(this.ballBody.getPosition())) {
-                Gdx.app.debug("ClassicGame", "ball " + Integer.toString(this.ballNumber) + " in my goal");
-                this.ballDisplayState = 0;
-                this.tempGoal =1;
-            } else {
-                this.tempGoal=0;
+            void checkGoal() {
+                if (gameField.goalPolygons[myPlayerNumber].contains(this.ballBody.getPosition())) {
+                    Gdx.app.debug("ClassicGame", "ball " + Integer.toString(this.ballNumber) + " in my goal");
+                    this.ballDisplayState = 0;
+                    this.tempGoal =1;
+                } else {
+                    this.tempGoal=0;
+                }
             }
-        }
 
-        void destroyBall() {
-            if(this.ballBody!=null) {
-                this.destroyPosition = new Vector2(this.ballBody.getPosition());
-                this.destroyTime = System.currentTimeMillis();
-                world.destroyBody(this.ballBody);
-                this.ballBody.setUserData(null);
-                this.ballBody = null;
+            void destroyBall() {
+                if(this.ballBody!=null) {
+                    this.destroyPosition = new Vector2(this.ballBody.getPosition());
+                    this.destroyTime = System.currentTimeMillis();
+                    world.destroyBody(this.ballBody);
+                    this.ballBody.setUserData(null);
+                    this.ballBody = null;
+                }
             }
-        }
 
-        void setBallForwardPosition() {
-            if(this.ballBody.getLinearVelocity().len()>0) {
-                this.ballForwardPosition.set(this.ballBody.getPosition().x + this.ballBody.getLinearVelocity().x/this.ballBody.getLinearVelocity().len()*this.ballRadius,
-                        this.ballBody.getPosition().y+ this.ballBody.getLinearVelocity().y/this.ballBody.getLinearVelocity().len()*this.ballRadius);
+            void setBallForwardPosition() {
+                if(this.ballBody.getLinearVelocity().len()>0) {
+                    this.ballForwardPosition.set(this.ballBody.getPosition().x + this.ballBody.getLinearVelocity().x/this.ballBody.getLinearVelocity().len()*this.ballRadius,
+                            this.ballBody.getPosition().y+ this.ballBody.getLinearVelocity().y/this.ballBody.getLinearVelocity().len()*this.ballRadius);
+                }
+                this.ballForwardPosition.set(this.ballBody.getPosition());
             }
-            this.ballForwardPosition.set(this.ballBody.getPosition());
-        }
 
-    }
+        }
 
     class Bat {
         Body batBody;
         private int batPlayerField;
         private float batWidth = width/4;
         private float batHeight = height/40;
-        private Vector2 newPos;
+        private Vector2 newPos,tempPos;
 
         private Sprite batSprite;
         Bat(int batPlayerField_) {
@@ -469,6 +494,15 @@ public class TrainingGameObjects {
             this.batSprite = new Sprite(texturesMap.get("bat_"+this.batPlayerField));
             this.batSprite.setOrigin(this.batWidth/2,this.batHeight/2);
             this.batSprite.setSize(this.batWidth,this.batHeight);
+            this.tempPos = new Vector2(this.newPos);
+        }
+
+        void updatePos(float x, float y){
+            this.tempPos.set(x,y);
+        }
+
+        void updatePos(Vector2 vector){
+            this.tempPos.set(vector);
         }
 
         void doPhysics() {
@@ -476,18 +510,9 @@ public class TrainingGameObjects {
             float orientation=0;
             if(this.batPlayerField ==myPlayerNumber) {
                 //update new position if touch inside my field
-                /*System.out.println("bat x " + globals.getGameVariables().bats[this.batPlayerField].batPosition.x +
-                        " bat y " + globals.getGameVariables().bats[this.batPlayerField].batPosition.y);*/
-                if(true) {
-                    if(gameField.movementPolygon.contains(globals.getComm().bats[this.batPlayerField].batPosition)) {
-                        this.newPos.set(globals.getComm().bats[this.batPlayerField].batPosition);
-                    }
-                } else {
-                    if (gameField.movementPolygon.contains(miscObjects.touches.touchPos[0])) {
-                        if (miscObjects.touches.isTouched[0] && !miscObjects.touches.isTouched[1]) {
-                            this.newPos.set(miscObjects.touches.touchPos[0]);
-                        }
-                    }
+                //Gdx.app.debug(TAG,"temppos is "+ this.tempPos.x + " " + this.tempPos.y);
+                if (gameField.movementPolygon.contains(this.tempPos)) {
+                    this.newPos.set(this.tempPos);
                 }
                 //force to physically move to touched position
                 Vector2 subVector = new Vector2(this.newPos).sub(this.batBody.getPosition());

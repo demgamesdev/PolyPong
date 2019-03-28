@@ -68,8 +68,8 @@ public class GDXGameLauncher extends AndroidApplication {
             Log.d(TAG, "input length "+globals.getAgent().inputs.size());
             //System.out.println(globals.getGameVariables().inputs);
 
-            globals.getAgent().createDataSet(getIntent().getStringExtra("dataname"),globals.getAgent().inputs,globals.getAgent().outputs);
-            globals.getAgent().saveData();
+            globals.getAgent().createDataSet(globals.getAgent().inputs,globals.getAgent().outputs);
+            globals.getAgent().saveDataSet(getIntent().getStringExtra("dataname"));
         }
 
 

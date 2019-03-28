@@ -6,7 +6,7 @@ dependencies {
     implementation "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
     implementation 'com.google.guava:guava:27.0.1-android'
 
-    implementation (group: 'org.deeplearning4j', name: 'deeplearning4j-nn', version: '1.0.0-SNAPSHOT'){
+    implementation (group: 'org.deeplearning4j', name: 'deeplearning4j-nn', version: '1.0.0-beta3'){
         exclude group: 'org.bytedeco.javacpp-presets', module: 'opencv-platform'
         exclude group: 'org.bytedeco.javacpp-presets', module: 'leptonica-platform'
         exclude group: 'org.bytedeco.javacpp-presets', module: 'hdf5-platform'

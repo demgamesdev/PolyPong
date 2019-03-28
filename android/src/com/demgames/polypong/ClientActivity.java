@@ -4,6 +4,7 @@ import com.demgames.miscclasses.SendClasses.*;
 import com.demgames.polypong.network.ClientListener;
 import com.demgames.polypong.network.ServerListener;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -16,6 +17,7 @@ import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
@@ -25,6 +27,7 @@ import android.widget.Toast;
 import android.os.Vibrator;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -34,6 +37,7 @@ import java.net.InetAddress;
 import java.nio.ByteOrder;
 import java.math.BigInteger;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -129,6 +133,19 @@ public class ClientActivity extends AppCompatActivity{
         Button manualIpButton = (Button) findViewById(R.id.manualIpButton);
         String myIpAdress;
 
+        final View mView = getLayoutInflater().inflate(R.layout.dialog_choose_agent,null,false);
+        final ListView availableAgentsListView = (ListView) mView.findViewById(R.id.availableAgentsListView);
+        final Button selfPlayButton = (Button) mView.findViewById(R.id.selfPlayButton);
+
+        final AlertDialog.Builder makeDialog = new AlertDialog.Builder(ClientActivity.this);
+        AlertDialog alertDialog;
+
+        List<String> agentsList = new ArrayList<>();
+        List<String> agentsNameList = new ArrayList<>();
+        ArrayAdapter agentsAdapter = new ArrayAdapter<>(getApplication(),R.layout.item_textview, R.id.listViewtextView,agentsNameList);
+
+        final ClientTask updateTask = this;
+
         @Override
         protected void onPreExecute() {
 
@@ -182,6 +199,58 @@ public class ClientActivity extends AppCompatActivity{
                     } else {
                         Toast.makeText(ClientActivity.this, "Enter valid Ip-adress", Toast.LENGTH_SHORT).show();
                     }
+                }
+            });
+
+            availableAgentsListView.setAdapter(agentsAdapter);
+            makeDialog.setView(mView);
+            alertDialog = makeDialog.create();
+
+
+            selfPlayButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent startGDXGameLauncher = new Intent(getApplicationContext(), GDXGameLauncher.class);
+                    startGDXGameLauncher.putExtra("myplayername",getIntent().getStringExtra("myplayername"));
+                    startGDXGameLauncher.putExtra("myplayernumber",globals.getComm().myPlayerNumber);
+                    startGDXGameLauncher.putExtra("numberofplayers",globals.getComm().playerMap.size());
+                    startGDXGameLauncher.putExtra("numberofballs",globals.getComm().balls.length);
+                    startGDXGameLauncher.putExtra("gravitystate",globals.getComm().gravityState);
+                    startGDXGameLauncher.putExtra("attractionstate",globals.getComm().attractionState);
+                    startGDXGameLauncher.putExtra("gamemode",globals.getComm().gameMode);
+                    startGDXGameLauncher.putExtra("agentmode",false);
+                    startGDXGameLauncher.putExtra("mode","normal");
+
+
+                    startActivity(startGDXGameLauncher);
+                    alertDialog.dismiss();
+                    updateTask.cancel(true);
+                    finish();
+                }
+
+            });
+
+            availableAgentsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                    globals.setupAgent(getApplicationContext());
+                    Intent startGDXGameLauncher = new Intent(getApplicationContext(), GDXGameLauncher.class);
+                    startGDXGameLauncher.putExtra("myplayername",getIntent().getStringExtra("myplayername"));
+                    startGDXGameLauncher.putExtra("myplayernumber",globals.getComm().myPlayerNumber);
+                    startGDXGameLauncher.putExtra("numberofplayers",globals.getComm().playerMap.size());
+                    startGDXGameLauncher.putExtra("numberofballs",globals.getComm().balls.length);
+                    startGDXGameLauncher.putExtra("gravitystate",globals.getComm().gravityState);
+                    startGDXGameLauncher.putExtra("attractionstate",globals.getComm().attractionState);
+                    startGDXGameLauncher.putExtra("gamemode",globals.getComm().gameMode);
+                    startGDXGameLauncher.putExtra("agentmode",true);
+                    startGDXGameLauncher.putExtra("mode","normal");
+                    startGDXGameLauncher.putExtra("agentname",agentsList.get(i));
+                    alertDialog.dismiss();
+                    startActivity(startGDXGameLauncher);
+                    updateTask.cancel(true);
+                    finish();
+
+
                 }
             });
 
@@ -248,28 +317,27 @@ public class ClientActivity extends AppCompatActivity{
             globals.getComm().sendObjectToAllClients(new SendConnectionState(globals.getComm().myPlayerNumber,3),"tcp");
             globals.getComm().clientConnectionStatesMap.put((globals.getComm().myPlayerNumber),3);
 
-            /** start game*/
             if(!isCancelled()) {
-                Intent startGDXGameLauncher = new Intent(getApplicationContext(), GDXGameLauncher.class);
-                startGDXGameLauncher.putExtra("myplayername",getIntent().getStringExtra("myplayername"));
-                startGDXGameLauncher.putExtra("myplayernumber",globals.getComm().myPlayerNumber);
-                startGDXGameLauncher.putExtra("numberofplayers",globals.getComm().playerMap.size());
-                startGDXGameLauncher.putExtra("numberofballs",globals.getComm().balls.length);
-                startGDXGameLauncher.putExtra("gravitystate",globals.getComm().gravityState);
-                startGDXGameLauncher.putExtra("attractionstate",globals.getComm().attractionState);
-                startGDXGameLauncher.putExtra("gamemode",globals.getComm().gameMode);
-                startGDXGameLauncher.putExtra("agentmode",false);
-                startGDXGameLauncher.putExtra("mode","normal");
-                startActivity(startGDXGameLauncher);
+                File agentsDir = new File(getApplication().getFilesDir().getAbsolutePath() + File.separator + "agents");
+                String[] agentFiles = agentsDir.list();
+                for(int i = 0; i<agentFiles.length;i++) {
+                    String[] tempSplit1 = agentFiles[i].split("\\.");
 
-                clientListUpdateTask.cancel(true);
-                finish();
+                    String[] tempSplit2 = tempSplit1[0].split("_");
+                    if(tempSplit2[2].equals(Integer.toString(getIntent().getIntExtra("numberofballs",1)))) {
+                        agentsList.add(tempSplit1[0]);
+                        agentsNameList.add(tempSplit2[0]+" (" + tempSplit2[3]+")");
+                    }
 
-                Log.d(TAG, "starting GDX game");
+                }
+                agentsAdapter.notifyDataSetChanged();
 
+                Log.d(TAG, "Game started");
             } else {
                 Log.d(TAG,"skipped do in background due to cancelling");
             }
+
+            /** start game*/
             return null;
         }
 
@@ -307,7 +375,9 @@ public class ClientActivity extends AppCompatActivity{
 
         //@Override
         protected void onPostExecute(Void Void) {
-            ClientActivity m_activity = null;
+            if (!isCancelled()) {
+                alertDialog.show();
+            }
         }
 
     }
