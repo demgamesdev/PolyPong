@@ -636,6 +636,7 @@ public class ClassicGameObjects {
         Polygon gameFieldPolygon;
 
         private Vector2[] playerFieldVertices;
+        private Vector2[] borderFieldVertices;
         private Vector2[] gameFieldVertices;
         private Vector2[] movementLineVertices;
         private Vector2[][] ballStartPositions;
@@ -831,16 +832,15 @@ public class ClassicGameObjects {
             this.movementLine.createFixture(fieldLineFixtureDef);
             movementLineShape.dispose();
 
-            this.floatMap.put("trigger_radius",0.05f);
 
-            this.shapeMap.put("trigger",new CircleShape());
-            this.shapeMap.get("trigger").setRadius(this.floatMap.get("trigger_radius"));
+
 
 
 
             //rotate for perspective of player
             this.playerFieldVertices = MiscObjects.transformVectorArray(this.playerFieldVertices,1,-360f/numberOfPlayers*myPlayerNumber);
             this.ballStartPositions[0] = MiscObjects.transformVectorArray(this.ballStartPositions[0],1,-360f/numberOfPlayers*myPlayerNumber);
+
 
             for(int i = 0; i<numberOfPlayers; i++) {
                 if(i>0) {
@@ -865,11 +865,6 @@ public class ClassicGameObjects {
                     this.gameFieldVertices[j-1+i*7] = new Vector2(this.playerFieldVertices[j]);
                 }
 
-                borderFixtureDef.shape = this.shapeMap.get("trigger");
-                this.bodyMap.put("trigger_1_"+i,world.createBody(borderBodyDef));
-                this.bodyMap.put("trigger_2_"+i,world.createBody(borderBodyDef));
-                this.bodyMap.get("trigger_1_"+i).createFixture(borderFixtureDef);
-                this.bodyMap.get("trigger_2_"+i).createFixture(borderFixtureDef);
 
                 if (numberOfPlayers==2) {
                     borderShapes[0 + i * 3].set(new Vector2[]{this.playerFieldVertices[9], this.playerFieldVertices[10], this.playerFieldVertices[11], this.playerFieldVertices[12],this.playerFieldVertices[13]});
@@ -882,8 +877,7 @@ public class ClassicGameObjects {
 
                     this.spriteMap.put("moveline"+i,createLineSprite(this.playerFieldVertices[18],this.playerFieldVertices[19],0.01f,texturesMap.get("fieldline")));
 
-                    this.bodyMap.get("trigger_1_"+i).setTransform(this.playerFieldVertices[20],0);
-                    this.bodyMap.get("trigger_2_"+i).setTransform(this.playerFieldVertices[21],0);
+
                 } else {
                     borderShapes[0 + i * 5].set(new Vector2[]{this.playerFieldVertices[2], this.playerFieldVertices[1], this.playerFieldVertices[10], this.playerFieldVertices[9]});
                     borderShapes[1 + i * 5].set(new Vector2[]{this.playerFieldVertices[10], this.playerFieldVertices[11], this.playerFieldVertices[12]});
@@ -897,16 +891,7 @@ public class ClassicGameObjects {
 
                     this.spriteMap.put("moveline"+i,createLineSprite(this.playerFieldVertices[16],this.playerFieldVertices[17],0.01f,texturesMap.get("fieldline")));
 
-                    this.bodyMap.get("trigger_1_"+i).setTransform(this.playerFieldVertices[18],0);
-                    this.bodyMap.get("trigger_2_"+i).setTransform(this.playerFieldVertices[19],0);
                 }
-
-                this.spriteMap.put("trigger_1_"+i,new Sprite(texturesMap.get("trigger")));
-                this.spriteMap.put("trigger_2_"+i,new Sprite(texturesMap.get("trigger")));
-                this.spriteMap.get("trigger_1_"+i).setBounds(this.bodyMap.get("trigger_1_"+i).getPosition().x-this.floatMap.get("trigger_radius"),this.bodyMap.get("trigger_1_"+i).getPosition().y-this.floatMap.get("trigger_radius"),
-                        2*this.floatMap.get("trigger_radius"),2*this.floatMap.get("trigger_radius"));
-                this.spriteMap.get("trigger_2_"+i).setBounds(this.bodyMap.get("trigger_2_"+i).getPosition().x-this.floatMap.get("trigger_radius"),this.bodyMap.get("trigger_2_"+i).getPosition().y-this.floatMap.get("trigger_radius"),
-                        2*this.floatMap.get("trigger_radius"),2*this.floatMap.get("trigger_radius"));
 
                 this.goalBodies[i] = world.createBody(borderBodyDef);
                 borderFixtureDef.shape = goalShapes[i];

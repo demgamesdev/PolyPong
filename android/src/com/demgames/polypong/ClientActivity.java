@@ -6,6 +6,7 @@ import com.demgames.polypong.network.ServerListener;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.net.wifi.WifiManager;
@@ -206,6 +207,13 @@ public class ClientActivity extends AppCompatActivity{
             makeDialog.setView(mView);
             alertDialog = makeDialog.create();
 
+            alertDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                @Override
+                public void onDismiss(final DialogInterface arg0) {
+                    finish();
+                }
+            });
+
 
             selfPlayButton.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -223,9 +231,9 @@ public class ClientActivity extends AppCompatActivity{
 
 
                     startActivity(startGDXGameLauncher);
-                    alertDialog.dismiss();
                     updateTask.cancel(true);
-                    finish();
+                    alertDialog.dismiss();
+
                 }
 
             });
@@ -245,10 +253,9 @@ public class ClientActivity extends AppCompatActivity{
                     startGDXGameLauncher.putExtra("agentmode",true);
                     startGDXGameLauncher.putExtra("mode","normal");
                     startGDXGameLauncher.putExtra("agentname",agentsList.get(i));
-                    alertDialog.dismiss();
                     startActivity(startGDXGameLauncher);
                     updateTask.cancel(true);
-                    finish();
+                    alertDialog.dismiss();
 
 
                 }

@@ -37,8 +37,7 @@ public class TrainingGameObjects {
 
     private int myPlayerNumber;
     private String[] playerNames;
-    private int numberOfPlayers;
-    private int numberOfBalls;
+    private int numberOfPlayers,numberOfBalls,updateCounter;
 
     float width, height,screenWidth, screenHeight, metersToPixels;
 
@@ -165,6 +164,7 @@ public class TrainingGameObjects {
             this.bats[i]=new Bat(i);
         }
 
+        this.updateCounter = 0;
         this.agentInput = new double[4*this.numberOfBalls];
     }
 
@@ -184,9 +184,12 @@ public class TrainingGameObjects {
             if (miscObjects.touches.isTouched[0] && !miscObjects.touches.isTouched[1]) {
                 this.bats[0].updatePos(miscObjects.touches.touchPos[0]);
             }
-            this.globals.getAgent().inputs.add(this.agentInput);
-            this.globals.getAgent().outputs.add(new double[]{this.bats[0].batBody.getPosition().x/this.width,this.bats[0].batBody.getPosition().y/this.height});
+            if(updateCounter%4==0) {
+                this.globals.getAgent().inputs.add(this.agentInput);
+                this.globals.getAgent().outputs.add(new double[]{this.bats[0].batBody.getPosition().x/this.width,this.bats[0].batBody.getPosition().y/this.height});
+            }
         }
+        updateCounter++;
     }
 
     void doPhysics() {
@@ -743,9 +746,16 @@ public class TrainingGameObjects {
             movementLineShape.dispose();
 
             this.floatMap.put("trigger_radius",0.05f);
-
             this.shapeMap.put("trigger",new CircleShape());
             this.shapeMap.get("trigger").setRadius(this.floatMap.get("trigger_radius"));
+            borderFixtureDef.shape = this.shapeMap.get("trigger");
+            this.bodyMap.put("trigger",world.createBody(borderBodyDef));
+            this.bodyMap.get("trigger").createFixture(borderFixtureDef);
+            this.bodyMap.get("trigger").setTransform(0,0,0);
+            this.spriteMap.put("trigger",new Sprite(texturesMap.get("trigger")));
+            this.spriteMap.get("trigger").setBounds(this.bodyMap.get("trigger").getPosition().x-this.floatMap.get("trigger_radius"),this.bodyMap.get("trigger").getPosition().y-this.floatMap.get("trigger_radius"),
+                    2*this.floatMap.get("trigger_radius"),2*this.floatMap.get("trigger_radius"));
+
 
 
 
@@ -776,11 +786,6 @@ public class TrainingGameObjects {
                     this.gameFieldVertices[j-1+i*7] = new Vector2(this.playerFieldVertices[j]);
                 }
 
-                borderFixtureDef.shape = this.shapeMap.get("trigger");
-                this.bodyMap.put("trigger_1_"+i,world.createBody(borderBodyDef));
-                this.bodyMap.put("trigger_2_"+i,world.createBody(borderBodyDef));
-                this.bodyMap.get("trigger_1_"+i).createFixture(borderFixtureDef);
-                this.bodyMap.get("trigger_2_"+i).createFixture(borderFixtureDef);
 
                 if (numberOfPlayers==2) {
                     borderShapes[0 + i * 3].set(new Vector2[]{this.playerFieldVertices[9], this.playerFieldVertices[10], this.playerFieldVertices[11], this.playerFieldVertices[12],this.playerFieldVertices[13]});
@@ -793,8 +798,6 @@ public class TrainingGameObjects {
 
                     this.spriteMap.put("moveline"+i,createLineSprite(this.playerFieldVertices[18],this.playerFieldVertices[19],0.01f,texturesMap.get("fieldline")));
 
-                    this.bodyMap.get("trigger_1_"+i).setTransform(this.playerFieldVertices[20],0);
-                    this.bodyMap.get("trigger_2_"+i).setTransform(this.playerFieldVertices[21],0);
                 } else {
                     borderShapes[0 + i * 5].set(new Vector2[]{this.playerFieldVertices[2], this.playerFieldVertices[1], this.playerFieldVertices[10], this.playerFieldVertices[9]});
                     borderShapes[1 + i * 5].set(new Vector2[]{this.playerFieldVertices[10], this.playerFieldVertices[11], this.playerFieldVertices[12]});
@@ -808,16 +811,8 @@ public class TrainingGameObjects {
 
                     this.spriteMap.put("moveline"+i,createLineSprite(this.playerFieldVertices[16],this.playerFieldVertices[17],0.01f,texturesMap.get("fieldline")));
 
-                    this.bodyMap.get("trigger_1_"+i).setTransform(this.playerFieldVertices[18],0);
-                    this.bodyMap.get("trigger_2_"+i).setTransform(this.playerFieldVertices[19],0);
                 }
 
-                this.spriteMap.put("trigger_1_"+i,new Sprite(texturesMap.get("trigger")));
-                this.spriteMap.put("trigger_2_"+i,new Sprite(texturesMap.get("trigger")));
-                this.spriteMap.get("trigger_1_"+i).setBounds(this.bodyMap.get("trigger_1_"+i).getPosition().x-this.floatMap.get("trigger_radius"),this.bodyMap.get("trigger_1_"+i).getPosition().y-this.floatMap.get("trigger_radius"),
-                        2*this.floatMap.get("trigger_radius"),2*this.floatMap.get("trigger_radius"));
-                this.spriteMap.get("trigger_2_"+i).setBounds(this.bodyMap.get("trigger_2_"+i).getPosition().x-this.floatMap.get("trigger_radius"),this.bodyMap.get("trigger_2_"+i).getPosition().y-this.floatMap.get("trigger_radius"),
-                        2*this.floatMap.get("trigger_radius"),2*this.floatMap.get("trigger_radius"));
 
                 this.goalBodies[i] = world.createBody(borderBodyDef);
                 borderFixtureDef.shape = goalShapes[i];
