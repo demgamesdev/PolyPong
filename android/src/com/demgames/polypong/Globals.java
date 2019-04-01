@@ -1,7 +1,9 @@
 package com.demgames.polypong;
 
+import android.app.AlertDialog;
 import android.app.Application;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.os.AsyncTask;
 import android.util.Log;
 import android.widget.TextView;
@@ -32,6 +34,13 @@ public class Globals extends Application implements IGlobals{
     private CommunicationClass comm = new CommunicationClass();
     private Agent agent;
 
+    private GDXGameLauncher gdxGameLauncher; // This is the main android activity
+
+    public void setGameLauncher(GDXGameLauncher gdxGameLauncher_){
+        this.gdxGameLauncher = gdxGameLauncher_;
+    }
+
+
 
     @Override
     public synchronized CommunicationClass getComm() {return (this.comm);}
@@ -40,6 +49,42 @@ public class Globals extends Application implements IGlobals{
 
     public void setupAgent(Context context) {
         this.agent = new Agent(context.getFilesDir());
+    }
+
+    public void showAlertDialog(final AlertDialogCallback callback){
+
+        gdxGameLauncher.runOnUiThread(new Runnable(){
+
+            @Override
+            public void run() {
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(gdxGameLauncher);
+                builder.setTitle("Test");
+                builder.setMessage("Testing");
+                builder.setPositiveButton("Okay", new DialogInterface.OnClickListener(){
+
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                        callback.positiveButtonPressed();
+
+                    }
+                });
+                builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener(){
+
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                        callback.negativeButtonPressed();
+
+                    }
+
+                });
+
+                AlertDialog dialog = builder.create();
+                dialog.show();
+            }
+        });
     }
 
 }

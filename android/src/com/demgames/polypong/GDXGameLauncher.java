@@ -29,6 +29,7 @@ public class GDXGameLauncher extends AndroidApplication {
         DisplayMetrics displayMetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
 
+        globals.setGameLauncher(this);
         if(getIntent().getStringExtra("gamemode").equals("classic")) {
             ClassicGame game = new ClassicGame(globals, getIntent().getIntExtra("myplayernumber",0),getIntent().getIntExtra("numberofplayers",2),
                     getIntent().getIntExtra("numberofballs",1),getIntent().getBooleanExtra("gravitystate",false),

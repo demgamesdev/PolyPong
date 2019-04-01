@@ -71,6 +71,23 @@ public class ClassicGame extends ApplicationAdapter{
     public void create() {
         Gdx.app.setLogLevel(Application.LOG_DEBUG);
 
+        globals.showAlertDialog(new AlertDialogCallback(){
+
+            @Override
+            public void positiveButtonPressed(){
+
+
+            }
+            @Override
+            public void negativeButtonPressed(){
+
+            }; // This will not be required
+            @Override
+            public void cancelled(){
+
+            }; // This will not be required
+        });
+
         //get width and height of displayGame
         this.width = 1f;
         this.height = 2f;

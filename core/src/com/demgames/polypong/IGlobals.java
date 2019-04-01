@@ -10,4 +10,6 @@ public interface IGlobals {
 
     CommunicationClass getComm();
     Agent getAgent();
+
+    void showAlertDialog(AlertDialogCallback callback);
 }
