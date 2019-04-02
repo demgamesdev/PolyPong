@@ -50,8 +50,14 @@ public class Globals extends Application implements IGlobals{
     public void setupAgent(Context context) {
         this.agent = new Agent(context.getFilesDir());
     }
+    @Override
+    public void finishGDXGameLauncher(){
+        if(this.gdxGameLauncher!=null) {
+            this.gdxGameLauncher.finish();
+        }
+    }
 
-    public void showAlertDialog(final AlertDialogCallback callback){
+    public void showStartDialog(final AlertDialogCallback callback){
 
         gdxGameLauncher.runOnUiThread(new Runnable(){
 
@@ -59,7 +65,83 @@ public class Globals extends Application implements IGlobals{
             public void run() {
 
                 AlertDialog.Builder builder = new AlertDialog.Builder(gdxGameLauncher);
-                builder.setTitle("Test");
+                builder.setCancelable(false);
+                builder.setTitle("Start");
+                builder.setMessage("Testing");
+                builder.setPositiveButton("Okay", new DialogInterface.OnClickListener(){
+
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                        callback.positiveButtonPressed();
+
+                    }
+                });
+                builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener(){
+
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                        callback.negativeButtonPressed();
+
+                    }
+
+                });
+
+
+                AlertDialog dialog = builder.create();
+                dialog.show();
+            }
+        });
+    }
+
+    public void showPauseDialog(final AlertDialogCallback callback){
+
+        gdxGameLauncher.runOnUiThread(new Runnable(){
+
+            @Override
+            public void run() {
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(gdxGameLauncher);
+                builder.setCancelable(false);
+                builder.setTitle("Pause");
+                builder.setMessage("Testing");
+                builder.setPositiveButton("Okay", new DialogInterface.OnClickListener(){
+
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                        callback.positiveButtonPressed();
+
+                    }
+                });
+                builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener(){
+
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                        callback.negativeButtonPressed();
+
+                    }
+
+                });
+
+                AlertDialog dialog = builder.create();
+                dialog.show();
+            }
+        });
+    }
+
+    public void showEndDialog(final AlertDialogCallback callback){
+
+        gdxGameLauncher.runOnUiThread(new Runnable(){
+
+            @Override
+            public void run() {
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(gdxGameLauncher);
+                builder.setCancelable(false);
+                builder.setTitle("End");
                 builder.setMessage("Testing");
                 builder.setPositiveButton("Okay", new DialogInterface.OnClickListener(){
 

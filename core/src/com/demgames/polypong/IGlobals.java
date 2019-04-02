@@ -11,5 +11,8 @@ public interface IGlobals {
     CommunicationClass getComm();
     Agent getAgent();
 
-    void showAlertDialog(AlertDialogCallback callback);
+    void finishGDXGameLauncher();
+    void showStartDialog(AlertDialogCallback callback);
+    void showPauseDialog(AlertDialogCallback callback);
+    void showEndDialog(AlertDialogCallback callback);
 }

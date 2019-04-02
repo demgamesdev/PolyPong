@@ -7,6 +7,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 
 import com.badlogic.gdx.backends.android.AndroidApplication;
@@ -53,7 +54,18 @@ public class GDXGameLauncher extends AndroidApplication {
                     getIntent().getBooleanExtra("agentmode",false),displayMetrics.heightPixels,displayMetrics.widthPixels);
             initialize(game, config);
         }
+
+
 	}
+
+    @Override
+    public void onBackPressed() {
+        Globals globals=(Globals)getApplicationContext();
+        Log.d(this.getClass().getName(), "back button pressed");
+        if(globals.getComm().gameState==1) {
+            globals.getComm().setGameState(3);
+        }
+    }
 
     @Override
     protected void onDestroy() {
@@ -102,16 +114,9 @@ public class GDXGameLauncher extends AndroidApplication {
                                 | View.SYSTEM_UI_FLAG_FULLSCREEN
                                 | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
             }
-            if(globals.getComm().gameState ==1) {
-                globals.getComm().clientConnectionStatesMap.put(getIntent().getIntExtra("myplayernumber",0) ,4);
-
-                globals.getComm().sendObjectToAllClients(new SendConnectionState(getIntent().getIntExtra("myplayernumber",0),4), "tcp");
-            }
         } else {
-            if(globals.getComm().gameState ==1) {
-                globals.getComm().clientConnectionStatesMap.put(getIntent().getIntExtra("myplayernumber",0) ,5);
-
-                globals.getComm().sendObjectToAllClients(new SendConnectionState(getIntent().getIntExtra("myplayernumber",0),5), "tcp");
+            if(globals.getComm().gameState==1) {
+                globals.getComm().setGameState(2);
             }
         }
     }

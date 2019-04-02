@@ -43,9 +43,7 @@ public class ClientListener extends Listener{
     public void disconnected(Connection connection) {
         Log.e(TAG, " disconnected.");
         synchronized (globals.getComm().connectionThreadLock) {
-            if(GDXGameLauncher.GDXGAME!=null) {
-                GDXGameLauncher.GDXGAME.finish();
-            }
+            //globals.finishGDXGameLauncher();
         }
     }
 
